@@ -1,0 +1,12 @@
+{
+  "type": "clear",
+  "name": "なし",
+  "files": [
+    {
+      "file_type": "clear",
+      "name": "なし",
+      "finame_pattern": "/uFFFF",
+      "rows": []
+    }
+  ]
+}

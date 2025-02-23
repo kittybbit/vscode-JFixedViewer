@@ -1,0 +1,85 @@
+import { FilePattern, Row } from "./types";
+import clear from "./clear.json";
+import zengin from "./zengin.json";
+
+type RawRow = {
+  name: string;
+  condition?: string;
+  mode_rule?: string;
+  mode_rule_position?: number;
+  mode?: string;
+  columns: number[];
+};
+
+type FileStructure = {
+  file_type: string;
+  name: string;
+  finame_pattern: string;
+  rows: RawRow[];
+};
+
+type Definition = {
+  type: string;
+  name: string;
+  files: FileStructure[];
+};
+
+export class DefinitionHolder {
+  private _files: FilePattern[] = [];
+  private _rowsByFile: Map<string, Row[]> = new Map();
+
+  public static init(): DefinitionHolder {
+    console.info("initialized DefinitionHolder.");
+    const dh = new DefinitionHolder();
+    return dh;
+  }
+
+  /** constructor */
+  private constructor() {
+    this.loadDefinitions();
+  }
+
+  /** Load definitions */
+  private loadDefinitions() {
+    // clear.json
+    this.convert(clear);
+    // zengin.json
+    this.convert(zengin);
+  }
+
+  private convert(definition: Definition) {
+    (definition as Definition).files.forEach((file) => {
+      const key = `${definition.type}/${file.file_type}`;
+      this._files.push({
+        finame_pattern: new RegExp(file.finame_pattern),
+        file_type: key,
+        name: `${definition.name}/${file.name}`,
+      });
+      this._rowsByFile.set(
+        key,
+        file.rows.map((row) => {
+          const r: Row = {
+            name: row.name,
+            condition: new RegExp(row.condition ?? ".*"),
+            mode_rule: row.mode_rule ? new RegExp(row.mode_rule) : undefined,
+            mode_rule_position: row.mode_rule_position,
+            mode: row.mode ? new RegExp(row.mode) : undefined,
+            columns: row.columns,
+          };
+          console.log(
+            `name: ${definition.name}/${file.name}@${r.name},column length: ${r.columns.reduce((acc, val) => acc + val, 0)}`,
+          );
+          return r;
+        }),
+      );
+    });
+  }
+
+  get files(): FilePattern[] {
+    return this._files;
+  }
+
+  get rowsByFile(): Map<string, Row[]> {
+    return this._rowsByFile;
+  }
+}
