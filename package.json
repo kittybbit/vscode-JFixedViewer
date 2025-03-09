@@ -3,7 +3,7 @@
   "name": "vscode-JFixedViewer",
   "displayName": "vscode-J Fixed Viewer",
   "description": "“Highlight the fixed-length file formats used in Japan.”",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "private": true,
   "license": "MIT",
   "homepage": "https://github.com/kittybbit/vscode-JFixedViewer",
