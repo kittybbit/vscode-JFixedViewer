@@ -1,0 +1,75 @@
+{
+  "publisher": "kittybbit",
+  "name": "vscode-JFixedViewer",
+  "displayName": "vscode-J Fixed Viewer",
+  "description": "“Highlight the fixed-length file formats used in Japan.”",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "homepage": "https://github.com/kittybbit/vscode-JFixedViewer",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kittybbit/vscode-JFixedViewer"
+  },
+  "bugs": {
+    "url": "https://github.com/kittybbit/vscode-JFixedViewer/issues"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "browser": "./dist/web.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "vscode-JFixedViewer.FiletypePicker",
+        "title": "固定長のファイル形式を選択",
+        "category": "JFixedViewer",
+        "icon": "$(file-binary)"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "clean": "rimraf out dist",
+    "precompile": "npm-run-all qlty",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "prepackage": "npm-run-all clean qlty",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm-run-all compile-tests compile",
+    "qlty": "npm-run-all qlty:fmt qlty:check",
+    "qlty:fmt": "qlty fmt",
+    "qlty:check": "qlty check",
+    "test": "vscode-test",
+    "open-in-browser": "vscode-test-web --extensionDevelopmentPath=. ."
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.75.0",
+    "@typescript-eslint/eslint-plugin": "^8.26.0",
+    "@typescript-eslint/parser": "^8.26.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "@vscode/test-web": "^0.0.67",
+    "@vscode/vsce": "^3.2.2",
+    "dotenv": "^16.4.7",
+    "eslint": "^9.22.0",
+    "npm-run-all": "^4.1.5",
+    "rimraf": "^6.0.1",
+    "ts-loader": "^9.5.2",
+    "typescript": "^5.8.2",
+    "webpack": "^5.98.0",
+    "webpack-cli": "^6.0.1"
+  },
+  "dependencies": {
+    "@vscode/extension-telemetry": "^0.9.8"
+  }
+}

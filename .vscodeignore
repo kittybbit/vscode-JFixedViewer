@@ -1,0 +1,32 @@
+# npm
+node_modules/
+
+# antlr
+antlr/
+
+# qlty
+.qlty/
+
+# vscode
+.vscode/
+.vscode-test/
+*.code-workspace
+.vscodeignore
+
+# source code
+src/
+
+# others
+.browserslistrc
+.eslintrc.js
+.gitattributes
+.gitignore
+.ncurc.json
+tsconfig.json
+webpack.config.js
+*.log
+*.tmp
+*.map
+global.d.ts
+secrets.json
+.env
