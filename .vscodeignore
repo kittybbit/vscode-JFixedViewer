@@ -1,14 +1,32 @@
-.vscode/**
-.vscode-test/**
-out/**
-node_modules/**
-src/**
+# npm
+node_modules/
+
+# antlr
+antlr/
+
+# qlty
+.qlty/
+
+# vscode
+.vscode/
+.vscode-test/
+*.code-workspace
+.vscodeignore
+
+# source code
+src/
+
+# others
+.browserslistrc
+.eslintrc.js
+.gitattributes
 .gitignore
-.yarnrc
+.ncurc.json
+tsconfig.json
 webpack.config.js
-vsc-extension-quickstart.md
-**/tsconfig.json
-**/eslint.config.mjs
-**/*.map
-**/*.ts
-**/.vscode-test.*
+*.log
+*.tmp
+*.map
+global.d.ts
+secrets.json
+.env
