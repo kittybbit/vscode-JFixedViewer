@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.0.1
+
+- 説明と検索キーワードを変更
+
 ## 1.0.0
 
 - Initial release

@@ -1,5 +1,5 @@
-import { create } from "domain";
 import { DefinitionHolder } from "../../definitions/DefinitionHolder";
+import { Telemetry } from "../Constants";
 import { Extension } from "../Extension";
 import { TextDecorator } from "./TextDecorator";
 
@@ -49,5 +49,9 @@ export class TextDecoratorFactory {
   private textDecoratorHandler(message: string) {
     console.log(`textDecoratorHandler: ${message}`);
     this.decorate(message);
+    Extension.reporter.sendTelemetryEvent(Telemetry.Decorate, {
+      file_type: message,
+      development: String(DEVELOPMENT),
+    });
   }
 }
