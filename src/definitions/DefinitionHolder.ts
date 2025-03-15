@@ -49,7 +49,7 @@ export class DefinitionHolder {
 
   private convert(definition: Definition) {
     (definition as Definition).files.forEach((file) => {
-      const key = `${definition.type}/${file.file_type}`;
+      const key = `${file.file_type}@${definition.type}`;
       this._files.push({
         finame_pattern: new RegExp(file.finame_pattern),
         file_type: key,
@@ -67,7 +67,7 @@ export class DefinitionHolder {
             columns: row.columns,
           };
           console.log(
-            `name: ${definition.name}/${file.name}@${r.name},column length: ${r.columns.reduce((acc, val) => acc + val, 0)}`,
+            `name: ${definition.name}/${file.name}:${r.name},column length: ${r.columns.reduce((acc, val) => acc + val, 0)}`,
           );
           return r;
         }),
