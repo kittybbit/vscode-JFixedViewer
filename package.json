@@ -3,7 +3,7 @@
   "name": "vscode-JFixedViewer",
   "displayName": "vscode-J Fixed Viewer",
   "description": "日本で利用される、固定長のファイルを見やすく表示する拡張機能です。",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "private": true,
   "license": "MIT",
   "homepage": "https://github.com/kittybbit/vscode-JFixedViewer",

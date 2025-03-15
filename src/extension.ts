@@ -6,6 +6,7 @@ import { Telemetry } from "./extension/Constants";
 import { FiletypePicker } from "./extension/command/FiletypePicker";
 import { DefinitionHolder } from "./definitions/DefinitionHolder";
 import { TextDecoratorFactory } from "./extension/editor/TextDecoratorFactory";
+import { changeActiveTextEditorHandler } from "./extension/events/ChangeActiveTextEditorHandler";
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -15,6 +16,11 @@ export function activate(context: vscode.ExtensionContext) {
   const dh = DefinitionHolder.init();
   FiletypePicker.register(context, dh);
   TextDecoratorFactory.init(dh);
+  vscode.window.onDidChangeActiveTextEditor(
+    changeActiveTextEditorHandler,
+    null,
+    context.subscriptions,
+  );
   Extension.reporter.sendTelemetryEvent(Telemetry.ExtensionActivate, {
     development: String(DEVELOPMENT),
   });

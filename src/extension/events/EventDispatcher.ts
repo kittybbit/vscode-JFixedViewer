@@ -6,7 +6,7 @@ export class EventDispatcher {
   // subscribe
   public onDidTriggerEvent = this.emitter.event;
 
-  // fire
+  // publish
   public fire(message: string) {
     console.log(`on fire: ${message}`);
     this.emitter.fire(message);

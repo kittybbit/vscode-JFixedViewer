@@ -1,17 +1,17 @@
 import { DefinitionHolder } from "../../definitions/DefinitionHolder";
-import { Telemetry } from "../Constants";
+import { textDecoratorHandler } from "../events/TextDecoratorHandler";
 import { Extension } from "../Extension";
 import { TextDecorator } from "./TextDecorator";
 
 export class TextDecoratorFactory {
   private _definitionHolder: DefinitionHolder;
   private _decorator: Map<string, TextDecorator> = new Map();
+  private _handler: (message: string) => void = () => {};
 
   public static init(dh: DefinitionHolder): TextDecoratorFactory {
     const td = new TextDecoratorFactory(dh);
-    Extension.eventDispatcher.onDidTriggerEvent(
-      td.textDecoratorHandler.bind(td),
-    );
+    td._handler = textDecoratorHandler(td);
+    Extension.eventDispatcher.onDidTriggerEvent(td._handler);
     return td;
   }
 
@@ -19,13 +19,13 @@ export class TextDecoratorFactory {
     this._definitionHolder = dh;
   }
 
-  private decorate(message: string) {
-    console.log(`decorate: ${message}`);
+  public decorate(message: string) {
     let decorator: TextDecorator | undefined = this.getDecorator(message);
     if (decorator === undefined) {
       return;
     }
     decorator.decorate();
+    console.log(`decorated: ${message}`);
   }
 
   private getDecorator(message: string): TextDecorator | undefined {
@@ -44,14 +44,5 @@ export class TextDecoratorFactory {
     const decorator = new TextDecorator(rows);
     this._decorator.set(message, decorator);
     return decorator;
-  }
-
-  private textDecoratorHandler(message: string) {
-    console.log(`textDecoratorHandler: ${message}`);
-    this.decorate(message);
-    Extension.reporter.sendTelemetryEvent(Telemetry.Decorate, {
-      file_type: message,
-      development: String(DEVELOPMENT),
-    });
   }
 }

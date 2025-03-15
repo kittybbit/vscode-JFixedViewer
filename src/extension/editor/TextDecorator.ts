@@ -17,12 +17,15 @@ export class TextDecorator {
       return;
     }
 
-    Extension.clearDecoration(editor);
+    Extension.clearEditor(editor);
 
-    const newDecoration = this.createDecorationType();
+    const newDecorationType = this.createDecorationType();
     const decorationOptions = this.createDecorationOptions(editor.document);
-    editor.setDecorations(newDecoration, decorationOptions);
-    Extension.setDecoration(editor, newDecoration);
+    editor.setDecorations(newDecorationType, decorationOptions);
+    Extension.storeDecoration(editor, {
+      textDecorator: this,
+      decorationType: newDecorationType,
+    });
   }
 
   private createDecorationType(): vscode.TextEditorDecorationType {
