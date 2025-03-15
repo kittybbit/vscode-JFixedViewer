@@ -1,6 +1,7 @@
 import { FilePattern, Row } from "./types";
 import clear from "./clear.json";
 import zengin from "./zengin.json";
+import jpx from "./jpx.json";
 
 type RawRow = {
   name: string;
@@ -45,6 +46,8 @@ export class DefinitionHolder {
     this.convert(clear);
     // zengin.json
     this.convert(zengin);
+    // jpx.json
+    this.convert(jpx);
   }
 
   private convert(definition: Definition) {
@@ -60,7 +63,7 @@ export class DefinitionHolder {
         file.rows.map((row) => {
           const r: Row = {
             name: row.name,
-            condition: new RegExp(row.condition ?? ".*"),
+            condition: new RegExp(row.condition ?? "^(?!s*$).+"),
             mode_rule: row.mode_rule ? new RegExp(row.mode_rule) : undefined,
             mode_rule_position: row.mode_rule_position,
             mode: row.mode ? new RegExp(row.mode) : undefined,

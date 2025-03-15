@@ -12,6 +12,7 @@ antlr/
 .vscode-test/
 *.code-workspace
 .vscodeignore
+.vscode-test.mjs
 
 # source code
 src/
