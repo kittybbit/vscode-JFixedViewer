@@ -5,6 +5,7 @@ import { DefinitionHolder } from "../../definitions/DefinitionHolder";
 export class FiletypePicker {
   public static register(
     context: vscode.ExtensionContext,
+    extension: Extension,
     dh: DefinitionHolder,
   ) {
     console.info("registered FiletypePicker");
@@ -21,7 +22,7 @@ export class FiletypePicker {
             .showQuickPick(Array.from(options.keys()))
             .then((selectedOption) => {
               const file_type = options.get(selectedOption ?? "");
-              Extension.eventDispatcher.fire(file_type ?? "");
+              extension.eventDispatcher.fire(file_type ?? "");
             });
         },
       ),

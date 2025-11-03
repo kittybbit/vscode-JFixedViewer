@@ -4,19 +4,24 @@ import { Extension } from "../Extension";
 import { TextDecorator } from "./TextDecorator";
 
 export class TextDecoratorFactory {
+  private _extension: Extension;
   private _definitionHolder: DefinitionHolder;
   private _decorator: Map<string, TextDecorator> = new Map();
   private _handler: (message: string) => void = () => {};
 
-  public static init(dh: DefinitionHolder): TextDecoratorFactory {
-    const td = new TextDecoratorFactory(dh);
-    td._handler = textDecoratorHandler(td);
-    Extension.eventDispatcher.onDidTriggerEvent(td._handler);
-    return td;
+  public static init(
+    extension: Extension,
+    dh: DefinitionHolder,
+  ): TextDecoratorFactory {
+    const tdf = new TextDecoratorFactory(extension, dh);
+    return tdf;
   }
 
-  private constructor(dh: DefinitionHolder) {
+  private constructor(extension: Extension, dh: DefinitionHolder) {
+    this._extension = extension;
     this._definitionHolder = dh;
+    this._handler = textDecoratorHandler(extension, this);
+    extension.eventDispatcher.onDidTriggerEvent(this._handler);
   }
 
   public decorate(message: string) {
@@ -37,11 +42,12 @@ export class TextDecoratorFactory {
   }
 
   private createDecorator(message: string): TextDecorator | undefined {
-    const rows = this._definitionHolder.rowsByFile.get(message);
-    if (rows === undefined) {
+    const rowDefinitions =
+      this._definitionHolder.rowDefinitionsByFile.get(message);
+    if (rowDefinitions === undefined) {
       return undefined;
     }
-    const decorator = new TextDecorator(rows);
+    const decorator = new TextDecorator(this._extension, rowDefinitions);
     this._decorator.set(message, decorator);
     return decorator;
   }

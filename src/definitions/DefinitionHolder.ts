@@ -1,4 +1,4 @@
-import { FilePattern, Row } from "./types";
+import { FilePattern, RowDefinition } from "./types";
 import clear from "./clear.json";
 import zengin from "./zengin.json";
 import jpx from "./jpx.json";
@@ -27,7 +27,7 @@ type Definition = {
 
 export class DefinitionHolder {
   private _files: FilePattern[] = [];
-  private _rowsByFile: Map<string, Row[]> = new Map();
+  private _rowDefinitionsByFile: Map<string, RowDefinition[]> = new Map();
 
   public static init(): DefinitionHolder {
     console.info("initialized DefinitionHolder.");
@@ -58,10 +58,10 @@ export class DefinitionHolder {
         file_type: key,
         name: `${definition.name}/${file.name}`,
       });
-      this._rowsByFile.set(
+      this._rowDefinitionsByFile.set(
         key,
         file.rows.map((row) => {
-          const r: Row = {
+          const r: RowDefinition = {
             name: row.name,
             condition: new RegExp(row.condition ?? "^(?!s*$).+"),
             mode_rule: row.mode_rule ? new RegExp(row.mode_rule) : undefined,
@@ -82,7 +82,7 @@ export class DefinitionHolder {
     return this._files;
   }
 
-  get rowsByFile(): Map<string, Row[]> {
-    return this._rowsByFile;
+  get rowDefinitionsByFile(): Map<string, RowDefinition[]> {
+    return this._rowDefinitionsByFile;
   }
 }
