@@ -1,5 +1,11 @@
 # vscode-JFixedViewer
 
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/kittybbit.vscode-JFixedViewer)](https://marketplace.visualstudio.com/items?itemName=kittybbit.vscode-JFixedViewer)
+[![Visual Studio Marketplace Downloads](https://img.shields.io/visual-studio-marketplace/d/kittybbit.vscode-JFixedViewer)](https://marketplace.visualstudio.com/items?itemName=kittybbit.vscode-JFixedViewer)
+[![Visual Studio Marketplace Rating](https://img.shields.io/visual-studio-marketplace/stars/kittybbit.vscode-JFixedViewer)](https://marketplace.visualstudio.com/items?itemName=kittybbit.vscode-JFixedViewer)
+[![Qlty Maintainability](https://qlty.sh/badges/0cc9e169-14e8-44d7-a0de-5c358687a18e/maintainability.png)](https://qlty.sh/gh/kittybbit/projects/vscode-JFixedViewer)
+
 日本でよく利用されている、固定長ファイルを読みやすく表示します。
 
 ## Features
@@ -12,7 +18,7 @@
 
 | カテゴリ       | ファイル種別                                |
 | -------------- | ------------------------------------------- |
-| 全銀協規定形式   | 振込入金通知                                |
+| 全銀協規定形式 | 振込入金通知                                |
 |                | 入出金取引明細 残高通知(預金)               |
 |                | 給与振込(民間)                              |
 |                | 賞与振込(民間)                              |
@@ -40,7 +46,7 @@
 |                | 外国送金依頼                                |
 |                | 荷為替輸入信用状発行依頼                    |
 |                | 外貨預金入出金取引明細                      |
-| JPX            | 四本値(デリバティブ)                      |
+| JPX            | 四本値(デリバティブ)                        |
 
 ## Requirements
 
@@ -50,6 +56,14 @@
 
 この拡張機能には特別な設定はありません。
 
+## Telemetry
+
+This extension collects telemetry data to improve the experience of using this extension with VS Code. We only collect data on which commands are executed. We do not collect any information about names, addresses, paths, etc. The extension respects the telemetry.enableTelemetry setting which you can learn more about in our [FAQ](https://code.visualstudio.com/docs/supporting/faq#_how-to-disable-telemetry-reporting).
+
 ## Known Issues
 
 現在、既知の問題はありません。
+
+## License
+
+MIT

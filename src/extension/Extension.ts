@@ -2,63 +2,71 @@ import * as vscode from "vscode";
 import TelemetryReporter from "@vscode/extension-telemetry";
 import { EventDispatcher } from "./events/EventDispatcher";
 import { TextDecorator } from "./editor/TextDecorator";
+import { Telemetry } from "./Constants";
 
-type Decoration = {
-  textDecorator: TextDecorator;
-  decorationType: vscode.TextEditorDecorationType;
-};
 /**
  * Context of this extension.
  */
-export class Extension {
-  private static _reporter: TelemetryReporter;
-  private static _eventDispatcher: EventDispatcher;
-  private static _editorDecorations = new Map<string, Decoration>();
+export class Extension implements vscode.Disposable {
+  private _reporter: TelemetryReporter;
+  private _eventDispatcher: EventDispatcher;
+  private _editorDecorator = new Map<string, TextDecorator>();
 
-  public static init(context: vscode.ExtensionContext) {
-    new Extension();
-    context.subscriptions.push(Extension._reporter);
+  public static init(context: vscode.ExtensionContext): Extension {
+    const extension = new Extension();
+    context.subscriptions.push(extension);
+    return extension;
   }
 
   private constructor() {
     console.log("initializing extension context.");
-    Extension._reporter = new TelemetryReporter(CONNECTION_STRING);
+    this._reporter = new TelemetryReporter(CONNECTION_STRING);
     console.log(`connection string: ${CONNECTION_STRING}`);
-    Extension._eventDispatcher = new EventDispatcher();
+    this._reporter.sendTelemetryEvent(Telemetry.ExtensionActivate, {
+      development: String(DEVELOPMENT),
+    });
+    this._eventDispatcher = new EventDispatcher();
   }
 
-  static get reporter(): TelemetryReporter {
-    return Extension._reporter;
+  dispose() {
+    this._editorDecorator.forEach((v) => {
+      v.dispose();
+    });
+    this._reporter.sendTelemetryEvent(Telemetry.ExtensionDeactivate, {
+      development: String(DEVELOPMENT),
+    });
+    this._reporter.dispose();
   }
 
-  static get eventDispatcher(): EventDispatcher {
-    return Extension._eventDispatcher;
+  get reporter(): TelemetryReporter {
+    return this._reporter;
   }
 
-  public static clearEditor(editor: vscode.TextEditor) {
-    Extension.clearDecoration(editor);
-    Extension._editorDecorations.delete(editor.document.fileName);
+  get eventDispatcher(): EventDispatcher {
+    return this._eventDispatcher;
   }
 
-  private static clearDecoration(editor: vscode.TextEditor) {
-    const decoration = Extension._editorDecorations.get(
-      editor.document.fileName,
-    );
+  public clearEditor(editor: vscode.TextEditor) {
+    this.clearDecoration(editor);
+    this._editorDecorator.delete(editor.document.fileName);
+  }
+
+  private clearDecoration(editor: vscode.TextEditor) {
+    const decoration = this._editorDecorator.get(editor.document.fileName);
     if (decoration !== undefined) {
       console.log(`clearing decoration: ${editor.document.fileName}`);
-      decoration.decorationType.dispose();
+      decoration.dispose();
     }
   }
 
-  public static storeDecoration(
+  public storeTextDecorator(
     editor: vscode.TextEditor,
-    decoration: Decoration,
+    decorator: TextDecorator,
   ) {
-    Extension._editorDecorations.set(editor.document.fileName, decoration);
+    this._editorDecorator.set(editor.document.fileName, decorator);
   }
 
-  public static getTextDecorator(editor: vscode.TextEditor) {
-    return Extension._editorDecorations.get(editor.document.fileName)
-      ?.textDecorator;
+  public getTextDecorator(editor: vscode.TextEditor) {
+    return this._editorDecorator.get(editor.document.fileName);
   }
 }

@@ -1,102 +1,106 @@
 import * as vscode from "vscode";
-import { Row } from "../../definitions/types";
+import { RowDefinition } from "../../definitions/types";
 import { Extension } from "../Extension";
 
-export class TextDecorator {
-  private _rows: Row[];
+export class TextDecorator implements vscode.Disposable {
+  private _extension: Extension;
+  private _rowDefinitions: RowDefinition[];
   private _mode?: string;
+  private _decorationType?: vscode.TextEditorDecorationType;
 
-  public constructor(rows: Row[]) {
-    this._rows = rows;
+  public constructor(extension: Extension, rows: RowDefinition[]) {
+    this._extension = extension;
+    this._rowDefinitions = rows;
   }
 
-  /** Decorate the text editor */
+  dispose() {
+    this._decorationType?.dispose();
+  }
+
+  /** Decorate the active editor */
   public decorate() {
     const editor = vscode.window.activeTextEditor;
-    if (editor === undefined) {
+    if (!editor) {
       return;
     }
 
-    Extension.clearEditor(editor);
+    this._extension.clearEditor(editor);
 
-    const newDecorationType = this.createDecorationType();
-    const decorationOptions = this.createDecorationOptions(editor.document);
-    editor.setDecorations(newDecorationType, decorationOptions);
-    Extension.storeDecoration(editor, {
-      textDecorator: this,
-      decorationType: newDecorationType,
-    });
+    this._decorationType = this.createDecorationType();
+    const decorationOption = this.createDecorationOption(editor.document);
+
+    // Apply all at once for performance
+    editor.setDecorations(this._decorationType, decorationOption);
+
+    this._extension.storeTextDecorator(editor, this);
   }
 
+  /** visually lighter decorations */
   private createDecorationType(): vscode.TextEditorDecorationType {
     return vscode.window.createTextEditorDecorationType({
       after: {
-        contentText: "|",
-        margin: "0 0.1em 0 0.1em",
+        contentText: "",
+        borderColor: new vscode.ThemeColor("editor.selectionBackground"),
+        border: "0.1em solid",
       },
+      isWholeLine: false,
     });
   }
 
-  /** Create ranges for each row */
-  private createDecorationOptions(
+  /** Create decorations for each field (column) */
+  private createDecorationOption(
     document: vscode.TextDocument,
   ): vscode.DecorationOptions[] {
-    const decorationOptions: vscode.DecorationOptions[] = [];
+    const options: vscode.DecorationOptions[] = [];
+    const lineCount = document.lineCount;
 
-    for (let lineNumber = 0; lineNumber < document.lineCount; lineNumber++) {
-      const line = document.lineAt(lineNumber);
-      const lineText = line.text;
-      const lineIsEmpty = line.isEmptyOrWhitespace;
-      if (lineIsEmpty) {
+    for (let i = 0; i < lineCount; i++) {
+      const line = document.lineAt(i);
+      const text = line.text;
+      if (line.isEmptyOrWhitespace) {
         continue;
       }
 
-      const useRow = this.getUseRowAtThisLine(lineText);
-      if (useRow === undefined) {
+      const row = this.getApplicableRow(text);
+      if (!row) {
         continue;
       }
 
-      let startPos = 0;
-      for (const column of useRow.columns) {
-        const start = new vscode.Position(lineNumber, startPos);
-        const endPos = startPos + column;
-        const end = new vscode.Position(lineNumber, endPos);
-        const range = new vscode.Range(start, end);
-        decorationOptions.push({
-          range: range,
-          hoverMessage: new vscode.MarkdownString(
-            `${useRow.name}, ${startPos + 1}-${endPos}(${column})`,
-          ),
-        });
-        startPos += column;
+      let start = 0;
+      for (const [colIndex, colWidth] of row.columns.entries()) {
+        const end = start + colWidth;
+        const range = new vscode.Range(
+          new vscode.Position(i, start),
+          new vscode.Position(i, end),
+        );
+        const hover = new vscode.MarkdownString(
+          `**${row.name}**  \n位置: ${start + 1} - ${end} (${colWidth}桁)`,
+        );
+        hover.isTrusted = true; // allows link expansion later
+
+        options.push({ range: range, hoverMessage: hover });
+        start = end;
       }
     }
-
-    return decorationOptions;
+    return options;
   }
 
-  private getUseRowAtThisLine(lineText: string): Row | undefined {
-    let useRow;
-    for (const row of this._rows) {
-      if (row.condition.test(lineText)) {
-        if (
-          row.mode === undefined ||
-          (this._mode !== undefined && row.mode.test(this._mode))
-        ) {
-          useRow = row;
-          // Set mode from then next row onward.
-          if (
-            row.mode_rule !== undefined &&
-            row.mode_rule_position !== undefined
-          ) {
-            const match = row.mode_rule.exec(lineText);
-            this._mode =
-              match !== null ? match[row.mode_rule_position] : undefined;
-          }
-          break;
+  /** Find applicable Row by regex condition & mode */
+  private getApplicableRow(lineText: string): RowDefinition | undefined {
+    for (const row of this._rowDefinitions) {
+      if (!row.condition.test(lineText)) {
+        continue;
+      }
+
+      if (!row.mode || (this._mode && row.mode.test(this._mode))) {
+        // Update mode if mode_rule applies
+        if (row.mode_rule && row.mode_rule_position !== undefined) {
+          const match = row.mode_rule.exec(lineText);
+          this._mode = match ? match[row.mode_rule_position] : undefined;
         }
+        return row;
       }
     }
-    return useRow;
+    return undefined;
   }
 }

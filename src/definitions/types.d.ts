@@ -1,4 +1,4 @@
-export type Row = {
+export type RowDefinition = {
     name: string;
     condition: RegExp;
     mode_rule?: RegExp;
