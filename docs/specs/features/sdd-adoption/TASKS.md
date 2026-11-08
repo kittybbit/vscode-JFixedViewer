@@ -15,7 +15,7 @@
 ## 現在の状態
 
 - ライフサイクル状態 `PLAN_COMMITTED`
-- 次の作業は、日本語版スライス1の完了コミットと PR 公開。
+- 次の作業は、PR #9 への Verify 修正の追加コミットとチェックの確認。
 - 独立した `plan-reviewer` は日本語版の再レビューで `Ready for approval` と判定した。
   残る指摘は0件。レビュー対象の `TASKS.md` の SHA-256 は
   `8e04d9a5a2e66d56c22164e085a121d6ff818e619adce87981029976bbb526fd`。
@@ -45,11 +45,12 @@
 
 - 起点は GitHub の `main`、コミット `56b4823cbb04873a7d909b2d4a530e6334efb517`。
 - 第1層の `codex/sdd-adoption-harness` は `main` を対象にする。
+  [PR #9](https://github.com/kittybbit/vscode-JFixedViewer/pull/9) の先端は
+  `2c5c0d20652e458f5468494f44a2570ba5bd5e29`。
 - 第2層の `codex/sdd-adoption-tests` は承認済みの第1層のブランチとヘッドを起点にする。
 - 第3層の `codex/sdd-adoption-architecture` は承認済みの第2層のブランチとヘッドを
   起点にする。第3層のヘッドに全スライスと終了差分を含める。
-- PR の URL、検証時のベースとヘッドの SHA、終了コミット、マージ結果は確認後に記録する。
-  現時点ではいずれも未確定。
+- 後続 PR の URL、検証時のベースとヘッドの SHA、終了コミット、マージ結果は確認後に記録する。
 
 各スライスで独立レビューの `Ready` と明示的な完了承認を得たら、Main がコミットし、
 その層の PR を公開または更新する。後続のブランチを作成したり作業を始めたりする前に、
@@ -86,7 +87,7 @@ Main は操作前に、実際の承認、対象とパス、レビューとコミ
 
 ## スライス1. SDD ハーネスと初期 Verify
 
-- ライフサイクル状態 `SLICE_APPROVED`。日本語版の差分に対する完了承認を得た。
+- ライフサイクル状態 `SLICE_APPROVED`。公開後の Verify 修正に対する完了承認を得た。
 - 受け入れ条件。SDD 方針、ロール、案内、テンプレート、ユースケースを日本語でたどれる。
   修正、再計画、完了、機能終了、マージを区別できることを手順例で確かめる。
   Verify と CodeQL は、今後のスタックの先行ブランチを含め、あらゆるブランチを対象にした
@@ -131,6 +132,26 @@ Main は操作前に、実際の承認、対象とパス、レビューとコミ
   `b54a97df7ef3949d6a54e936e0b18ea33e74f88dde02761a416306ff57f9419c`。
 - 完了承認は `Approved`。独立レビュー後にこの会話で明示的な承認を得た。
   対象はレビュー済みの日本語版スライス1の差分と、下記の承認対象パス。
+  Main が28パスだけをステージし、`git diff --cached --check` を通して
+  `2c5c0d20652e458f5468494f44a2570ba5bd5e29` にコミットし、PR #9 を公開した。
+
+### PR 公開後の Verify 修正
+
+- PR #9 の上記ヘッドで CodeQL は通過し、Verify は `npm ci` で失敗した。
+  `ubuntu-latest` の Ubuntu 26.04 に、ロック済みの Playwright 1.56.1 が対応していない。
+  [失敗したジョブ](https://github.com/kittybbit/vscode-JFixedViewer/actions/runs/42472193466/job/128705357615)
+  のログを `/private/tmp/jfixed-sdd-s1-publish.snzfjn_8/verify-ci-failure.log` に保存した。
+- Verify のランナーを、同じ Playwright が対応する `ubuntu-24.04` に固定する。
+  `npm ci` と既存の検証を引き続き実行する。修正後の差分は独立レビューと完了承認に進む。
+- ワークフローの構文と、ロック済み Playwright が Ubuntu 24.04 用の Chromium を選ぶことを
+  確認した。`/tmp/jfixedviewer-sdd-ubuntu-correction.eBQcoA/record.txt` を参照する。
+- Qlty の基準と修正後の証跡は `/private/tmp/jfixed-sdd-s1-ci-base-evidence.DFfPMP` と
+  `/private/tmp/jfixed-sdd-s1-ci-final-evidence.poltlbx3` にある。
+  指摘の増加や悪化はなく、総合チェックが通った。ランナーでの検証は PR 更新後に行う。
+- 独立再レビューは `Ready`。残る指摘は0件。レビューした2パスの内容一覧の SHA-256 は
+  `0e7b09b129d89f1224a36734c11d4f9536dbecfdafab9540b39f8fdac23485bf`。
+- 修正の完了承認は `Approved`。独立再レビュー後にこの会話で承認を得た。
+  対象は Verify のランナー指定と、この証跡の追記。
 
 ### スライス1の日本語化前の実装と検証
 
