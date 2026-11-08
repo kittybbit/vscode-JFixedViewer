@@ -14,7 +14,7 @@
 ## 現在の状態
 
 - ライフサイクル状態 `PLAN_COMMITTED`
-- 次の作業は、スライス2の完了コミットと PR 公開。
+- スライス2は公開済み。PR #10 の Verify で見つかった Web テストの起動失敗を修正し、再検証する。
 - 独立した `plan-reviewer` は日本語版の再レビューで `Ready for approval` と判定した。
   残る指摘は0件。レビュー対象の `TASKS.md` の SHA-256 は
   `8e04d9a5a2e66d56c22164e085a121d6ff818e619adce87981029976bbb526fd`。
@@ -47,6 +47,8 @@
   [PR #9](https://github.com/kittybbit/vscode-JFixedViewer/pull/9) の先端は
   `e685673dbb613faf495ebcd569eb156975bb7016`。
 - 第2層の `codex/sdd-adoption-tests` は、検証済みの上記ヘッドを起点に作成した。
+  [PR #10](https://github.com/kittybbit/vscode-JFixedViewer/pull/10) の修正前のヘッドは
+  `e1268b32b519487c5353a734b59457bf2cebe51b`。GitHub のスタック #11 で PR #9 に続く。
 - 第3層の `codex/sdd-adoption-architecture` は承認済みの第2層のブランチとヘッドを
   起点にする。第3層のヘッドに全スライスと終了差分を含める。
 - 後続 PR の URL、検証時のベースとヘッドの SHA、終了コミット、マージ結果は確認後に記録する。
@@ -219,7 +221,7 @@ Main は操作前に、実際の承認、対象とパス、レビューとコミ
 
 ## スライス2. 現行挙動と実ホストのテスト
 
-- ライフサイクル状態 `SLICE_APPROVED`。独立レビュー後に完了承認を得た。
+- ライフサイクル状態 `SLICE_COMMITTED`。完了承認を得て公開した。Verify の修正分も完了承認済み。
 - 受け入れ条件。デスクトップ安定版で既存実装の挙動をテストする。
   デスクトップ安定版、デスクトップ 1.75.0、Web 安定版の実ホストで共通のスモークテストを実行し、
   それぞれで拡張が起動し、`vscode-JFixedViewer.FiletypePicker` が登録されることを確認する。
@@ -276,6 +278,28 @@ Main は操作前に、実際の承認、対象とパス、レビューとコミ
   `ca9ed1fc1bcbdda9e5ed2853c26b9b2a499c70288d8c0eb49cf7a55951ff9a6c`。
 - 完了承認は `Approved`。独立再レビュー後にこの会話で明示的な承認を得た。
   対象はレビュー済みのスライス2の差分と下記の承認対象パス。
+
+### PR 公開後の Web テスト起動の修正
+
+- PR #10 の公開時のヘッド `e1268b32b519487c5353a734b59457bf2cebe51b` では
+  CodeQL が通り、Verify もデスクトップ版の2ステップまでは通った。
+  [Verify のログ][slice2-web-failure]では、Web 用の Chromium が画面のない環境で起動に失敗し、
+  `Missing X server or $DISPLAY` を出力した。ランナーが終了しなかったためジョブが時間切れになった。
+- Verify の Web ステップもデスクトップ版と同じ `xvfb-run -a` を使い、5分の時間制限を設けた。
+  Web 安定版の実ホストと既存のスモークテストは維持した。
+- YAML の構文と Web ステップの設定値を確認した。macOS の作業環境に Xvfb はないため、
+  この起動方法での Web スモークテストは PR 更新後の GitHub ランナーで確認する。
+- Qlty の修正前は `/private/tmp/jfixed-sdd-s2-web-ci-base-evidence.0GqvF6g4`、修正後は
+  `/private/tmp/jfixed-sdd-s2-web-ci-final-evidence.VY8A23Sm`。既存の指摘は `check` の1件、
+  `smells` の4件で変わらず、総合チェックは通った。この文書の証跡追記は別途 Markdown を検査した。
+- 修正分の独立再レビューは `Ready`（`SLICE_READY`）。未解決の指摘は0件。
+  レビューしたスライス2の全10パスの差分 SHA-256 は
+  `f7bdf933a691dd2d154617b77df9ed31aa15fc0f9ccbe07f0c6a8e5fc74526b0`。
+- 修正の完了承認は `Approved`。独立再レビュー後にこの会話で明示的な承認を得た。
+  対象は `.github/workflows/verify.yml` の Web ステップと、この文書の証跡追記。
+  同じ PR を更新し、新しいヘッドで Verify と CodeQL が通ってからスライス3に着手する。
+
+[slice2-web-failure]: https://github.com/kittybbit/vscode-JFixedViewer/actions/runs/42479695637/job/128728738995
 
 ### スライス2の承認対象パス
 
