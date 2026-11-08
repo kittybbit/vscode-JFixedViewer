@@ -1,113 +1,144 @@
-# Feature Tasks: SDD Adoption
+# SDD 導入の機能計画
 
-## Agent Brief
+## 作業概要
 
-- Preserve fixed-width display while adopting the SDD workflow and architecture
-  in `SPECS.md`. Each layer has independent value and a reviewable PR.
-- Active slice: none. Main records exact Human Approval and commits the
-  independently reviewed planning package before dispatching slice 1.
-- Use the active slice's checks and paths below. Preserve cross-document
-  sharing within one format, both host entry points, and the VS Code floor.
-- Stop for decisions that change approved scope, design, impact, or validation.
-  Correct deterministic failures within the existing boundary and revalidate.
+- `SPECS.md` に沿って SDD と層構造を導入し、固定長表示の挙動を保つ。
+  各スライスは単独で価値があり、個別の PR としてレビューできる。
+- 対象はスライス1の日本語化に伴う再計画。承認済みのパス内で日本語の文書案を用意し、
+  再計画の独立レビューと明示的な計画承認を経て再計画をコミットする。
+  その後、日本語版のスライス1は独立レビューと完了承認に進む。
+- 着手するスライスの検証と対象パスを確認する。同一形式を使う文書間の状態共有、
+  両ホストの入口、VS Code の最小バージョンを維持する。
+- 承認された範囲、設計、影響、検証を変える判断は Main に戻す。
+  既存の承認範囲で解決できる決定的な失敗は、修正ループで修正して検証し直す。
 
-## Current state
+## 現在の状態
 
-- Lifecycle state: PLAN_APPROVED
-- Next operation: Main commits the approved planning package.
-- Gate evidence: independent `plan-reviewer` verdict `Ready for approval`,
-  with both plan findings resolved. The reviewed `TASKS.md` SHA-256 was
-  `f7826717a511c38adef8b5e3e5aa528060fb462c468ccd644a2daab46493a62c`.
-  Reviewed package identities and planning checks are recorded in
-  `/tmp/jfixedviewer-sdd-plan-revision.ahsshs/record.txt`.
-- Planning commit content: this file, `SPECS.md`, `TRACEABILITY.md`, and Main's
-  approval and review evidence in this file.
+- ライフサイクル状態 `PLAN_APPROVED`
+- 次の作業は、日本語化に限った承認済みの再計画をコミットすること。
+- 独立した `plan-reviewer` は日本語版の再レビューで `Ready for approval` と判定した。
+  残る指摘は0件。レビュー対象の `TASKS.md` の SHA-256 は
+  `8e04d9a5a2e66d56c22164e085a121d6ff818e619adce87981029976bbb526fd`。
+- 日本語化前の計画では、独立した `plan-reviewer` が2件の指摘の解消を確認し、
+  `Ready for approval` と判定した。レビュー対象の `TASKS.md` の SHA-256 は
+  `f7826717a511c38adef8b5e3e5aa528060fb462c468ccd644a2daab46493a62c`。
+  当時の文書の識別情報と検証結果は
+  `/tmp/jfixedviewer-sdd-plan-revision.ahsshs/record.txt` にある。
+- Main は元の計画をコミット `27164e6ab80afa1a9a5884a7aeaf489dcc2bf01f` に記録し、
+  `PLAN_COMMITTED` まで進めた。対象の3パスだけをステージし、
+  `git diff --cached --check` が通った。
+- 再計画コミットには `SPECS.md`、`TASKS.md`、`TRACEABILITY.md` と、
+  Main がこのファイルに記録する新しいレビュー・承認の証跡を含める。
+  日本語化前の承認とコミットは履歴として残す。
 
-## Native Stack References
+## 日本語化の再計画
 
-- Trunk: GitHub `main` at `56b4823cbb04873a7d909b2d4a530e6334efb517`.
-- Layer 1: `codex/sdd-adoption-harness` targets `main`.
-- Layer 2: `codex/sdd-adoption-tests` targets the approved layer 1 branch/head.
-- Layer 3: `codex/sdd-adoption-architecture` targets the approved layer 2
-  branch/head. Its head includes all layers and ultimately the closure patch.
-- PR URLs, checked head and base SHAs, final closure commit and merge results
-  are recorded as observed. None exists yet.
+利用者の追加指示を `SDD-4` に記録する。再計画のコミットで日本語化するのは上記の機能文書3点。
+スライス1では既存の承認対象のうち、SDD 方針、アーキテクチャ、ユースケース、テンプレート、
+案内文書、7ロールの説明と指示、ルートの `README.md`、新しい Verify の手順表示名と SDD の
+コメントを日本語にする。Verify のワークフローとジョブの識別子、実行条件、処理は維持する。
 
-After each slice is independently Ready and receives explicit Completion
-Approval, Main commits and publishes or updates its layer PR. Before creating
-or starting a dependent layer, Main checks predecessor base/head, successful
-Verify and CodeQL results for that current PR head, and applicable repository
-and Cloud gates. Verify checks out the PR head SHA. Record the CodeQL analyzed
-revision and its association with the same current PR head. Main rechecks
-the GitHub rules on publication and at merge. Missing, failed, stale, or
-pending checks block dependent work. An expected skip counts only if the
-applicable rule accepts it.
+スライス1の独立レビューの `Ready` は英語版の差分に対する判定。
+日本語化した差分は別途検証し、独立レビューを受け、完了承認を得てからコミットする。
+スライス2と3の実装・検証範囲、依存関係、承認対象パスは既存計画を引き継ぐ。
 
-Use the [native GitHub stack workflow][github-stack] to group the linked PRs
-and confirm their order. After Feature Exit, closure approval and commit, wait
-for fresh top-head gates. Obtain separate Human Merge Approval for the exact
-three PRs, order, bases, heads, closure commit, and native Rebase merge of the
-complete stack into `main`. Rebase merge preserves linear history and focused
-commits. Confirm the current UI offers that operation and that repository
-rules permit it. Do not merge individual layers early. A changed merge
-identity or unavailable native operation returns to Main for a decision.
-Record every PR's observed merge result and resulting commit identity. A
-partial merge keeps the last substantiated state and identifies what remains.
+## GitHub スタック
+
+- 起点は GitHub の `main`、コミット `56b4823cbb04873a7d909b2d4a530e6334efb517`。
+- 第1層の `codex/sdd-adoption-harness` は `main` を対象にする。
+- 第2層の `codex/sdd-adoption-tests` は承認済みの第1層のブランチとヘッドを起点にする。
+- 第3層の `codex/sdd-adoption-architecture` は承認済みの第2層のブランチとヘッドを
+  起点にする。第3層のヘッドに全スライスと終了差分を含める。
+- PR の URL、検証時のベースとヘッドの SHA、終了コミット、マージ結果は確認後に記録する。
+  現時点ではいずれも未確定。
+
+各スライスで独立レビューの `Ready` と明示的な完了承認を得たら、Main がコミットし、
+その層の PR を公開または更新する。後続のブランチを作成したり作業を始めたりする前に、
+Main は先行 PR のベースと最新ヘッドを確かめ、そのヘッドに対する Verify と CodeQL、
+適用されるリポジトリのルールと Cloud のチェックが通っていることを確認する。
+Verify は PR ヘッドの SHA をチェックアウトする。CodeQL は解析したリビジョンと、
+その PR の最新ヘッドとの対応を記録する。公開時とマージ時に GitHub のルールを再確認する。
+チェックが欠けている、失敗している、古い、または実行中の場合は後続に進まない。
+想定どおりのスキップは、該当ルールが認めている場合に限り通過として扱う。
+
+[GitHub 標準のスタック手順][github-stack]で PR を結び付け、順序を確認する。
+機能の終了判定（Feature Exit）、終了承認、終了コミットの後、最上位 PR の最新ヘッドで
+必要なチェックが通るのを待つ。3件の PR、順序、ベース、ヘッド、終了コミットと、
+スタック全体を `main` に取り込む GitHub 標準の Rebase merge について、別途マージ承認を得る。
+Rebase merge で履歴を直線に保ち、変更ごとのコミットを残す。
+現在の UI で操作でき、リポジトリのルールが許可していることを確認する。
+マージはスタック全体の承認と検証が済んでから一括で行う。マージ対象の識別情報が変わった場合や
+標準の操作を使えない場合は Main に判断を戻す。各 PR の実際のマージ結果と取り込み先の
+コミットを記録する。一部しかマージできていなければ、確認済みの状態と残作業を記録する。
 
 [github-stack]: https://docs.github.com/en/pull-requests/how-tos/create-pull-requests/creating-stacked-pull-requests
 
-## Human Approval
+## 人による承認
 
-- Status: Approved
-- Approved at: approved in the current conversation after independent review.
-- Approved scope: slices 1–3 as reviewed, including their validation and
-  implementation boundaries.
-- Approved paths: the exact paths in the three slice approval lists below.
+- 日本語化の再計画は `Approved`。独立レビュー後にこの会話で明示的な承認を得た。
+  対象は機能文書3点と、スライス1の承認済みパス内で `SDD-4` を満たす日本語化。
+- 元の計画は `Approved`。独立レビュー後にこの会話で明示的な承認を得た。
+  対象はレビュー済みのスライス1〜3の実装と検証で、承認パスは下記の各一覧に記載する。
 
-The scope under review is the implementation and validation path lists below.
-A slice's Ready verdict, its Completion Approval, and its commit are separate
-gate facts. Closure and merge each have their own explicit approval. Main
-records the actual approval, exact scope, review and commit references before
-acting. Unlisted paths and material design or coverage changes require
-Replanning and renewed approval.
+各スライスの実装と検証は下記の一覧を境界とする。独立レビューの `Ready`、完了承認、
+コミットはそれぞれ別に記録する。終了とマージにもそれぞれ明示的な承認が要る。
+Main は操作前に、実際の承認、対象とパス、レビューとコミットの参照を記録する。
+一覧にないパスや設計・検証範囲の重要な変更は、再計画と改めての承認が必要になる。
 
-## Slice 1. SDD harness and initial Verify
+## スライス1. SDD ハーネスと初期 Verify
 
-- Lifecycle state: PLANNED
-- Acceptance: SDD policy, roles, entry points, templates and use-case
-  documentation are navigable. Static lifecycle examples distinguish
-  correction, replanning, completion, exit and merge. Verify and CodeQL
-  run on PRs targeting any branch, including future stack predecessors.
-  Remove the CodeQL PR branch filter and retain the existing push and
-  schedule behavior and scanning configuration.
-- Solution Shape: `AGENTS.md` owns constraints and routing. SDD core policy
-  owns lifecycle and approvals, validation owns check selection and
-  correction, evidence owns identity and freshness, and each Codex role
-  owns its procedure. Copilot and `.agent.md` route to those owners.
-  Use cases own durable observable behavior. Architecture documents the
-  target layers and identifies the enforcement as pending until slice 3.
-  GitHub Actions and the existing npm toolchain own verification.
-- Adapt reusable SDD policy from reference commit `80ab0a84`, removing
-  AJS-specific duties. Keep the seven role IDs and authority boundaries.
-  Keep a single `TASKS.md` lifecycle vocabulary. Independent review is
-  separate from mechanical commits executed by Main.
-- Verify uses locked dependencies with Node 24 and `npm ci`; checks changed
-  Markdown, types and both production bundles at the actual PR head.
-  Use Markdownlint CLI2 0.22.0 for changed Markdown, including dot-directory
-  files. Use the PR merge base to identify changed Markdown and include
-  additions, edits and rename destinations. CodeQL keeps its PR analysis
-  semantics. Keep SDD and test tooling out of packaged extension contents.
-- Validation: Markdown lint, relative links and anchors, TOML and YAML parse,
-  policy scenario review, `git diff --check`,
-  `npm exec -- tsc -p . --noEmit`, and
-  `npm exec -- webpack --mode production --devtool false`. Check both
-  manifest bundle paths and test workflow trigger/head selection statically
-  for `main` and a representative future predecessor branch such as
-  `codex/fixed-width-example-base`. Apply the Qlty evidence plan below to
-  changed analyzed inputs. Verify real PR check results after publication.
-  Runtime is unchanged in this slice.
+- ライフサイクル状態 `PLANNED`。日本語化前の実装と判定は下記の履歴を参照する。
+- 受け入れ条件。SDD 方針、ロール、案内、テンプレート、ユースケースを日本語でたどれる。
+  修正、再計画、完了、機能終了、マージを区別できることを手順例で確かめる。
+  Verify と CodeQL は、今後のスタックの先行ブランチを含め、あらゆるブランチを対象にした
+  PR で動く。CodeQL の PR 対象ブランチの絞り込みを外し、既存の push 時と定期実行時の
+  挙動と解析設定を維持する。日本語化で手順の意味とチェックの条件を変えない。
+- 設計上の責務と境界（Solution Shape）。`AGENTS.md` はリポジトリの制約と担当の振り分けを担う。
+  SDD 本則は状態遷移と承認、検証方針はチェックの選択と修正、証跡方針は識別情報と再利用の条件を
+  定める。各 Codex ロールは自身の手順を定め、Copilot と `.agent.md` は参照先を案内する。
+  ユースケースには長く使える観察可能な挙動を書く。アーキテクチャ文書には目標の層構造と、
+  スライス3まで依存ルールの自動検査が未導入であることを書く。検証は GitHub Actions と
+  既存の npm ツールで行う。
+- 参照元コミット `80ab0a84` から再利用できる SDD 方針を引き継ぎ、AJS 固有の責務を外す。
+  7ロールの ID と権限の境界を保ち、ライフサイクル状態は `TASKS.md` の用語にそろえる。
+  独立レビューと、Main が実行する承認後のコミット操作は分ける。
+- Verify は Node 24 と `npm ci` でロック済みの依存を使い、PR の最新ヘッドで
+  変更された Markdown、型、両ホストの本番バンドルを検査する。
+  ドットで始まるディレクトリ配下も Markdownlint CLI2 0.22.0 の対象にする。
+  PR のマージベースからの差分で追加、変更、改名先の Markdown を選ぶ。
+  CodeQL の PR 解析の方式は維持する。拡張のパッケージに SDD やテストのツールを含めない。
+- 検証は Markdown lint、相対リンクとアンカー、TOML と YAML の構文、手順のシナリオ、
+  `git diff --check`、`npm exec -- tsc -p . --noEmit`、
+  `npm exec -- webpack --mode production --devtool false`。
+  マニフェストの両バンドルのパスを確認し、`main` と将来の先行ブランチの例
+  `codex/fixed-width-example-base` に対するワークフローの起動条件とヘッドの選択を静的に検証する。
+  Qlty の解析入力が変わった場合は後述の証跡を取る。公開後は実際の PR チェックを確認する。
+  このスライスの実行時挙動は現行と同じ。
 
-### Slice 1 approval paths
+### スライス1の日本語化前の実装と検証
+
+- ローカル検証と差分のファイル一覧、ハッシュは
+  `/tmp/jfixedviewer-sdd-slice1-static.Z4V7su/record.txt` と同じディレクトリにある。
+  承認済みの28パス、Markdown のリンクと lint、ロールとワークフローの構文、状態遷移の例、
+  型、両ホストの本番ビルド、パッケージからの除外を検証した。要求と検証の対応は変わっていない。
+- Qlty の基準証跡は `/private/tmp/jfixed-sdd-s1-evidence-base.PQsC5T`。
+  英語版の最終証跡は `/private/tmp/jfixed-sdd-s1-evidence-final.2r6mo3h_`。
+  全件の `check` は基準の28件のうち未変更の2件が残り、終了コードは1だった。
+  `smells` は基準と同じ4件で、終了コードは0。総合チェックは整形による変更なしで通過した。
+  検証対象の差分はスナップショットの一覧とハッシュに、後から追記した状態・証跡の情報は
+  Markdown の検証に対応する。
+- `/private/tmp/jfixed-sdd-s1-evidence-final.nf6dhzo7` の型、ビルド、パッケージの検証は、
+  レビュー後の修正が Verify に渡す Markdown の引数だけだったため、英語版の修正後も有効だった。
+- 修正では Markdown のパスを文字どおりに渡す場合と、対象ファイルがない場合を確かめた。
+  証跡は `/tmp/jfixedviewer-sdd-lint-correction.b3ATWM/record.txt`。
+- 独立した `implementation-reviewer` は、Verify の指摘解消と責務の分け方を確認し、
+  英語版を `SLICE_READY` と判定した。レビュー対象28ファイルの一覧の SHA-256 は
+  `bb35e704e7f9f40c1e9aca93d8b56697bec280a4c24b5c74b9d5453573ac2715`。
+  当時の判定は `Ready`、完了承認は `Pending`。日本語化した差分には新たな判定が要る。
+- 実際の PR ヘッドに対する GitHub の Verify と CodeQL は公開待ち。実ホストの
+  スモークテストはスライス2で行う。
+
+### スライス1の承認対象パス
 
 - `AGENTS.md`
 - `.agent.md`
@@ -123,7 +154,7 @@ Replanning and renewed approval.
 - `.github/workflows/codeql.yml`
 - `.github/workflows/verify.yml`
 - `.vscodeignore`
-- `README.md` (link contributors to SDD policy)
+- `README.md`（開発者向けの SDD 方針への案内）
 - `docs/requirements/use-cases/README.md`
 - `docs/requirements/use-cases/uc-display-fixed-width.md`
 - `docs/requirements/use-cases/uc-clear-decorations.md`
@@ -136,118 +167,103 @@ Replanning and renewed approval.
 - `docs/specs/features/_templates/SPECS.template.md`
 - `docs/specs/features/_templates/TASKS.template.md`
 - `docs/specs/features/_templates/TRACEABILITY.template.md`
-- `docs/specs/features/sdd-adoption/TASKS.md` (gate and evidence references)
+- `docs/specs/features/sdd-adoption/TASKS.md`（承認や証跡の参照）
 
-## Slice 2. Baseline characterization and real hosts
+## スライス2. 現行挙動と実ホストのテスト
 
-- Lifecycle state: PLANNED
-- Acceptance: Desktop stable executes the behavioral suite against the legacy
-  implementation. Desktop stable, Desktop 1.75.0, and Web stable run common
-  smoke assertions using real VS Code hosts. Each host activates the
-  extension and sees `vscode-JFixedViewer.FiletypePicker` registered.
-- Solution Shape: a test-only host seam calls actual legacy entry points and
-  observes the options and telemetry sent to fake outer dependencies. A
-  scoped CJS loader substitution for VS Code and telemetry is allowed only
-  during module loading, with restoration in `finally` and test isolation.
-  Set deterministic fake values for the compiled legacy connection and
-  `DEVELOPMENT` globals in the characterization process and restore them.
-  Preserve regression scenarios when the seam is rewired in slice 3.
-  Use actual stable and minimum hosts for smoke, with the existing locked
-  test CLI and Web runner.
-- Test all SDD-2 cases. Use the real bundled Zengin and JPX data. Assert
-  first-match precedence, mode updates and reset on an unmatched capture,
-  sharing within a format and isolation across formats, ignored whitespace
-  and nonmatching records, and Japanese hover content and positions.
-  Assert UTF-16 coordinates with an astral character and an untruncated span
-  on a short line. Cover selecting with no editor, cancel leaving decoration
-  in place with empty `file_type`, and clearing via the empty built-in format.
-  Cover switch/reapply, same-format shared disposal behavior, and disposal on
-  deactivation. Check telemetry names, exact properties and timing relative
-  to selection/activation; editor changes do not emit a decorate event.
-- Build smoke copies in ignored `out/smoke-extension`, with the normal
-  manifest and `dist` layout, using an explicit webpack smoke flag and an
-  empty, non-secret connection string. Stage the manifest using Node.
-  Leave ordinary bundles in `dist` and retain their existing env resolution.
-  Bundle the shared browser test entry inside the staged extension for the
-  Web runner. Disable host telemetry before activation and isolate test
-  profiles. Skip dotenv loading for smoke before it can read a real key.
-- Add `npm run test:prepare`, `npm run test:desktop`,
-  `npm run test:desktop:min` and `npm run test:web`. Keep `npm test`
-  as the desktop entry with preparation in its prehook. Keep CI's existing
-  production checks and add preparation plus all host commands. On Linux,
-  use Xvfb for Electron and install the locked Playwright Chromium for Web.
-- Validation: predecessor PR gates; production and smoke build outputs,
-  secret-free smoke build and actual activation on all three hosts, baseline
-  characterization, Qlty evidence and `git diff --check`. Verify uses the
-  same commands. An unavailable host remains Missing and blocks readiness.
+- ライフサイクル状態 `PLANNED`
+- 受け入れ条件。デスクトップ安定版で既存実装の挙動をテストする。
+  デスクトップ安定版、デスクトップ 1.75.0、Web 安定版の実ホストで共通のスモークテストを実行し、
+  それぞれで拡張が起動し、`vscode-JFixedViewer.FiletypePicker` が登録されることを確認する。
+- 設計上の責務と境界（Solution Shape）。テスト専用の代替ホストから既存の実装の入口を呼び出し、
+  代替した外部依存に渡る装飾オプションとテレメトリを観測する。CJS ローダーによる VS Code と
+  テレメトリの差し替えは、テストを分離したうえで、モジュール読み込み中に限って使う。
+  `finally` で元に戻す。コンパイル済みの既存実装が参照する接続情報と `DEVELOPMENT` には
+  テストプロセス内で固定のダミー値を入れ、実行後に戻す。
+  スライス3でテストの接続先を変える際も、回帰シナリオは保つ。
+  スモークテストは既存のロック済み CLI と Web ランナーを使い、実際の安定版と最小対応版を起動する。
+- SDD-2 の全ケースをテストする。組み込みの全銀と JPX の定義を使い、先に一致した行の優先、
+  モード更新とキャプチャ不一致時のリセット、同一形式内での共有と別形式からの分離、空白行や
+  不一致のレコードの除外、日本語ホバーの内容と位置を確かめる。補助平面の文字で UTF-16 座標を確認し、
+  短い行でも範囲を切り詰めないことを確かめる。エディターがない場合の形式選択、キャンセル時の
+  装飾保持と空の `file_type`、組み込みの空形式による解除を扱う。
+  エディター切替時の再適用、同じ形式で共有する装飾の破棄、非アクティブ化時の破棄を確かめる。
+  テレメトリはイベント名、各プロパティの値、選択や起動との前後関係を確認する。
+  エディター切替だけでは装飾イベントを送らない。
+- 無視対象の `out/smoke-extension` に、通常のマニフェストと `dist` 構成を持つ
+  スモーク用の拡張を作る。webpack のスモーク用フラグを明示し、秘密情報を含まない空の接続文字列を
+  渡す。Node でマニフェストを配置する。通常のバンドルは既存の環境変数の解決方法を保ち、
+  `dist` に出力する。共通のブラウザ用テストの入口を、Web ランナーが参照できるように
+  スモーク用の拡張内へバンドルする。拡張を起動する前にホストのテレメトリを無効化し、
+  テスト用プロファイルを分離する。スモーク用の処理では、実際のキーを読む前に dotenv を省く。
+- `npm run test:prepare`、`npm run test:desktop`、`npm run test:desktop:min`、
+  `npm run test:web` を追加する。`npm test` はデスクトップ用の入口として維持し、prehook で
+  テストを準備する。CI の本番ビルドを維持し、準備と全ホストのテストコマンドを追加する。
+  Linux では Electron を Xvfb で実行し、Web 用にロック済みの Playwright Chromium を導入する。
+- 検証は先行 PR のチェック、通常ビルドとスモーク用ビルドの成果物、秘密情報のないスモーク用ビルド、
+  3つの実ホストでの起動、現行挙動のテスト、Qlty の証跡、`git diff --check`。
+  Verify でも同じコマンドを使う。利用できないホストは `Missing` として記録し、準備完了には進まない。
 
-### Slice 2 approval paths
+### スライス2の承認対象パス
 
 - `.github/workflows/verify.yml`
 - `.vscode-test.mjs`
-- `package.json` (scripts only)
+- `package.json`（スクリプトのみ）
 - `webpack.config.js`
 - `scripts/prepare-smoke.mjs`
-- `src/test/extension.test.ts` (replace sample)
+- `src/test/extension.test.ts`（サンプルを置き換える）
 - `src/test/smoke.test.ts`
 - `src/test/smoke.ts`
 - `src/test/support/characterizationHost.ts`
-- `docs/specs/features/sdd-adoption/TASKS.md` (gate and evidence references)
+- `docs/specs/features/sdd-adoption/TASKS.md`（承認や証跡の参照）
 
-## Slice 3. Clean Architecture migration and enforcement
+## スライス3. Clean Architecture への移行と依存ルールの検査
 
-- Lifecycle state: PLANNED
-- Acceptance: existing builds, smoke and characterization pass against
-  migrated code. JSON is byte-identical across moves, command and manifest
-  compatibility are unchanged, and the architecture suite reports zero
-  production violations while rejecting deliberate negative cases.
-- Solution Shape: domain computes row choice, transitions and spans from
-  compiled rules and an initial mode. It returns fields and next mode with
-  no host dependency. The application owns the ordered format catalog,
-  per-format mode and decoration DTO, and typed telemetry port. The JSON
-  loader preserves ordering, IDs and regular expressions, and infrastructure
-  alone reads bundled JSON and constructs the telemetry SDK. Presentation
-  owns picker/events, host conversions and one decoration handle per format
-  alongside the document file-name association. Bootstrap instantiates and
-  disposes the adapters/use case and registers the subscriptions. Entry
-  exports only the existing activation and deactivation functions.
-- Preserve legacy mode reuse between same-format files and the shared handle
-  per format. Clear the previous handle associated with a file name before
-  painting a replacement. Keep the empty format in the catalog, use it to
-  clear, and reapply the last selected format on active-editor change.
-  Use the same VS Code range, style, trusted hover, and grouped application.
-  Do not add an edit subscription, auto-detection, clamping, state reset, or
-  document isolation. Remove logging of the telemetry connection string.
-  Keep telemetry event order, name and payload. Never send content or paths.
-- Enforce the dependency catalog with the installed TypeScript compiler AST
-  and a Node test. Exclude only test files, catalog all production source
-  roots, and reject uncataloged production files. Relative dependency
-  direction is domain to domain; application to domain/application;
-  infrastructure to domain/application/infrastructure/resource; presentation
-  to application/presentation; bootstrap to application/infrastructure/
-  presentation/bootstrap; entry to bootstrap. VS Code imports are allowed
-  in entry, bootstrap, infrastructure and VS Code presentation. Only
-  infrastructure/telemetry may import the SDK. Reject Node built-ins across
-  production and limit bundled JSON to infrastructure. Require application
-  factory use in application/bootstrap and concrete infrastructure usage and
-  construction in infrastructure/bootstrap.
-- Scan import/type imports, exports from, import type queries, literal
-  dynamic imports, `require`, and import-equals; fail on unanalyzable
-  computed loader references. Resolve relative references with TypeScript
-  resolution. Test forbidden direction, VS Code, SDK, JSON, Node built-ins
-  with and without the `node:` prefix, and composition misuse, with
-  corresponding allowed examples. Static results demonstrate the rule
-  catalog; independent review judges the semantic owners and abstraction
-  boundaries. Add `npm run test:architecture` to Verify.
-- Validation: predecessor PR gates; the full slice 2 checks; architecture
-  positives and negatives; engine/manifest and JSON equivalence,
-  `git diff --check`, and Qlty evidence. Assess browser safety, test wiring
-  only changes to regression tests, and actual old-host activation.
+- ライフサイクル状態 `PLANNED`
+- 受け入れ条件。移行後もビルド、スモークテスト、現行挙動の回帰テストが通る。
+  移動後の定義 JSON はバイト単位で同じで、コマンドとマニフェストの互換性を維持する。
+  アーキテクチャテストで本番コードの違反が0件となり、意図的な禁止例は検出する。
+- 設計上の責務と境界（Solution Shape）。ドメイン層はコンパイル済みのルールと初期モードから、
+  行、モード遷移、範囲を計算し、ホストに依存せず項目と次のモードを返す。
+  アプリケーション層は順序付きの形式一覧、形式ごとのモード、装飾 DTO、型付きテレメトリポートを担う。
+  定義ローダーは順序、ID、正規表現を保つ。組み込み JSON を読み込む処理と、テレメトリ SDK を生成する処理は、
+  インフラストラクチャ層に置く。プレゼンテーション層は形式選択 UI、イベント、ホスト向けの変換、
+  形式ごとに1つの装飾ハンドルとファイル名の関連付けを担う。bootstrap はアダプターと
+  ユースケースを生成・破棄し、購読を登録する。拡張の入口では既存の有効化・無効化関数だけを公開する。
+- 同じ形式を使うファイル間でモードを再利用し、装飾ハンドルを共有する現行挙動を保つ。
+  装飾を置き換える前に、そのファイル名に関連付けられた従来のハンドルを破棄する。
+  形式一覧に空形式を残して装飾の解除に使い、アクティブエディターの切替時に前回の形式を再適用する。
+  VS Code の範囲、スタイル、信頼済みホバー、一括適用は現行と同じとする。
+  編集イベントの購読、自動判定、範囲の切り詰め、状態のリセット、文書ごとの分離は対象外。
+  テレメトリ接続文字列のログを削除する。イベントの順序、名前、ペイロードは保ち、
+  ファイルの内容やパスは送らない。
+- 既存の TypeScript コンパイラの AST と Node のテストで、層の依存ルールを検査する。
+  除外はテストファイルに限り、本番ソースのルートをすべて分類して未分類ファイルを違反にする。
+  相対依存の許可先は、ドメイン層からドメイン層、アプリケーション層からドメイン層と
+  アプリケーション層、インフラストラクチャ層からドメイン層、アプリケーション層、
+  インフラストラクチャ層、リソース層。プレゼンテーション層からアプリケーション層と
+  プレゼンテーション層、bootstrap からアプリケーション層、インフラストラクチャ層、
+  プレゼンテーション層、bootstrap へ依存できる。拡張の入口の依存先は bootstrap。
+  VS Code を import できるのは拡張の入口、bootstrap、インフラストラクチャ層、
+  VS Code 向けプレゼンテーション層。SDK を import できるのは
+  `infrastructure/telemetry` のみ。本番コードで Node 組み込み依存を禁止し、
+  組み込み JSON の読み込みはインフラストラクチャ層に限る。
+  アプリケーションのファクトリーを使えるのはアプリケーション層と bootstrap。
+  インフラストラクチャの具体実装を使用・生成できるのはインフラストラクチャ層と bootstrap。
+- import と型の import、再エクスポート、import 型クエリ、リテラルの動的 import、
+  `require`、import-equals を検査し、静的に解析できない動的なローダー参照は違反とする。
+  相対参照は TypeScript の解決方法に従う。禁止される依存方向、VS Code、SDK、JSON、
+  `node:` の有無それぞれの Node 組み込み依存、依存の組み立ての誤用を検査し、
+  対応する許可例も確かめる。静的検査は列挙したルールを検証し、責務の配置と抽象化の妥当性は
+  独立レビューで判断する。Verify に `npm run test:architecture` を追加する。
+- 検証は先行 PR のチェック、スライス2の全項目、アーキテクチャの許可例・禁止例、
+  エンジン指定、マニフェストと JSON の同一性、`git diff --check`、Qlty の証跡。
+  ブラウザーで動くこと、回帰テストは接続先だけを変更していること、最小対応版で実際に起動することを確認する。
 
-### Slice 3 approval paths
+### スライス3の承認対象パス
 
 - `.github/workflows/verify.yml`
-- `package.json` (architecture test script only)
+- `package.json`（アーキテクチャテストのスクリプトのみ）
 - `src/extension.ts`
 - `src/domain/fixedWidth/projectFields.ts`
 - `src/application/fixedWidth/FixedWidthDecoration.ts`
@@ -259,83 +275,80 @@ Replanning and renewed approval.
 - `src/resource/definitions/clear.json`
 - `src/resource/definitions/jpx.json`
 - `src/resource/definitions/zengin.json`
-- `src/definitions/DefinitionHolder.ts` (remove)
-- `src/definitions/types.d.ts` (remove)
-- `src/definitions/clear.json` (move)
-- `src/definitions/jpx.json` (move)
-- `src/definitions/zengin.json` (move)
-- `src/extension/Constants.ts` (remove)
-- `src/extension/Extension.ts` (remove)
-- `src/extension/command/FiletypePicker.ts` (remove)
-- `src/extension/editor/TextDecorator.ts` (remove)
-- `src/extension/editor/TextDecoratorFactory.ts` (remove)
-- `src/extension/events/ChangeActiveTextEditorHandler.ts` (remove)
-- `src/extension/events/EventDispatcher.ts` (remove)
-- `src/extension/events/TextDecoratorHandler.ts` (remove)
+- `src/definitions/DefinitionHolder.ts`（削除）
+- `src/definitions/types.d.ts`（削除）
+- `src/definitions/clear.json`（移動）
+- `src/definitions/jpx.json`（移動）
+- `src/definitions/zengin.json`（移動）
+- `src/extension/Constants.ts`（削除）
+- `src/extension/Extension.ts`（削除）
+- `src/extension/command/FiletypePicker.ts`（削除）
+- `src/extension/editor/TextDecorator.ts`（削除）
+- `src/extension/editor/TextDecoratorFactory.ts`（削除）
+- `src/extension/events/ChangeActiveTextEditorHandler.ts`（削除）
+- `src/extension/events/EventDispatcher.ts`（削除）
+- `src/extension/events/TextDecoratorHandler.ts`（削除）
 - `src/test/architecture.test.ts`
 - `src/test/support/architectureRules.ts`
-- `src/test/extension.test.ts` (rewire only as needed, retain assertions)
-- `src/test/support/characterizationHost.ts` (rewire only)
-- `docs/specs/architecture.md` (record the enforced boundaries)
-- `docs/specs/features/sdd-adoption/TASKS.md` (gate and evidence references)
+- `src/test/extension.test.ts`（必要な接続先のみ変更し、アサーションは維持）
+- `src/test/support/characterizationHost.ts`（接続先の変更のみ）
+- `docs/specs/architecture.md`（検査対象の境界を記録）
+- `docs/specs/features/sdd-adoption/TASKS.md`（承認や証跡の参照）
 
-## Validation and evidence index
+## 検証と証跡
 
-- Baseline identity: exact disposable snapshot of
-  `56b4823cbb04873a7d909b2d4a530e6334efb517`. Main reports passing
-  `tsc --noEmit` and both production webpack builds. No host or architecture
-  gate exists at baseline. The existing sample does not characterize behavior.
-- Initial Qlty evidence: `/private/tmp/jfixed-sdd-evidence.drmE5r`, version
-  0.645.0. Raw `check` exit 1 with 27 findings, with the analyzed-file
-  inventory and count still to capture. Raw `smells` exit 0 with four
-  findings and 14 analyzed files. Findings include unchanged lockfile
-  advisory CVE-2026-46681, README line lengths and existing CodeQL YAML
-  findings. Capture and record nonzero inventories and counts for each
-  baseline and final command before the implementation evidence can pass.
-- For each affected slice, use matched isolated exact baseline and final
-  inputs, tool version, config, selection, inventories and SARIF. Run
-  `qlty check --all --sarif --no-fix` and
-  `qlty smells --all --sarif --no-snippets` and retain raw statuses. Require
-  no new or adversely moved findings. Run `npm run qlty` on the disposable
-  final snapshot and require it to pass by default. Sync only approved
-  formatting changes and rerun final evidence against the new patch.
-  If unchanged baseline findings block the aggregate, record the failure and
-  ask Main for a separate, scoped human disposition identifying the exact
-  findings and affected gates before proceeding. No scanner suppression,
-  dependency change, or reporting a failed check as Pass. Do not make an
-  exception for new findings or failing required GitHub/Cloud checks.
-- Keep scope, exact base/patch identity, approved and inspected paths, tool
-  versions, command/exit, configuration/dependency identities, raw outputs
-  and coverage in accessible evidence sidecars. Add compact references here
-  as checks, reviews and commits occur. Pending, missing or failed required
-  evidence blocks readiness unless the corresponding gate has an explicitly
-  approved disposition under the policy.
-- Current validation: planning-document validation only. Product slice
-  checks are pending. `.serena/` is pre-existing and outside every scope.
+- 基準は `56b4823cbb04873a7d909b2d4a530e6334efb517` の内容と一致する使い捨てのスナップショット。
+  Main は `tsc --noEmit` と webpack の両本番ビルドが通ることを確認した。
+  基準時点では実ホストとアーキテクチャのチェックはなく、既存のサンプルテストは挙動を検証していない。
+- 当初の Qlty 証跡は `/private/tmp/jfixed-sdd-evidence.drmE5r`、バージョンは 0.645.0。
+  `check` は終了コード1、指摘27件で、当時は解析ファイルの一覧と件数が未取得だった。
+  `smells` は終了コード0、指摘4件、解析ファイル14件。指摘には変更対象外のロックファイルにある
+  CVE-2026-46681、README の行長、CodeQL の既存 YAML が含まれる。
+  実装の検証を通過とする前に、基準と最終の各コマンドで、解析対象の一覧と0件でない件数を取得し記録する。
+- 影響を受けるスライスごとに分離した基準と最終のスナップショットを使い、ツールのバージョン、
+  設定、選択条件をそろえて解析対象の一覧と SARIF を比較する。
+  `qlty check --all --sarif --no-fix` と
+  `qlty smells --all --sarif --no-snippets` を実行し、実際の終了コードを残す。新規または悪化した指摘がないことを確認する。
+  使い捨ての最終スナップショットで `npm run qlty` を実行し、原則として通過を要件とする。
+  整形の変更は承認済みのパスに限って作業ツリーへ反映し、新しい差分で最終検証をやり直す。
+  未変更の既存指摘のため総合チェックが通らない場合は、失敗の記録、該当する指摘、影響を受ける承認条件を
+  添えて Main に戻し、人による個別の判断を得てから進む。スキャナーでの指摘の抑止、依存の変更、
+  失敗したチェックを通過と記録することは認めない。新規指摘や必須の GitHub・Cloud チェックの
+  失敗は例外の対象外とする。
+- 範囲、正確なベースと差分の識別情報、承認したパスと検査したパス、ツールのバージョン、コマンドと
+  終了コード、設定と依存の識別情報、出力、検証範囲は関係者が参照できる別ファイルに残す。
+  検証、レビュー、コミットのたびに、ここから証跡を参照できるようにする。
+  必須の証跡が未確定、未取得または失敗の場合は、方針に沿った明示的な個別承認がない限り
+  準備完了と判定しない。
+- 日本語版の草案で、Markdown 20件と相対リンク54件、ロールと CI の設定を照合した。
+  `/tmp/jfixedviewer-sdd-localization.TNMMug/record.txt` を参照する。
+- 日本語化した作業ツリーの Qlty 証跡は `/private/tmp/jfixed-sdd-ja-evidence.t_bedk6_`。
+  全体の `check` は既存の指摘1件で終了コード1、`smells` の指摘4件は基準と一致した。
+  総合チェックは通過した。スライス1の正式な独立レビューは再計画のコミット後に行う。
+- 英語版の証跡は履歴として参照し、入力が同じ検証は証跡方針に従って再利用する。
+  既存の `.serena/` はすべての範囲の対象外。
 
-## Feature Exit
+## 機能の終了判定
 
-Once all slices are independently Ready, approved, committed and published,
-the closer verifies SDD-1 through SDD-3, final integrated product and Qlty
-evidence, and current PR gates. Architecture and use cases already own the
-reusable results; review them for consistency and propagate any needed
-correction only to these planned paths:
+各スライスが独立レビューの `Ready`、承認、コミット、公開を済ませたら、終了判定の担当者が
+SDD-1〜SDD-4、統合後の製品と Qlty の証跡、各 PR の最新チェックを確かめる。
+再利用する知識はアーキテクチャ文書とユースケースにある。記述の整合性を確認し、
+必要な修正の反映は下記のパスに限る。
 
 - `docs/specs/architecture.md`
 - `docs/requirements/use-cases/uc-display-fixed-width.md`
 - `docs/requirements/use-cases/uc-clear-decorations.md`
 - `docs/requirements/use-cases/uc-switch-editors.md`
 
-No release or changelog update is planned because supported behavior remains
-the same. Keep any uncovered issue in the external closure evidence with an
-explicit owner or disposition. Review and validate the exact projected
-closure diff on the top layer, obtain separate Closure Approval, and remove
-only these selected-feature files in the closure commit:
+対応する機能の挙動は維持するため、リリースと変更履歴の更新は今回の対象外。
+残った課題には担当者か対応方針を明記し、外部の終了証跡に記録する。
+最上位の層で終了時の正確な差分をレビューし、検証してから別途終了承認を得る。
+終了コミットで削除するのは次の機能文書に限る。
 
 - `docs/specs/features/sdd-adoption/SPECS.md`
 - `docs/specs/features/sdd-adoption/TASKS.md`
 - `docs/specs/features/sdd-adoption/TRACEABILITY.md`
 
-Retain a closure evidence sidecar with gate decisions, validation and actual
-merge results, accessible to Main and the user. Main records `CLOSED` there
-only after GitHub confirms all PRs merged. No integration-only branch or PR.
+各承認の判断、検証、実際のマージ結果は、Main と利用者が参照できる終了証跡に残す。
+すべての PR がマージされたことを GitHub で確認してから、Main がそこに `CLOSED` を記録する。
+統合専用のブランチや PR は作らない。

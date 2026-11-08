@@ -1,63 +1,58 @@
-# Feature Specification: SDD Adoption
+# SDD 導入の機能仕様
 
-## Purpose
+## 目的
 
-Establish an approval-gated development workflow for JFixedViewer and use it
-to move the fixed-width viewer into enforceable architecture boundaries.
-Users can continue selecting built-in formats and viewing field boundaries
-and positions in VS Code on desktop and web.
+JFixedViewer に承認を伴う仕様駆動開発を導入し、この手順を使って固定長ビューアーを
+依存関係の検査ができる層構造に移す。利用者はこれまでどおり、デスクトップ版と Web 版の
+VS Code で組み込み形式を選び、項目の区切りや位置を確認できる。
 
-## Source
+## 根拠
 
-- User-approved direction for this feature and the SDD and architecture
-  policies of `vscode-ajsbutler` at `80ab0a84f81cd594ebde45e141b8fb81e92eb1ca`.
-- JFixedViewer 1.3.1 behavior at base
-  `56b4823cbb04873a7d909b2d4a530e6334efb517`, described in `README.md` and
-  implemented by the format picker, definition holder, and text decorator.
+- 利用者が承認した導入方針と、コミット
+  `80ab0a84f81cd594ebde45e141b8fb81e92eb1ca` 時点の `vscode-ajsbutler` の
+  SDD およびアーキテクチャ方針。
+- コミット `56b4823cbb04873a7d909b2d4a530e6334efb517` 時点の JFixedViewer 1.3.1。
+  現行挙動は `README.md` と、形式選択、定義の読み込み、テキスト装飾の実装で確認した。
+- SDD とアーキテクチャに関する文書を日本語にそろえるという利用者の追加指示。
 
-## Requirements and acceptance
+## 要件と受け入れ条件
 
-- **SDD-1**. Main, independent lifecycle roles, and feature templates support
-  exact-scope approval, correction, replanning, evidence, and closure. The
-  selected feature records its only lifecycle state in `TASKS.md`. Each layer
-  has its own GitHub PR, and successor work requires verified predecessor
-  checks on the current head.
-- **SDD-2**. Regression tests capture the baseline behavior of built-in Zengin
-  and JPX formats, unmatched and blank lines, mode transitions, short lines,
-  UTF-16 positions, cancellation, clearing, editor switches, disposal, and
-  telemetry. Real desktop stable, desktop 1.75.0, and web stable hosts activate
-  the extension and expose its existing command without real telemetry secrets.
-- **SDD-3**. Layer rules and composition are verified by executable checks,
-  including forbidden-dependency cases. A production build yields desktop and
-  web bundles. The same behavioral regression checks pass after migration.
+- **SDD-1**。Main、独立レビューを含むライフサイクルの各ロール、機能文書テンプレートで、
+  対象を限定した承認、修正、再計画、証跡管理、機能の終了を扱える。
+  対象機能のライフサイクル状態は `TASKS.md` に一元化する。
+  スライスごとに GitHub PR を用意し、先行 PR の最新ヘッドで検証が通ってから後続に着手する。
+- **SDD-2**。全銀と JPX の組み込み形式、空白行と不一致行、モード遷移、短い行、UTF-16 の位置、
+  キャンセル、装飾解除、エディター切替、破棄、テレメトリについて、回帰テストで移行前の
+  挙動を確かめる。デスクトップ安定版、デスクトップ 1.75.0、Web 安定版の実ホストで、
+  実際のテレメトリ接続情報を使わずに拡張が起動し、既存のコマンドが登録される。
+- **SDD-3**。層の依存ルールと依存の組み立てを、禁止例を含む実行可能なテストで検証する。
+  本番ビルドでデスクトップ用と Web 用の両方のバンドルを生成し、移行後も同じ回帰テストが通る。
+- **SDD-4**。SDD の方針、アーキテクチャ、恒久ユースケース、テンプレート、案内文書、
+  ロールの説明と指示、対象機能の計画文書を日本語で読めるようにする。
+  ルールの強さと意味を保ち、識別子、コマンド、設定値、ワークフローの識別子と実行条件を維持する。
 
-## Decisions and impact
+## 決定事項と影響
 
-- Domain owns row matching, mode transitions, and field spans. Application
-  owns format selection, host-neutral decoration data, and the typed telemetry
-  port. Infrastructure loads bundled definitions and adapts the telemetry SDK.
-  Resources own the definition JSON. VS Code presentation owns the picker,
-  editor events, and decoration handles. Bootstrap wires and disposes runtime
-  dependencies.
-- Preserve the existing format-based sharing of row mode and decoration state
-  across documents. Preserve document-name associations for editor reapply,
-  first matching row precedence, fixed-width span calculations, Japanese
-  hover text, cancellation, and the built-in empty format used to clear.
-- Preserve `ext.activate`, `ext.decorate`, and `ext.deactivate`, including
-  the `development` value and `file_type` on `ext.decorate`. Keep data and
-  paths out of telemetry event properties.
-- Add durable use cases for fixed-width display, clearing, and switching
-  editors. The baseline contains no active feature, requirements catalog, or
-  roadmap that needs reconciliation.
+- ドメイン層は行判定、モード遷移、項目範囲を担う。アプリケーション層は形式選択、
+  ホストに依存しない装飾データ、型付きテレメトリポートを担う。インフラストラクチャ層は
+  組み込み定義を読み込み、テレメトリ SDK を扱う。定義 JSON はリソース層に置く。
+  VS Code 向けプレゼンテーション層は形式選択 UI、エディターイベント、装飾ハンドルを扱う。
+  bootstrap は実行時の依存を組み立て、破棄する。
+- 同じ形式を使う文書間では行判定モードと装飾の状態を共有する。エディター切替時に
+  ファイル名で形式を引き直す挙動、先に一致した行定義の優先、固定幅での範囲計算、
+  日本語のホバー表示、キャンセル、組み込みの空形式による解除を維持する。
+- `ext.activate`、`ext.decorate`、`ext.deactivate` と `development` の値、
+  `ext.decorate` の `file_type` を維持する。テレメトリのイベントには文書データとパスを含めない。
+- 固定長表示、装飾解除、エディター切替のユースケースを恒久文書にする。
+  移行前に調整を要する進行中の機能、要件一覧、ロードマップはない。
 
-## Compatibility
+## 互換性
 
-Preserve `vscode-JFixedViewer.FiletypePicker`, `engines.vscode` at `^1.75.0`,
-both existing bundle entry paths, and the contents of the built-in definition
-JSON. There is no new public extension API.
+`vscode-JFixedViewer.FiletypePicker`、`engines.vscode` の `^1.75.0`、
+既存のバンドルの入口2つと、組み込み定義 JSON の内容を維持する。
+公開 API の追加は対象外とする。
 
-## Non-goals
+## 対象外
 
-- Definition fixes, changes to row interpretation, and per-document isolation
-  of a format's state.
-- Dependency upgrades, VS Code minimum-version changes, and release work.
+- 定義の修正、行の解釈の変更、同じ形式の状態を文書単位に分ける変更。
+- 依存の更新、VS Code 最小バージョンの変更、リリース作業。
