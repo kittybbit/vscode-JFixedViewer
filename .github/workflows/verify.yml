@@ -61,4 +61,5 @@ jobs:
         run: xvfb-run -a npm run test:desktop:min
 
       - name: Web 安定版のスモークテスト
-        run: npm run test:web
+        timeout-minutes: 5
+        run: xvfb-run -a npm run test:web
