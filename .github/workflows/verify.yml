@@ -1,0 +1,49 @@
+---
+name: Verify
+
+"on":
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: 変更した Markdown の検査
+        shell: bash
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          changed_markdown="$RUNNER_TEMP/changed-markdown"
+          git diff --name-only --diff-filter=ACMR -z \
+            "$PR_BASE...$PR_HEAD" -- '*.md' > "$changed_markdown"
+          if [[ -s "$changed_markdown" ]]; then
+            markdown_paths=()
+            while IFS= read -r -d '' markdown_path; do
+              markdown_paths+=(":$markdown_path")
+            done < "$changed_markdown"
+            npm exec --yes --package=markdownlint-cli2@0.22.0 -- \
+              markdownlint-cli2 "${markdown_paths[@]}"
+          fi
+
+      - name: 型チェック
+        run: npm exec -- tsc -p . --noEmit
+
+      - name: デスクトップ版と Web 版のビルド
+        run: npm exec -- webpack --mode production --devtool false
