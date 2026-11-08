@@ -1,14 +1,14 @@
 # vscode-JFixedViewer
 
-[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/kittybbit.vscode-JFixedViewer)](https://marketplace.visualstudio.com/items?itemName=kittybbit.vscode-JFixedViewer)
-[![Visual Studio Marketplace Downloads](https://img.shields.io/visual-studio-marketplace/d/kittybbit.vscode-JFixedViewer)](https://marketplace.visualstudio.com/items?itemName=kittybbit.vscode-JFixedViewer)
-[![Visual Studio Marketplace Rating](https://img.shields.io/visual-studio-marketplace/stars/kittybbit.vscode-JFixedViewer)](https://marketplace.visualstudio.com/items?itemName=kittybbit.vscode-JFixedViewer)
-[![Qlty Maintainability](https://qlty.sh/badges/0cc9e169-14e8-44d7-a0de-5c358687a18e/maintainability.png)](https://qlty.sh/gh/kittybbit/projects/vscode-JFixedViewer)
+[![MIT ライセンス](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Visual Studio Marketplace のバージョン](https://img.shields.io/visual-studio-marketplace/v/kittybbit.vscode-JFixedViewer)](https://marketplace.visualstudio.com/items?itemName=kittybbit.vscode-JFixedViewer)
+[![Visual Studio Marketplace のダウンロード数](https://img.shields.io/visual-studio-marketplace/d/kittybbit.vscode-JFixedViewer)](https://marketplace.visualstudio.com/items?itemName=kittybbit.vscode-JFixedViewer)
+[![Visual Studio Marketplace の評価](https://img.shields.io/visual-studio-marketplace/stars/kittybbit.vscode-JFixedViewer)](https://marketplace.visualstudio.com/items?itemName=kittybbit.vscode-JFixedViewer)
+[![Qlty の保守性評価](https://qlty.sh/badges/0cc9e169-14e8-44d7-a0de-5c358687a18e/maintainability.png)](https://qlty.sh/gh/kittybbit/projects/vscode-JFixedViewer)
 
 日本でよく利用されている、固定長ファイルを読みやすく表示します。
 
-## Features
+## 機能
 
 - コマンドパレットの`JFixedViewer:固定長のファイル形式を選択`からファイル形式を選択できます。
   - 選択した固定長ファイル形式に合わせて、項目を`|`区切りで装飾して表示します。この区切りは装飾として表示されるだけで、実際のデータは変更されません。
@@ -48,22 +48,29 @@
 |                | 外貨預金入出金取引明細                      |
 | JPX            | 四本値(デリバティブ)                        |
 
-## Requirements
+## 動作要件
 
 この拡張機能を使用するための特別な要件はありません。
 
-## Extension Settings
+## 拡張機能の設定
 
 この拡張機能には特別な設定はありません。
 
-## Telemetry
+## テレメトリ
 
-This extension collects telemetry data to improve the experience of using this extension with VS Code. We only collect data on which commands are executed. We do not collect any information about names, addresses, paths, etc. The extension respects the telemetry.enableTelemetry setting which you can learn more about in our [FAQ](https://code.visualstudio.com/docs/supporting/faq#_how-to-disable-telemetry-reporting).
+VS Code での使い勝手を改善するため、実行したコマンドの情報だけを収集します。
+氏名、住所、ファイルのパスなどの情報は収集しません。
+拡張機能は `telemetry.enableTelemetry` の設定に従います。
+設定方法は [VS Code の FAQ](https://code.visualstudio.com/docs/supporting/faq#_how-to-disable-telemetry-reporting)を参照してください。
 
-## Known Issues
+## 既知の問題
 
 現在、既知の問題はありません。
 
-## License
+## 開発に参加する
+
+変更を加える前に [SDD ポリシー](docs/specs/README.md) を確認してください。
+
+## ライセンス
 
 MIT

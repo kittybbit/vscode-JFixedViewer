@@ -1,23 +1,34 @@
-# npm
+# npm の依存
 node_modules/
 
-# antlr
+# ANTLR のファイル
 antlr/
 
-# qlty
+# Qlty の設定
 .qlty/
 
-# vscode
+# VS Code の開発用ファイル
 .vscode/
 .vscode-test/
+.vscode-test-web/
 *.code-workspace
 .vscodeignore
 .vscode-test.mjs
 
-# source code
+# 開発と SDD
+.agent.md
+AGENTS.md
+.codex/
+.github/
+.serena/
+docs/
+out/
+scripts/
+
+# ソースコード
 src/
 
-# others
+# その他
 .browserslistrc
 .eslintrc.js
 .gitattributes
