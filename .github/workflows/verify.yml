@@ -47,3 +47,18 @@ jobs:
 
       - name: デスクトップ版と Web 版のビルド
         run: npm exec -- webpack --mode production --devtool false
+
+      - name: テスト用の拡張を準備
+        run: npm run test:prepare
+
+      - name: Playwright Chromium を準備
+        run: npm exec -- playwright install --with-deps chromium
+
+      - name: デスクトップ安定版のテスト
+        run: xvfb-run -a npm run test:desktop
+
+      - name: デスクトップ 1.75.0 のスモークテスト
+        run: xvfb-run -a npm run test:desktop:min
+
+      - name: Web 安定版のスモークテスト
+        run: npm run test:web

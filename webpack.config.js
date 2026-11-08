@@ -9,10 +9,7 @@ const dotenv = require("dotenv");
 
 //@ts-check
 /** @typedef {import('webpack').Configuration} WebpackConfig **/
-const env = dotenv.config().parsed ?? {};
-const CONNECTION_STRING = env.connection_string;
-
-const extensionConfig = (env, argv) => {
+const extensionConfig = (argv, bundle) => {
   const PRODUCTION = argv.mode === "production";
   const DEVELOPMENT = !PRODUCTION;
 
@@ -26,7 +23,7 @@ const extensionConfig = (env, argv) => {
     },
     output: {
       // the bundle is stored in the 'dist' folder (check package.json), 📖 -> https://webpack.js.org/configuration/output/
-      path: path.resolve(__dirname, "dist"),
+      path: bundle.outputPath,
       filename: "[name].js",
       libraryTarget: "commonjs2",
     },
@@ -75,14 +72,14 @@ const extensionConfig = (env, argv) => {
     plugins: [
       new DefinePlugin({
         DEVELOPMENT: JSON.stringify(DEVELOPMENT),
-        CONNECTION_STRING: JSON.stringify(CONNECTION_STRING),
+        CONNECTION_STRING: JSON.stringify(bundle.connectionString),
       }),
     ],
   };
 };
 
-const webConfig = (env, argv) => {
-  const extensionCfg = extensionConfig(env, argv);
+const webConfig = (argv, bundle) => {
+  const extensionCfg = extensionConfig(argv, bundle);
   return {
     ...extensionCfg,
     ...{
@@ -94,7 +91,7 @@ const webConfig = (env, argv) => {
       },
       output: {
         // the bundle is stored in the 'dist' folder (check package.json), 📖 -> https://webpack.js.org/configuration/output/
-        path: path.resolve(__dirname, "dist"),
+        path: bundle.outputPath,
         filename: "[name].js",
         libraryTarget: "commonjs2",
       },
@@ -102,6 +99,33 @@ const webConfig = (env, argv) => {
   };
 };
 
+const smokeTestConfig = (argv, bundle) => {
+  const config = webConfig(argv, bundle);
+  return {
+    ...config,
+    entry: {
+      smoke: "./src/test/smoke.ts",
+    },
+    output: {
+      ...config.output,
+      filename: "smoke.js",
+    },
+  };
+};
+
 module.exports = (env, argv) => {
-  return [extensionConfig(env, argv), webConfig(env, argv)];
+  const smoke = env?.smoke === true || env?.smoke === "true";
+  const outputPath = smoke
+    ? path.resolve(__dirname, "out/smoke-extension/dist")
+    : path.resolve(__dirname, "dist");
+  // スモーク用バンドルは開発者の .env を読み込まず、認証情報を埋め込まない。
+  const connectionString = smoke
+    ? ""
+    : (dotenv.config().parsed ?? {}).connection_string;
+  const bundle = { outputPath, connectionString };
+  const configs = [extensionConfig(argv, bundle), webConfig(argv, bundle)];
+  if (smoke) {
+    configs.push(smokeTestConfig(argv, bundle));
+  }
+  return configs;
 };
