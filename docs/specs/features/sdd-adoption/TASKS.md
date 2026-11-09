@@ -12,8 +12,8 @@
 
 ## 現在の状態
 
-- ライフサイクル状態 `SLICE_APPROVED`
-- スライス3の完了承認を得た。完了コミットを作り、最上位の PR を公開する。
+- ライフサイクル状態 `SLICE_COMMITTED`
+- スライス3を PR #12 として公開した。Verify で見つかった Markdown の修正は完了承認済み。
 - 独立した `plan-reviewer` は日本語版の再レビューで `Ready for approval` と判定した。
   残る指摘は0件。レビュー対象の `TASKS.md` の SHA-256 は
   `8e04d9a5a2e66d56c22164e085a121d6ff818e619adce87981029976bbb526fd`。
@@ -321,7 +321,7 @@ Main は操作前に、実際の承認、対象とパス、レビューとコミ
 
 ## スライス3. Clean Architecture への移行と依存ルールの検査
 
-- ライフサイクル状態 `SLICE_APPROVED`
+- ライフサイクル状態 `SLICE_COMMITTED`。公開後の Markdown 修正は独立レビュー済み。
 - 受け入れ条件。移行後もビルド、スモークテスト、現行挙動の回帰テストが通る。
   移動後の定義 JSON はバイト単位で同じで、コマンドとマニフェストの互換性を維持する。
   アーキテクチャテストで本番コードの違反が0件となり、意図的な禁止例は検出する。
@@ -385,8 +385,8 @@ Main は操作前に、実際の承認、対象とパス、レビューとコミ
   `npm run test:web` は同日取得した Web 安定版1.145.2 のキャッシュを指定した。
   コミット `c4453f8ea430795f941c1b2ff6c9321135a74a02` で起動スモークと実行後の型チェックが通った。
 - 初回実装差分の内容一覧の SHA-256 は
-  `b97d9e0a1aa2bcd9c5c6ddac6687022bcc73e4debb22c98c0ac93a0020e6cef1`、パッチの SHA-256 は
-  `0897ce9ba6ed3d0016a1208d6b2a402ab1daca555e1bdf15f2c7744531e5bac6`。
+  `b97d9e0a1aa2bcd9c5c6ddac6687022bcc73e4debb22c98c0ac93a0020e6cef1`。
+  パッチの SHA-256 は `0897ce9ba6ed3d0016a1208d6b2a402ab1daca555e1bdf15f2c7744531e5bac6`。
   これは独立レビューの修正前の識別情報で、最終差分ではない。
 - 独立レビューから2件の指摘が戻り、承認済みのテスト支援パス内で修正した。
   `require?.("node:fs")` と `module["require"]("node:fs")` を解析不能なローダーとして拒否する。
@@ -401,8 +401,8 @@ Main は操作前に、実際の承認、対象とパス、レビューとコミ
 - 実ホストと本番ビルドの証跡は `/private/tmp/jfixed-sdd-s3-final-evidence.Ccw4YFeL` にある。
   修正後の型、依存検査と Qlty の証跡は `/private/tmp/jfixed-sdd-s3-final-evidence.v2dWEZpc` にある。
   最終の実質差分の内容一覧の SHA-256 は
-  `cd55478db5520d8197aec1e29184d7fb26554b484ba8466fa9ad00c6708ecb62`、パッチの SHA-256 は
-  `61b8ad7b0f1d2f4ebd6e2f2d7e176df2ec181504dcd5fbaa7c02bd3f95864f6c`。
+  `cd55478db5520d8197aec1e29184d7fb26554b484ba8466fa9ad00c6708ecb62`。
+  パッチの SHA-256 は `61b8ad7b0f1d2f4ebd6e2f2d7e176df2ec181504dcd5fbaa7c02bd3f95864f6c`。
 - Qlty 0.645.0 は基準・最終とも `check` 64ファイル、`smells` 18ファイルを解析した。
   `check` は既存のロックファイル指摘1件のまま、`smells` は4件から0件に減り、総合チェックは通った。
   整形反映後の最終検査で差分は生じなかった。基準証跡は `/private/tmp/jfixed-sdd-s3-base-evidence.5zQ1iWbf`。
@@ -414,6 +414,22 @@ Main は操作前に、実際の承認、対象とパス、レビューとコミ
   レビューした全差分の SHA-256 は `433ac79902ff8b53e05a1032e523f6fbb28d8c973854fe9766428bbbc6c46383`。
 - 完了承認は `Approved`。独立再レビュー後にこの会話で明示的な承認を得た。
   対象はレビュー済みのスライス3の差分と下記の承認対象パス。
+
+### PR 公開後の Markdown 修正
+
+- `ac10832bb508b51ff9b5eef7866c76e93a59d475` を公開し、[PR #12][slice3-pr] を
+  スタック #11 の最上位に追加した。ベースは PR #10 のヘッド `927457c`。
+- CodeQL は通過した。[Verify][slice3-verify-failure] は、この文書の2行が行長上限の80文字を
+  超えたため停止した。`markdownlint-cli2` 0.22.0 の実行ファイルで同じ2件を再現した。
+- 該当箇所を折り返し、同じバージョンで PR が変更した Markdown 2件を検査した。
+  製品・テストの入力は同じため、型、ビルド、実ホスト、アーキテクチャ、Qlty の証跡を再利用する。
+- 修正の独立再レビューは `Ready`（`SLICE_READY`）。未解決の指摘は0件。
+  レビューした修正パッチの SHA-256 は `7e50a4f7d8add43d794b70160baa9c4692f2fcacbfca55e9f17c59abb8b0e533`。
+- 修正の完了承認は `Approved`。独立再レビュー後にこの会話で明示的な承認を得た。
+  対象はこの文書の2行の折り返しと証跡の追記。同じ PR を更新し、最新ヘッドの検証を確認する。
+
+[slice3-pr]: https://github.com/kittybbit/vscode-JFixedViewer/pull/12
+[slice3-verify-failure]: https://github.com/kittybbit/vscode-JFixedViewer/actions/runs/42542782721/job/128921188258
 
 ### スライス3の承認対象パス
 
