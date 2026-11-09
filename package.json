@@ -57,6 +57,7 @@
     "test:desktop": "vscode-test",
     "test:desktop:min": "node -e \"const path=require('node:path');require('@vscode/test-electron').runTests({version:'1.75.0',extensionDevelopmentPath:path.resolve('out/smoke-extension'),extensionTestsPath:path.resolve('out/test/smoke.js'),launchArgs:['--disable-telemetry']}).catch((error)=>{console.error(error);process.exitCode=1;})\"",
     "test:web": "vscode-test-web --browserType=chromium --quality=stable --extensionDevelopmentPath=out/smoke-extension --extensionTestsPath=out/smoke-extension/dist/smoke.js --esm",
+    "test:architecture": "node --test out/test/architecture.test.js",
     "open-in-browser": "vscode-test-web --extensionDevelopmentPath=. ."
   },
   "devDependencies": {

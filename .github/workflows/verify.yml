@@ -51,6 +51,9 @@ jobs:
       - name: テスト用の拡張を準備
         run: npm run test:prepare
 
+      - name: アーキテクチャの依存ルールを検査
+        run: npm run test:architecture
+
       - name: Playwright Chromium を準備
         run: npm exec -- playwright install --with-deps chromium
 
