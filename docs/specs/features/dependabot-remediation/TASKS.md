@@ -9,7 +9,8 @@
 
 ## 現在の状態
 
-- ライフサイクル状態 `PLAN_APPROVED`。次は計画文書のコミット。
+- ライフサイクル状態 `SLICE_APPROVED`。次はスライス1のコミットと PR 公開。
+- 状態遷移は `PLAN_APPROVED` → `PLAN_COMMITTED` → `IMPLEMENTING` → `IMPLEMENTED`。
 - 機能ブランチは `codex/dependabot-remediation`。計画のベースは `origin/main` の
   `1acf5a8bf78919a4baf903905208af9617339111`。
 - 2026-11-09 に GitHub API から取得した未解決の警告は 76 件。すべて `package-lock.json` が対象で、
@@ -48,7 +49,9 @@
 
 - 計画承認は `Approved`。2026-11-09 に利用者が、上記の独立レビューを通過した計画を承認した。
   スライス1の `package.json`、`package-lock.json` と「必須検証」の範囲を対象とする。
-- 完了承認は `Pending`。スライス1の実装差分と検証証跡を対象とする。
+  計画コミットは `97d57bf4e7be1129d70113158de041642850a5f2`。
+- 完了承認は `Approved`。2026-11-09 に利用者が、独立レビュー済みのスライス1を承認した。
+  対象は `package.json`、`package-lock.json`、本書の実装・検証記録、コミットと PR 公開。
 - 終了承認は `Pending`。機能文書の削除 2 件と PR に保持する終了証跡を対象とする。
 - マージ承認は `Pending`。終了コミットを含む PR の最新ヘッドと `main` への取り込みを対象とする。
 
@@ -58,8 +61,9 @@
 
 ## スライス1. 脆弱な npm 依存関係の更新
 
-- 状態は `PLANNED`。先行スライスはない。製品パスは `package.json` と `package-lock.json` の 2 件。
-  スライスの状態と証跡はこの `TASKS.md` に追記する。検証支援パスの変更は予定しない。
+- 状態は `SLICE_APPROVED`。先行スライスはない。製品パスは `package.json` と
+  `package-lock.json`。計画コミットは `97d57bf4e7be1129d70113158de041642850a5f2`。
+  検証記録のため、この `TASKS.md` も更新した。検証支援パスは変更していない。
 - 既存のロックファイルを npm で更新する。`npm audit fix --package-lock-only --ignore-scripts`
   で互換範囲内の修正版を解決する。
   開発依存の `@vscode/test-cli` は `^0.0.15`、`@vscode/test-web` は `^0.0.81`、
@@ -68,12 +72,10 @@
   更新後の webpack は `terser-webpack-plugin` を間接依存として提供しない。
   既存のビルド設定が直接読み込むため、`terser-webpack-plugin` `^5.6.1` を直接の開発依存に追加する。
 - 上流の依存範囲から修正版を解決できない経路に次の `overrides` を使い、ロックを再生成する。
-
-  | 適用範囲 | 更新候補 | 理由 |
-  | -------- | -------- | ---- |
-  | `@vscode/test-cli` 配下の `mocha` | `^12.0.3` | `diff` 等の修正版を解決する |
-  | `glob@>=9 <14.0.2` | `^14.0.4` | 該当する脆弱範囲の `glob` を置き換える |
-  | `minimatch@>=7 <11.0.1` | `^11.0.5` | 該当する脆弱範囲の `minimatch` を置き換える |
+  - `@vscode/test-cli` 配下の `mocha` は `^12.0.3` にする。
+    `diff` 等の修正版を解決する。
+  - `glob` の `>=9 <14.0.2` を `^14.0.4` にする。
+  - `minimatch` の `>=7 <11.0.1` を `^11.0.5` にする。
 
 - 設計の責務と境界は[アーキテクチャ](../../architecture.md#設計の責務と境界)に従う。
   npm が依存解決を担い、配布・ビルド・テストのツールは開発依存に置く。
@@ -112,7 +114,46 @@
    新規・悪化した指摘がなく、総合チェックが通ることを[品質条件](../../validation.md#品質条件)に従って確認する。
 6. 変更した Markdown の lint、相対リンクと構造、`git diff --check` を確認する。
 
-検証後に独立レビューを依頼する。[証跡の取り扱い](../../evidence.md#証跡の取り扱い)と
+### 実装と検証結果
+
+- 実装は計画の承認範囲内。VS Code の最低対応版 `1.75.0` と `main`、`browser` の宣言は維持。
+  実行時依存のテレメトリ SDK とその層境界、拡張のソースコードを変更していない。
+- GitHub Dependabot の未解決警告76件を更新後のロックと名前・脆弱 SemVer 範囲で照合した。
+  基準ロックは91項目が該当し、更新後は該当0件。GitHub API の警告一覧は受付時と同一だった。
+- 基準の `npm audit` は41件、更新後は0件。`npm ci` は更新後のロックから成功した。
+- Node.js `v24.21.0`、npm `11.19.0` で型チェック、デスクトップ版と Web 版の本番ビルド、
+  テスト準備が成功。アーキテクチャテストは7件すべて通過。
+- デスクトップ安定版 VS Code `1.145.2` の回帰テストは5件通過。最低対応版
+  `1.75.0` のデスクトップスモークと、Web 安定版 `1.145.2` のスモークが成功。
+- `vsce package` が成功。VSIX にデスクトップと Web の両エントリーポイントが含まれ、
+  `engines.vscode` は `^1.75.0`。基準版と最終版は同じ11ファイルとマニフェストで、
+  エントリーポイント、実行時依存、VS Code 対応版が一致した。バンドルはそれぞれ生成に使った
+  webpack と SDK 間接依存を含むため、バンドルサイズが変わった。
+- Qlty `0.645.0`。ベースと最終の設定 SHA-256 は同一の
+  `ef66ff4bc2fc0987ea6ce019c5370b11aed4a3ebbb448ad64473d913bec0af6e`。
+  check の SARIF は基準1件（`@nevware21/ts-utils`）、最終0件。smells は両方0件。
+  基準と最終の check パス一覧はそれぞれ61件と63件で、最終には機能記録2件が加わる。
+  smells は基準・最終とも18ファイルを調べて0件。対象一覧はメトリクス出力と一致する。
+  最終の `npm run qlty` も通過。
+- 機能文書の Markdown lint は2件とも通過。相対リンクとアンカー13件、差分の空白検査も通過。
+- 変更後の追跡対象は製品2ファイルとこの検証記録。テストファイルは追加していない。
+  Verify、CodeQL、Cloud の PR チェックは PR 未公開のため未実施。
+
+すべてのログ、SARIF、解析パス一覧は
+`/tmp/jfixedviewer-dependabot-impl-01a1c07b.log` と
+`/tmp/jfixedviewer-temporal-trial.mHGYRz/` に保持する。`smells` の18ファイル一覧は
+`evidence-smells-targets.txt` に、VSIX のファイル一覧は `vsix-base-files.txt` と
+`vsix-final-files.txt` に記録する。
+
+### 実装の独立レビュー
+
+- 2026-11-09 に `implementation-reviewer` が `Ready` と判定した。対応が必要な指摘はなかった。
+- 計画コミットは `97d57bf4e7be1129d70113158de041642850a5f2`。
+- レビュー時点の全差分（`git diff --binary`）の SHA-256 は
+  `dc5a690607e16252466ecb69572f322f000ec1a7957d65fce1881d774a0d2be5`。
+- レビュー担当は全76件を独立に照合し、更新後のロックに該当する脆弱な項目がないことを確認した。
+
+[証跡の取り扱い](../../evidence.md#証跡の取り扱い)と
 [決定的な失敗の修正ループ](../../validation.md#決定的な失敗の修正ループ)に従う。
 
 ## 機能の終了判定
