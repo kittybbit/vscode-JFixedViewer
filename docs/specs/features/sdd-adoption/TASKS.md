@@ -4,8 +4,7 @@
 
 - `SPECS.md` に沿って SDD と層構造を導入し、固定長表示の挙動を保つ。
   各スライスは単独で価値があり、個別の PR としてレビューできる。
-- 対象はスライス2。PR #9 の先端で必要なチェックが通ったため、現行挙動の回帰テストと
-  デスクトップ版および Web 版の実ホストのスモークテストを追加する。
+- 対象はスライス3。固定長表示を層構造に移行し、アーキテクチャの依存ルールを検査する。
 - 着手するスライスの検証と対象パスを確認する。同一形式を使う文書間の状態共有、
   両ホストの入口、VS Code の最小バージョンを維持する。
 - 承認された範囲、設計、影響、検証を変える判断は Main に戻す。
@@ -13,8 +12,8 @@
 
 ## 現在の状態
 
-- ライフサイクル状態 `PLAN_COMMITTED`
-- スライス2は公開済み。PR #10 の Verify で見つかった Web テストの起動失敗を修正し、再検証する。
+- ライフサイクル状態 `SLICE_APPROVED`
+- スライス3の完了承認を得た。完了コミットを作り、最上位の PR を公開する。
 - 独立した `plan-reviewer` は日本語版の再レビューで `Ready for approval` と判定した。
   残る指摘は0件。レビュー対象の `TASKS.md` の SHA-256 は
   `8e04d9a5a2e66d56c22164e085a121d6ff818e619adce87981029976bbb526fd`。
@@ -47,10 +46,10 @@
   [PR #9](https://github.com/kittybbit/vscode-JFixedViewer/pull/9) の先端は
   `e685673dbb613faf495ebcd569eb156975bb7016`。
 - 第2層の `codex/sdd-adoption-tests` は、検証済みの上記ヘッドを起点に作成した。
-  [PR #10](https://github.com/kittybbit/vscode-JFixedViewer/pull/10) の修正前のヘッドは
-  `e1268b32b519487c5353a734b59457bf2cebe51b`。GitHub のスタック #11 で PR #9 に続く。
-- 第3層の `codex/sdd-adoption-architecture` は承認済みの第2層のブランチとヘッドを
-  起点にする。第3層のヘッドに全スライスと終了差分を含める。
+  [PR #10](https://github.com/kittybbit/vscode-JFixedViewer/pull/10) の検証済みヘッドは
+  `927457c791e227193d9e41b867493f7fa86de909`。GitHub のスタック #11 で PR #9 に続く。
+- 第3層の `codex/sdd-adoption-architecture` は検証済みの上記ヘッドを起点に作成した。
+  第3層のヘッドに全スライスと終了差分を含める。
 - 後続 PR の URL、検証時のベースとヘッドの SHA、終了コミット、マージ結果は確認後に記録する。
 
 各スライスで独立レビューの `Ready` と明示的な完了承認を得たら、Main がコミットし、
@@ -221,7 +220,7 @@ Main は操作前に、実際の承認、対象とパス、レビューとコミ
 
 ## スライス2. 現行挙動と実ホストのテスト
 
-- ライフサイクル状態 `SLICE_COMMITTED`。完了承認を得て公開した。Verify の修正分も完了承認済み。
+- ライフサイクル状態 `SLICE_COMMITTED`。修正コミットを公開し、先端の検証が通った。
 - 受け入れ条件。デスクトップ安定版で既存実装の挙動をテストする。
   デスクトップ安定版、デスクトップ 1.75.0、Web 安定版の実ホストで共通のスモークテストを実行し、
   それぞれで拡張が起動し、`vscode-JFixedViewer.FiletypePicker` が登録されることを確認する。
@@ -297,9 +296,15 @@ Main は操作前に、実際の承認、対象とパス、レビューとコミ
   `f7bdf933a691dd2d154617b77df9ed31aa15fc0f9ccbe07f0c6a8e5fc74526b0`。
 - 修正の完了承認は `Approved`。独立再レビュー後にこの会話で明示的な承認を得た。
   対象は `.github/workflows/verify.yml` の Web ステップと、この文書の証跡追記。
-  同じ PR を更新し、新しいヘッドで Verify と CodeQL が通ってからスライス3に着手する。
+  修正コミット `927457c791e227193d9e41b867493f7fa86de909` を PR #10 に公開した。
+- [修正後の Verify][slice2-web-verify] はデスクトップ安定版、デスクトップ 1.75.0、Web 安定版で通過。
+  [CodeQL][slice2-codeql] は `refs/pull/10/head` の同じコミットを解析し、結果はすべて通過。
+  PR のベースは `e685673dbb613faf495ebcd569eb156975bb7016`。
+  対象ブランチのルールと PR のチェックに、追加の必須チェックや Qlty Cloud のチェックはなかった。
 
 [slice2-web-failure]: https://github.com/kittybbit/vscode-JFixedViewer/actions/runs/42479695637/job/128728738995
+[slice2-web-verify]: https://github.com/kittybbit/vscode-JFixedViewer/actions/runs/42536663685/job/128902357064
+[slice2-codeql]: https://github.com/kittybbit/vscode-JFixedViewer/actions/runs/42536660546
 
 ### スライス2の承認対象パス
 
@@ -316,7 +321,7 @@ Main は操作前に、実際の承認、対象とパス、レビューとコミ
 
 ## スライス3. Clean Architecture への移行と依存ルールの検査
 
-- ライフサイクル状態 `PLANNED`
+- ライフサイクル状態 `SLICE_APPROVED`
 - 受け入れ条件。移行後もビルド、スモークテスト、現行挙動の回帰テストが通る。
   移動後の定義 JSON はバイト単位で同じで、コマンドとマニフェストの互換性を維持する。
   アーキテクチャテストで本番コードの違反が0件となり、意図的な禁止例は検出する。
@@ -356,6 +361,59 @@ Main は操作前に、実際の承認、対象とパス、レビューとコミ
 - 検証は先行 PR のチェック、スライス2の全項目、アーキテクチャの許可例・禁止例、
   エンジン指定、マニフェストと JSON の同一性、`git diff --check`、Qlty の証跡。
   ブラウザーで動くこと、回帰テストは接続先だけを変更していること、最小対応版で実際に起動することを確認する。
+
+### スライス3の実装と検証
+
+- 比較ベースは PR #10 の検証済みヘッド
+  `927457c791e227193d9e41b867493f7fa86de909`。承認対象パスの実質差分に含まれる
+  既存実装の削除、新しい層の実装、アーキテクチャ文書、テストと Verify の変更を反映した。
+  コマンド、`engines.vscode` の `^1.75.0`、デスクトップ/Web のバンドル入口を維持し、依存とロックファイルを変更していない。
+- ドメイン、アプリケーション、インフラストラクチャ、プレゼンテーション、bootstrap の責務を分け、
+  拡張の入口を既存の有効化・無効化関数に保った。モード共有、先に一致する定義、装飾の関連付けと破棄、
+  キャンセル、空形式による解除、テレメトリのイベント名・順序・ペイロードを回帰テストで維持した。
+  接続文字列のログを削除し、文書内容やパスをイベントに含めない。
+- 移動した定義 JSON はベースと最終のバイト比較で一致した。最終ファイルの SHA-256 は、
+  `clear.json` が `7b91e8d3618866029e45fc68277eee89a3c0d8b17a1adc4ba05118fbe08f0995`、
+  `jpx.json` が `faf2a78e7738f44acc60bd1dfa2d0fa0c500ee44d77f167f6739eb5dd0fe77ac`、
+  `zengin.json` が `dd053812822e6b948248a237f7303c5d1eb39745e7a957ee62f4457502afb1dc`。
+- `npm exec -- tsc -p . --noEmit`、`npm run package`、`npm run test:prepare` と
+  スモーク用バンドルの秘密情報検査が通った。`npm run test:architecture` は許可例と禁止例を含む
+  7件すべてが通過。本番の `dist/extension.js` と `dist/web.js` はスモーク準備後にも
+  ハッシュが変わらないことを確認した。
+- `npm run test:desktop` は VS Code 1.145.2 で回帰4件と起動スモーク1件の計5件が通過。
+  `npm run test:desktop:min` は VS Code 1.75.0 で起動スモークが通過。
+  `npm run test:web` は同日取得した Web 安定版1.145.2 のキャッシュを指定した。
+  コミット `c4453f8ea430795f941c1b2ff6c9321135a74a02` で起動スモークと実行後の型チェックが通った。
+- 初回実装差分の内容一覧の SHA-256 は
+  `b97d9e0a1aa2bcd9c5c6ddac6687022bcc73e4debb22c98c0ac93a0020e6cef1`、パッチの SHA-256 は
+  `0897ce9ba6ed3d0016a1208d6b2a402ab1daca555e1bdf15f2c7744531e5bac6`。
+  これは独立レビューの修正前の識別情報で、最終差分ではない。
+- 独立レビューから2件の指摘が戻り、承認済みのテスト支援パス内で修正した。
+  `require?.("node:fs")` と `module["require"]("node:fs")` を解析不能なローダーとして拒否する。
+  文字列 `require` から TypeScript の解決先を参照し、namespace import は全 export を調べることで、
+  `require` で得た名前空間からの呼び出し、namespace import の分割代入と element access を
+  ファクトリー使用の違反として検出する。これら5形式の禁止例をテストに追加した。
+- 修正後は `npm exec -- tsc -p . --noEmit`、テストのコンパイル、
+  `npm run test:architecture`（7/7）、`git diff --check` が通過した。
+  本番コード、`src/test/extension.test.ts`、`src/test/support/characterizationHost.ts`、
+  定義 JSON は修正していない。これらの入力に依存する初回実装の本番ビルド、秘密情報検査、
+  Desktop 安定版・1.75.0・Web 安定版の実ホスト証跡は再利用する。
+- 実ホストと本番ビルドの証跡は `/private/tmp/jfixed-sdd-s3-final-evidence.Ccw4YFeL` にある。
+  修正後の型、依存検査と Qlty の証跡は `/private/tmp/jfixed-sdd-s3-final-evidence.v2dWEZpc` にある。
+  最終の実質差分の内容一覧の SHA-256 は
+  `cd55478db5520d8197aec1e29184d7fb26554b484ba8466fa9ad00c6708ecb62`、パッチの SHA-256 は
+  `61b8ad7b0f1d2f4ebd6e2f2d7e176df2ec181504dcd5fbaa7c02bd3f95864f6c`。
+- Qlty 0.645.0 は基準・最終とも `check` 64ファイル、`smells` 18ファイルを解析した。
+  `check` は既存のロックファイル指摘1件のまま、`smells` は4件から0件に減り、総合チェックは通った。
+  整形反映後の最終検査で差分は生じなかった。基準証跡は `/private/tmp/jfixed-sdd-s3-base-evidence.5zQ1iWbf`。
+  この文書の状態と証跡の追記は別途 Markdown lint で検査した。
+- `git diff --check` は通過した。`TRACEABILITY.md` は、SDD-2 の回帰・ホスト検証と
+  SDD-3 の依存・両バンドル検証という既存の要件対応が維持され、検証結果もその範囲を満たしたため変更しない。
+  利用者向け挙動に変更がないため、恒久ユースケースと変更履歴も変更対象外。
+- 独立再レビューは `Ready`。未解決の指摘は0件で、追加した5形式の禁止例をそれぞれ確認した。
+  レビューした全差分の SHA-256 は `433ac79902ff8b53e05a1032e523f6fbb28d8c973854fe9766428bbbc6c46383`。
+- 完了承認は `Approved`。独立再レビュー後にこの会話で明示的な承認を得た。
+  対象はレビュー済みのスライス3の差分と下記の承認対象パス。
 
 ### スライス3の承認対象パス
 
