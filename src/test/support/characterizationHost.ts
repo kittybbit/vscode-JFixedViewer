@@ -8,6 +8,7 @@ type FakeDocument = {
   fileName: string;
   lines: string[];
   readonly lineCount: number;
+  readonly lineAtCallCount: number;
   lineAt(index: number): { text: string; isEmptyOrWhitespace: boolean };
   getText(): string;
 };
@@ -16,6 +17,7 @@ class CharacterizedDocument implements FakeDocument {
   public readonly uri: FakeDocument["uri"];
   public readonly fileName: string;
   public lines: string[];
+  private lineAtCalls = 0;
 
   public constructor(fileName: string, lines: string[], uri: string) {
     this.uri = { toString: () => uri };
@@ -27,10 +29,15 @@ class CharacterizedDocument implements FakeDocument {
     return this.lines.length;
   }
 
+  public get lineAtCallCount(): number {
+    return this.lineAtCalls;
+  }
+
   public lineAt(index: number): {
     text: string;
     isEmptyOrWhitespace: boolean;
   } {
+    this.lineAtCalls += 1;
     const text = this.lines[index];
     return { text, isEmptyOrWhitespace: /^\s*$/u.test(text) };
   }
@@ -42,6 +49,12 @@ class CharacterizedDocument implements FakeDocument {
 type DecorationOption = {
   range: { start: Position; end: Position };
   hoverMessage?: { value: string; isTrusted: boolean };
+  renderOptions?: Record<string, unknown>;
+};
+type Configuration = {
+  boundaryStyle?: unknown;
+  boundaryColor?: unknown;
+  boundaryWidth?: unknown;
 };
 type LoadedExtension = {
   activate(context: { subscriptions: Disposable[] }): unknown;
@@ -186,6 +199,11 @@ function createFakeWorkspace(host: CharacterizationHost) {
     },
     onDidChangeTextDocument: host.documentChangeEmitter.event,
     onDidCloseTextDocument: host.documentCloseEmitter.event,
+    onDidChangeConfiguration: host.configurationChangeEmitter.event,
+    getConfiguration: (_section: string, resource: FakeDocument["uri"]) => ({
+      get: <T>(name: keyof Configuration): T | undefined =>
+        host.configurationFor(resource.toString())[name] as T | undefined,
+    }),
   };
 }
 
@@ -313,6 +331,12 @@ export class CharacterizationHost {
     contentChanges: unknown[];
   }>();
   public readonly documentCloseEmitter = new FakeEventEmitter<FakeDocument>();
+  public readonly configurationChangeEmitter = new FakeEventEmitter<{
+    affectsConfiguration: (
+      section: string,
+      resource?: FakeDocument["uri"],
+    ) => boolean;
+  }>();
   public commandDisposalCount = 0;
   public nextQuickPick: string | undefined;
   public activeTextEditor: FakeEditor | undefined;
@@ -325,6 +349,7 @@ export class CharacterizationHost {
     readonly FakeEditor[]
   >();
   private readonly documentsByUri = new Map<string, FakeDocument>();
+  private readonly configurationByUri = new Map<string, Configuration>();
   private readonly vscode: Record<string, unknown>;
   private loadedExtension: LoadedExtension | undefined;
   private globalDescriptors = new Map<string, PropertyDescriptor | undefined>();
@@ -408,6 +433,18 @@ export class CharacterizationHost {
       document: editor.document,
       contentChanges: [],
     });
+  }
+
+  public setConfiguration(uri: string, configuration: Configuration): void {
+    this.configurationByUri.set(uri, configuration);
+    this.configurationChangeEmitter.fire({
+      affectsConfiguration: (section, resource) =>
+        section === "jfixedviewer" && resource?.toString() === uri,
+    });
+  }
+
+  public configurationFor(uri: string): Configuration {
+    return this.configurationByUri.get(uri) ?? {};
   }
 
   public closeDocument(editor: FakeEditor): void {

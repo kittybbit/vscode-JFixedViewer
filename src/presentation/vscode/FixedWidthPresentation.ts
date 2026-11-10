@@ -4,6 +4,10 @@ import type {
   FixedWidthLine,
 } from "../../application/fixedWidth/FixedWidthDecoration";
 import type { TelemetryPort } from "../../application/telemetry/TelemetryPort";
+import {
+  createFieldDecorations,
+  readBoundarySettings,
+} from "./decorationStyle";
 
 const commandId = "vscode-JFixedViewer.FiletypePicker";
 const renderDelay = 100;
@@ -11,6 +15,8 @@ const renderDelay = 100;
 type EditorDecoration = {
   fileType: string;
   decorationType: vscode.TextEditorDecorationType;
+  alternatingDecorationType?: vscode.TextEditorDecorationType;
+  alternatingBackgroundKey?: string;
 };
 
 type PendingRender = {
@@ -38,6 +44,7 @@ export class FixedWidthPresentation implements vscode.Disposable {
       this.registerCommand();
       this.listenToVisibleEditors();
       this.listenToDocumentChanges();
+      this.listenToConfigurationChanges();
     } catch (error) {
       this.rethrowStartupFailure(error);
     }
@@ -88,6 +95,45 @@ export class FixedWidthPresentation implements vscode.Disposable {
         this.cancelPendingRender(document),
       ),
     );
+  }
+
+  private listenToConfigurationChanges(): void {
+    this.subscriptions.push(
+      vscode.workspace.onDidChangeConfiguration((event) => {
+        this.updateConfiguredDocuments(event);
+      }),
+    );
+  }
+
+  private updateConfiguredDocuments(
+    event: vscode.ConfigurationChangeEvent,
+  ): void {
+    const visibleDocumentsByUri = new Map(
+      vscode.window.visibleTextEditors.map(({ document }) => [
+        document.uri.toString(),
+        document,
+      ]),
+    );
+    for (const [uri, document] of visibleDocumentsByUri) {
+      this.updateConfiguredDocument(event, uri, document);
+    }
+  }
+
+  private updateConfiguredDocument(
+    event: vscode.ConfigurationChangeEvent,
+    uri: string,
+    document: vscode.TextDocument,
+  ): void {
+    const fileType = this.fileTypeByDocument.get(uri);
+    if (fileType === undefined) {
+      return;
+    }
+    if (!event.affectsConfiguration("jfixedviewer", document.uri)) {
+      return;
+    }
+
+    this.cancelPendingRender(document);
+    this.decorateDocument(document, fileType);
   }
 
   private updateVisibleEditors(editors: readonly vscode.TextEditor[]): void {
@@ -157,26 +203,15 @@ export class FixedWidthPresentation implements vscode.Disposable {
     document: vscode.TextDocument,
     fileType: string,
   ): void {
-    const options = this.decoration
-      .decorate(fileType, this.documentLines(document))
-      .map((field) => {
-        const hover = new vscode.MarkdownString(
-          `**${field.name}**  \n位置: ${field.start + 1} - ${field.end} (${field.width}桁)`,
-        );
-        hover.isTrusted = true;
-        return {
-          range: new vscode.Range(
-            new vscode.Position(field.line, field.start),
-            new vscode.Position(field.line, field.end),
-          ),
-          hoverMessage: hover,
-        };
-      });
+    const lines = [...this.documentLines(document)];
+    const settings = readBoundarySettings(document.uri);
+    const fields = this.decoration.decorate(fileType, lines);
+    const decorations = createFieldDecorations(fields, lines, settings);
 
     const uri = document.uri.toString();
     for (const editor of vscode.window.visibleTextEditors) {
       if (editor.document.uri.toString() === uri) {
-        this.setEditorDecorations(editor, fileType, options);
+        this.setEditorDecorations(editor, fileType, decorations);
       }
     }
   }
@@ -184,7 +219,7 @@ export class FixedWidthPresentation implements vscode.Disposable {
   private setEditorDecorations(
     editor: vscode.TextEditor,
     fileType: string,
-    options: vscode.DecorationOptions[],
+    decorations: ReturnType<typeof createFieldDecorations>,
   ): void {
     let current = this.decorationByEditor.get(editor);
     if (!current || current.fileType !== fileType) {
@@ -194,17 +229,53 @@ export class FixedWidthPresentation implements vscode.Disposable {
       current = {
         fileType,
         decorationType: vscode.window.createTextEditorDecorationType({
-          after: {
-            contentText: "",
-            borderColor: new vscode.ThemeColor("editor.selectionBackground"),
-            border: "0.1em solid",
-          },
           isWholeLine: false,
         }),
       };
       this.decorationByEditor.set(editor, current);
     }
-    editor.setDecorations(current.decorationType, options);
+    editor.setDecorations(current.decorationType, decorations.options);
+    this.updateAlternatingDecoration(editor, current, decorations);
+  }
+
+  private updateAlternatingDecoration(
+    editor: vscode.TextEditor,
+    current: EditorDecoration,
+    decorations: ReturnType<typeof createFieldDecorations>,
+  ): void {
+    if (decorations.alternatingOptions.length === 0) {
+      this.clearAlternatingDecoration(editor, current);
+      return;
+    }
+
+    if (
+      current.alternatingBackgroundKey !== decorations.alternatingBackgroundKey
+    ) {
+      this.clearAlternatingDecoration(editor, current);
+      current.alternatingDecorationType =
+        vscode.window.createTextEditorDecorationType({
+          isWholeLine: false,
+          backgroundColor: decorations.alternatingBackground,
+        });
+      current.alternatingBackgroundKey = decorations.alternatingBackgroundKey;
+    }
+    const decorationType = current.alternatingDecorationType;
+    if (decorationType) {
+      editor.setDecorations(decorationType, decorations.alternatingOptions);
+    }
+  }
+
+  private clearAlternatingDecoration(
+    editor: vscode.TextEditor,
+    current: EditorDecoration,
+  ): void {
+    if (!current.alternatingDecorationType) {
+      return;
+    }
+    editor.setDecorations(current.alternatingDecorationType, []);
+    current.alternatingDecorationType.dispose();
+    delete current.alternatingDecorationType;
+    delete current.alternatingBackgroundKey;
   }
 
   private scheduleRender(document: vscode.TextDocument): void {
@@ -275,6 +346,7 @@ export class FixedWidthPresentation implements vscode.Disposable {
     if (!current) {
       return;
     }
+    this.clearAlternatingDecoration(editor, current);
     editor.setDecorations(current.decorationType, []);
     current.decorationType.dispose();
     this.decorationByEditor.delete(editor);
@@ -318,8 +390,9 @@ export class FixedWidthPresentation implements vscode.Disposable {
       clearTimeout(pending.timeout);
     }
     this.pendingRenderByDocument.clear();
-    for (const { decorationType } of this.decorationByEditor.values()) {
-      decorationType.dispose();
+    for (const current of this.decorationByEditor.values()) {
+      current.alternatingDecorationType?.dispose();
+      current.decorationType.dispose();
     }
     this.decorationByEditor.clear();
     this.fileTypeByDocument.clear();
