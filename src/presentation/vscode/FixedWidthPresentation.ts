@@ -6,14 +6,26 @@ import type {
 import type { TelemetryPort } from "../../application/telemetry/TelemetryPort";
 
 const commandId = "vscode-JFixedViewer.FiletypePicker";
+const renderDelay = 100;
+
+type EditorDecoration = {
+  fileType: string;
+  decorationType: vscode.TextEditorDecorationType;
+};
+
+type PendingRender = {
+  document: vscode.TextDocument;
+  timeout: ReturnType<typeof setTimeout>;
+};
 
 export class FixedWidthPresentation implements vscode.Disposable {
   private readonly subscriptions: vscode.Disposable[] = [];
-  private readonly fileTypeByFileName = new Map<string, string>();
-  private readonly decorationTypeByFileType = new Map<
-    string,
-    vscode.TextEditorDecorationType
+  private readonly fileTypeByDocument = new Map<string, string>();
+  private readonly decorationByEditor = new Map<
+    vscode.TextEditor,
+    EditorDecoration
   >();
+  private readonly pendingRenderByDocument = new Map<string, PendingRender>();
   private disposed = false;
 
   public constructor(
@@ -24,7 +36,8 @@ export class FixedWidthPresentation implements vscode.Disposable {
   public start(): void {
     try {
       this.registerCommand();
-      this.listenToActiveEditor();
+      this.listenToVisibleEditors();
+      this.listenToDocumentChanges();
     } catch (error) {
       this.rethrowStartupFailure(error);
     }
@@ -41,28 +54,242 @@ export class FixedWidthPresentation implements vscode.Disposable {
     const selectedName = await vscode.window.showQuickPick(
       this.decoration.choices.map((choice) => choice.name),
     );
+    if (this.disposed) {
+      return;
+    }
+
     const fileType = this.decoration.fileTypeForName(selectedName);
-    if (fileType !== undefined) {
-      this.decorate(fileType);
+    const editor = vscode.window.activeTextEditor;
+    if (fileType !== undefined && editor) {
+      this.applySelection(editor.document, fileType);
     }
     this.telemetry.decorationSelected(fileType ?? "");
   }
 
-  private listenToActiveEditor(): void {
+  private listenToVisibleEditors(): void {
     this.subscriptions.push(
-      vscode.window.onDidChangeActiveTextEditor((editor) =>
-        this.applyToActiveEditor(editor),
+      vscode.window.onDidChangeVisibleTextEditors((editors) =>
+        this.updateVisibleEditors(editors),
+      ),
+    );
+    this.updateVisibleEditors(vscode.window.visibleTextEditors);
+  }
+
+  private listenToDocumentChanges(): void {
+    this.subscriptions.push(
+      vscode.workspace.onDidChangeTextDocument((event) => {
+        if (event.contentChanges.length > 0) {
+          this.scheduleRender(event.document);
+        }
+      }),
+    );
+    this.subscriptions.push(
+      vscode.workspace.onDidCloseTextDocument((document) =>
+        this.cancelPendingRender(document),
       ),
     );
   }
 
-  private applyToActiveEditor(editor: vscode.TextEditor | undefined): void {
-    if (!editor) {
+  private updateVisibleEditors(editors: readonly vscode.TextEditor[]): void {
+    if (this.disposed) {
       return;
     }
-    const fileType = this.fileTypeByFileName.get(editor.document.fileName);
+
+    this.clearHiddenEditorDecorations(editors);
+    this.cancelRendersForHiddenDocuments(editors);
+    this.decorateNewlyVisibleEditors(editors);
+  }
+
+  private clearHiddenEditorDecorations(
+    editors: readonly vscode.TextEditor[],
+  ): void {
+    const visibleEditors = new Set(editors);
+    for (const editor of this.decorationByEditor.keys()) {
+      if (!visibleEditors.has(editor)) {
+        this.clearEditor(editor);
+      }
+    }
+  }
+
+  private cancelRendersForHiddenDocuments(
+    editors: readonly vscode.TextEditor[],
+  ): void {
+    const visibleDocumentUris = new Set(
+      editors.map((editor) => editor.document.uri.toString()),
+    );
+    for (const [uri, pending] of this.pendingRenderByDocument) {
+      if (!visibleDocumentUris.has(uri)) {
+        this.cancelPendingRender(pending.document);
+      }
+    }
+  }
+
+  private decorateNewlyVisibleEditors(
+    editors: readonly vscode.TextEditor[],
+  ): void {
+    for (const editor of editors) {
+      const fileType = this.fileTypeByDocument.get(
+        editor.document.uri.toString(),
+      );
+      if (fileType !== undefined && !this.decorationByEditor.has(editor)) {
+        this.decorateDocument(editor.document, fileType);
+      }
+    }
+  }
+
+  private applySelection(
+    document: vscode.TextDocument,
+    fileType: string,
+  ): void {
+    const uri = document.uri.toString();
+    this.cancelPendingRender(document);
+    if (fileType === "clear@clear") {
+      this.fileTypeByDocument.delete(uri);
+      this.clearDocumentDecorations(uri);
+      return;
+    }
+
+    this.fileTypeByDocument.set(uri, fileType);
+    this.decorateDocument(document, fileType);
+  }
+
+  private decorateDocument(
+    document: vscode.TextDocument,
+    fileType: string,
+  ): void {
+    const options = this.decoration
+      .decorate(fileType, this.documentLines(document))
+      .map((field) => {
+        const hover = new vscode.MarkdownString(
+          `**${field.name}**  \n位置: ${field.start + 1} - ${field.end} (${field.width}桁)`,
+        );
+        hover.isTrusted = true;
+        return {
+          range: new vscode.Range(
+            new vscode.Position(field.line, field.start),
+            new vscode.Position(field.line, field.end),
+          ),
+          hoverMessage: hover,
+        };
+      });
+
+    const uri = document.uri.toString();
+    for (const editor of vscode.window.visibleTextEditors) {
+      if (editor.document.uri.toString() === uri) {
+        this.setEditorDecorations(editor, fileType, options);
+      }
+    }
+  }
+
+  private setEditorDecorations(
+    editor: vscode.TextEditor,
+    fileType: string,
+    options: vscode.DecorationOptions[],
+  ): void {
+    let current = this.decorationByEditor.get(editor);
+    if (!current || current.fileType !== fileType) {
+      if (current) {
+        this.clearEditor(editor);
+      }
+      current = {
+        fileType,
+        decorationType: vscode.window.createTextEditorDecorationType({
+          after: {
+            contentText: "",
+            borderColor: new vscode.ThemeColor("editor.selectionBackground"),
+            border: "0.1em solid",
+          },
+          isWholeLine: false,
+        }),
+      };
+      this.decorationByEditor.set(editor, current);
+    }
+    editor.setDecorations(current.decorationType, options);
+  }
+
+  private scheduleRender(document: vscode.TextDocument): void {
+    const uri = document.uri.toString();
+    if (!this.hasVisibleSelection(uri)) {
+      return;
+    }
+
+    this.cancelPendingRender(document);
+    const timeout = setTimeout(
+      () => this.renderPendingDocument(uri, document),
+      renderDelay,
+    );
+    this.pendingRenderByDocument.set(uri, { document, timeout });
+  }
+
+  private hasVisibleSelection(uri: string): boolean {
+    return (
+      !this.disposed &&
+      this.fileTypeByDocument.has(uri) &&
+      vscode.window.visibleTextEditors.some(
+        (editor) => editor.document.uri.toString() === uri,
+      )
+    );
+  }
+
+  private renderPendingDocument(
+    uri: string,
+    document: vscode.TextDocument,
+  ): void {
+    const pending = this.pendingRenderByDocument.get(uri);
+    if (pending?.document !== document) {
+      return;
+    }
+    this.pendingRenderByDocument.delete(uri);
+    if (this.disposed || !this.isDocumentOpen(document)) {
+      return;
+    }
+    const fileType = this.fileTypeByDocument.get(uri);
     if (fileType !== undefined) {
-      this.decorate(fileType, editor);
+      this.decorateDocument(document, fileType);
+    }
+  }
+
+  private cancelPendingRender(document: vscode.TextDocument): void {
+    const uri = document.uri.toString();
+    const pending = this.pendingRenderByDocument.get(uri);
+    if (pending?.document === document) {
+      clearTimeout(pending.timeout);
+      this.pendingRenderByDocument.delete(uri);
+    }
+  }
+
+  private isDocumentOpen(document: vscode.TextDocument): boolean {
+    return vscode.workspace.textDocuments.includes(document);
+  }
+
+  private clearDocumentDecorations(uri: string): void {
+    for (const [editor] of this.decorationByEditor) {
+      if (editor.document.uri.toString() === uri) {
+        this.clearEditor(editor);
+      }
+    }
+  }
+
+  private clearEditor(editor: vscode.TextEditor): void {
+    const current = this.decorationByEditor.get(editor);
+    if (!current) {
+      return;
+    }
+    editor.setDecorations(current.decorationType, []);
+    current.decorationType.dispose();
+    this.decorationByEditor.delete(editor);
+  }
+
+  private *documentLines(
+    document: vscode.TextDocument,
+  ): Generator<FixedWidthLine> {
+    for (let index = 0; index < document.lineCount; index += 1) {
+      const line = document.lineAt(index);
+      yield {
+        line: index,
+        text: line.text,
+        isEmptyOrWhitespace: line.isEmptyOrWhitespace,
+      };
     }
   }
 
@@ -87,70 +314,14 @@ export class FixedWidthPresentation implements vscode.Disposable {
       subscription.dispose();
     }
     this.subscriptions.length = 0;
-    for (const fileType of this.fileTypeByFileName.values()) {
-      this.decorationTypeByFileType.get(fileType)?.dispose();
+    for (const pending of this.pendingRenderByDocument.values()) {
+      clearTimeout(pending.timeout);
     }
-    this.fileTypeByFileName.clear();
-  }
-
-  private decorate(
-    fileType: string,
-    editor: vscode.TextEditor | undefined = vscode.window.activeTextEditor,
-  ): void {
-    if (!editor) {
-      return;
+    this.pendingRenderByDocument.clear();
+    for (const { decorationType } of this.decorationByEditor.values()) {
+      decorationType.dispose();
     }
-
-    const fileName = editor.document.fileName;
-    this.clearEditor(fileName);
-    const decorationType = vscode.window.createTextEditorDecorationType({
-      after: {
-        contentText: "",
-        borderColor: new vscode.ThemeColor("editor.selectionBackground"),
-        border: "0.1em solid",
-      },
-      isWholeLine: false,
-    });
-    const fields = this.decoration.decorate(
-      fileType,
-      this.documentLines(editor),
-    );
-    const options = fields.map((field) => {
-      const hover = new vscode.MarkdownString(
-        `**${field.name}**  \n位置: ${field.start + 1} - ${field.end} (${field.width}桁)`,
-      );
-      hover.isTrusted = true;
-      return {
-        range: new vscode.Range(
-          new vscode.Position(field.line, field.start),
-          new vscode.Position(field.line, field.end),
-        ),
-        hoverMessage: hover,
-      };
-    });
-
-    editor.setDecorations(decorationType, options);
-    this.decorationTypeByFileType.set(fileType, decorationType);
-    this.fileTypeByFileName.set(fileName, fileType);
-  }
-
-  private *documentLines(editor: vscode.TextEditor): Generator<FixedWidthLine> {
-    for (let index = 0; index < editor.document.lineCount; index += 1) {
-      const line = editor.document.lineAt(index);
-      yield {
-        line: index,
-        text: line.text,
-        isEmptyOrWhitespace: line.isEmptyOrWhitespace,
-      };
-    }
-  }
-
-  private clearEditor(fileName: string): void {
-    const fileType = this.fileTypeByFileName.get(fileName);
-    if (fileType === undefined) {
-      return;
-    }
-    this.decorationTypeByFileType.get(fileType)?.dispose();
-    this.fileTypeByFileName.delete(fileName);
+    this.decorationByEditor.clear();
+    this.fileTypeByDocument.clear();
   }
 }

@@ -119,7 +119,7 @@ suite("固定長表示の現行挙動", () => {
     assert.strictEqual(hasRow(loan, 0, "データ(商業手形割引〔合計〕)"), false);
   });
 
-  test("先に一致する行を選び、モードを共有し、不一致時にリセットする", async () => {
+  test("1回の解析ではモードを引き継ぎ、別文書では先頭から解析する", async () => {
     const normal = `2${"x".repeat(112)} `;
     const edi = `2${"x".repeat(112)}Y`;
     const general = host.createEditor("50200121-general.txt", [normal, edi]);
@@ -142,10 +142,7 @@ suite("固定長表示の現行挙動", () => {
     const sameType = host.createEditor("50200003-second.txt", ["2"]);
     host.setActiveEditor(sameType);
     await host.chooseFileType(zenginTransfer);
-    assert.strictEqual(
-      hasRow(sameType, 0, "データ(通知預金・定期預金・積立定期預金)"),
-      true,
-    );
+    assert.deepStrictEqual(optionsForLine(sameType, 0), []);
     const sameTypeHandleBeforeForeign = sameType.decorationCalls.at(-1)?.type;
 
     const otherType = host.createEditor("50200009-foreign.txt", [
@@ -164,18 +161,15 @@ suite("固定長表示の現行挙動", () => {
     );
     const beforeSwitch = host.reporters[0].events.length;
     host.setActiveEditor(sameType);
-    assert.strictEqual(
-      hasRow(sameType, 0, "データ(通知預金・定期預金・積立定期預金)"),
-      true,
-    );
+    assert.deepStrictEqual(optionsForLine(sameType, 0), []);
     const sameTypeHeadHandle = sameType.decorationCalls.at(-1)?.type;
     assert.strictEqual(sameTypeHandleBeforeForeign?.disposeCount, 1);
     assert.strictEqual(host.reporters[0].events.length, beforeSwitch);
 
     host.setActiveEditor(first);
     assert.strictEqual(sameTypeHeadHandle?.disposeCount, 1);
-    assert.strictEqual(firstType?.disposeCount, 0);
-    assert.strictEqual(first.decorationCalls.length, 2);
+    assert.strictEqual(firstType?.disposeCount, 1);
+    assert.strictEqual(first.decorationCalls.length, 3);
     assert.strictEqual(
       hasRow(first, 1, "データ(通知預金・定期預金・積立定期預金)"),
       true,
@@ -241,6 +235,339 @@ suite("固定長表示の現行挙動", () => {
     assert.strictEqual(reporter.events.length, eventsBeforeSwitch);
   });
 
+  test("編集をまとめて再解析し、編集後のヘッダーと最新内容に追随する", async () => {
+    const editor = host.createEditor("50200003-edited.txt", [header("5"), "2"]);
+    host.setActiveEditor(editor);
+    await host.chooseFileType(zenginTransfer);
+    assert.strictEqual(
+      hasRow(editor, 1, "データ(通知預金・定期預金・積立定期預金)"),
+      true,
+    );
+
+    const originalType = editor.decorationCalls.at(-1)?.type;
+    const callsBeforeEdit = editor.decorationCalls.length;
+    host.changeDocument(editor, [header("1"), "2"]);
+    host.changeDocument(editor, [header("5"), "2"]);
+    host.changeDocument(editor, [header("1"), "2"]);
+    host.sendEmptyDocumentChange(editor);
+    await host.waitForPendingRender();
+
+    assert.strictEqual(editor.decorationCalls.length, callsBeforeEdit + 1);
+    assert.strictEqual(
+      hasRow(editor, 1, "データ(普通預金・当座預金・貯蓄預金)"),
+      true,
+    );
+    assert.strictEqual(
+      hasRow(editor, 1, "データ(通知預金・定期預金・積立定期預金)"),
+      false,
+    );
+    assert.strictEqual(editor.decorationCalls.at(-1)?.type, originalType);
+    assert.strictEqual(originalType?.disposeCount, 0);
+
+    host.changeDocument(editor, [header("5"), "2"]);
+    await host.waitForPendingRender();
+    assert.strictEqual(
+      hasRow(editor, 1, "データ(通知預金・定期預金・積立定期預金)"),
+      true,
+    );
+    host.changeDocument(editor, [header("1"), "2"]);
+    await host.waitForPendingRender();
+    assert.strictEqual(
+      hasRow(editor, 1, "データ(普通預金・当座預金・貯蓄預金)"),
+      true,
+    );
+
+    const unselected = host.createEditor("unselected.txt", ["2"]);
+    host.setActiveEditor(unselected);
+    host.changeDocument(unselected, [header("5"), "2"]);
+    await host.waitForPendingRender();
+    assert.strictEqual(unselected.decorationCalls.length, 0);
+  });
+
+  test("1000行を10回編集しても、最後の通知から一度だけ描画する", async () => {
+    const uri = "file:///large/50200003.txt";
+    const primary = host.createEditor("50200003.txt", [header("1"), "2"], uri);
+    host.setActiveEditor(primary);
+    await host.chooseFileType(zenginTransfer);
+    const split = host.createEditor("50200003.txt", [], uri);
+    host.setVisibleEditors([primary, split]);
+
+    const primaryCallsBefore = primary.decorationCalls.length;
+    const splitCallsBefore = split.decorationCalls.length;
+    const timers = host.useFakeTimers();
+    try {
+      for (let edit = 1; edit <= 10; edit += 1) {
+        const lines = [header("1"), ...Array<string>(998).fill("2"), "9"];
+        lines[1] = `2${"x".repeat(edit)}`;
+        host.changeDocument(primary, lines);
+        if (edit < 10) {
+          timers.advanceBy(9);
+        }
+      }
+
+      timers.advanceBy(99);
+      assert.strictEqual(primary.decorationCalls.length, primaryCallsBefore);
+      assert.strictEqual(split.decorationCalls.length, splitCallsBefore);
+      timers.advanceBy(1);
+      assert.strictEqual(
+        primary.decorationCalls.length,
+        primaryCallsBefore + 1,
+      );
+      assert.strictEqual(split.decorationCalls.length, splitCallsBefore + 1);
+      assert.strictEqual(primary.document.lineCount, 1000);
+      assert.strictEqual(hasRow(primary, 999, "エンド"), true);
+      assert.strictEqual(hasRow(split, 999, "エンド"), true);
+    } finally {
+      timers.restore();
+    }
+  });
+
+  test("同じ URI の分割表示に同じ解析結果を配り、別 URI と解除を分ける", async () => {
+    const primary = host.createEditor(
+      "50200003-split.txt",
+      [header("5"), "2"],
+      "file:///first/50200003-split.txt?view=primary#left",
+    );
+    host.setActiveEditor(primary);
+    await host.chooseFileType(zenginTransfer);
+
+    const split = host.createEditor(
+      "50200003-split.txt",
+      [],
+      "file:///first/50200003-split.txt?view=primary#left",
+    );
+    const sameNameOtherUri = host.createEditor(
+      "50200003-split.txt",
+      ["2"],
+      "vscode-remote://authority/first/50200003-split.txt?view=other#right",
+    );
+    assert.notStrictEqual(
+      sameNameOtherUri.document.uri.toString(),
+      primary.document.uri.toString(),
+    );
+    assert.strictEqual(
+      new URL(sameNameOtherUri.document.uri.toString()).pathname,
+      new URL(primary.document.uri.toString()).pathname,
+    );
+    host.setVisibleEditors([primary, split, sameNameOtherUri]);
+    assert.strictEqual(
+      hasRow(split, 1, "データ(通知預金・定期預金・積立定期預金)"),
+      true,
+    );
+    assert.strictEqual(sameNameOtherUri.decorationCalls.length, 0);
+    assert.notStrictEqual(
+      primary.decorationCalls.at(-1)?.type,
+      split.decorationCalls.at(-1)?.type,
+    );
+
+    host.changeDocument(primary, [header("1"), "2"]);
+    await host.waitForPendingRender();
+    assert.strictEqual(
+      hasRow(primary, 1, "データ(普通預金・当座預金・貯蓄預金)"),
+      true,
+    );
+    assert.strictEqual(
+      hasRow(split, 1, "データ(普通預金・当座預金・貯蓄預金)"),
+      true,
+    );
+    assert.strictEqual(sameNameOtherUri.decorationCalls.length, 0);
+
+    host.setActiveEditor(primary);
+    host.setVisibleEditors([primary, split, sameNameOtherUri]);
+    const primaryType = primary.decorationCalls.at(-1)?.type;
+    const splitType = split.decorationCalls.at(-1)?.type;
+    await host.chooseFileType(clearType);
+    assert.strictEqual(primaryType?.disposeCount, 1);
+    assert.strictEqual(splitType?.disposeCount, 1);
+    assert.deepStrictEqual(primary.decorationCalls.at(-1)?.options, []);
+    assert.deepStrictEqual(split.decorationCalls.at(-1)?.options, []);
+    assert.strictEqual(sameNameOtherUri.decorationCalls.length, 0);
+  });
+
+  test("閉じて開き直した URI は形式を保ち、古い待機処理を破棄する", async () => {
+    const uri = "file:///reopened/50200003.txt";
+    const editor = host.createEditor("50200003.txt", [header("5"), "2"], uri);
+    host.setActiveEditor(editor);
+    await host.chooseFileType(zenginTransfer);
+    host.changeDocument(editor, [header("1"), "2"]);
+    host.closeDocument(editor);
+    await host.waitForPendingRender();
+    assert.strictEqual(editor.decorationCalls.length, 2);
+    assert.deepStrictEqual(editor.decorationCalls.at(-1)?.options, []);
+
+    const reopened = host.createEditor("50200003.txt", [header("1"), "2"], uri);
+    host.setVisibleEditors([reopened]);
+    assert.strictEqual(
+      hasRow(reopened, 1, "データ(普通預金・当座預金・貯蓄預金)"),
+      true,
+    );
+
+    host.changeDocument(reopened, [header("5"), "2"]);
+    const callsBeforeDispose = reopened.decorationCalls.length;
+    const currentType = reopened.decorationCalls.at(-1)?.type;
+    host.dispose();
+    assert.strictEqual(currentType?.disposeCount, 1);
+    await host.waitForPendingRender();
+    assert.strictEqual(reopened.decorationCalls.length, callsBeforeDispose);
+  });
+
+  test("待機中に再選択すると古い更新を取り消し、余分なイベントを送らない", async () => {
+    const editor = host.createEditor("50200003-reselect.txt", [
+      header("1"),
+      "2",
+    ]);
+    host.setActiveEditor(editor);
+    await host.chooseFileType(zenginTransfer);
+
+    const reporter = host.reporters[0];
+    const eventsBeforeEdit = reporter.events.length;
+    const callsBeforeEdit = editor.decorationCalls.length;
+    const originalType = editor.decorationCalls.at(-1)?.type;
+    const timers = host.useFakeTimers();
+    try {
+      host.changeDocument(editor, [header("5"), "2"]);
+      assert.strictEqual(timers.pendingCount, 1);
+      assert.strictEqual(reporter.events.length, eventsBeforeEdit);
+
+      await host.chooseFileType(zenginTransfer);
+      assert.strictEqual(timers.pendingCount, 0);
+      assert.strictEqual(originalType?.disposeCount, 0);
+      assert.strictEqual(editor.decorationCalls.length, callsBeforeEdit + 1);
+      assert.strictEqual(editor.decorationCalls.at(-1)?.type, originalType);
+      assert.strictEqual(reporter.events.length, eventsBeforeEdit + 1);
+
+      const callsAfterReselection = editor.decorationCalls.length;
+      const eventsAfterReselection = reporter.events.length;
+      timers.advanceBy(100);
+      assert.strictEqual(editor.decorationCalls.length, callsAfterReselection);
+      assert.strictEqual(reporter.events.length, eventsAfterReselection);
+    } finally {
+      timers.restore();
+    }
+  });
+
+  test("解除すると待機中の更新を取り消し、余分なイベントを送らない", async () => {
+    const editor = host.createEditor("50200003-clear-pending.txt", [
+      header("1"),
+      "2",
+    ]);
+    host.setActiveEditor(editor);
+    await host.chooseFileType(zenginTransfer);
+
+    const reporter = host.reporters[0];
+    const eventsBeforeEdit = reporter.events.length;
+    const callsBeforeEdit = editor.decorationCalls.length;
+    const originalType = editor.decorationCalls.at(-1)?.type;
+    const timers = host.useFakeTimers();
+    try {
+      host.changeDocument(editor, [header("5"), "2"]);
+      assert.strictEqual(timers.pendingCount, 1);
+      assert.strictEqual(reporter.events.length, eventsBeforeEdit);
+
+      await host.chooseFileType(clearType);
+      assert.strictEqual(timers.pendingCount, 0);
+      assert.strictEqual(originalType?.disposeCount, 1);
+      assert.strictEqual(editor.decorationCalls.length, callsBeforeEdit + 1);
+      assert.deepStrictEqual(editor.decorationCalls.at(-1)?.options, []);
+      assert.strictEqual(reporter.events.length, eventsBeforeEdit + 1);
+      assert.deepStrictEqual(reporter.events.at(-1), {
+        name: "ext.decorate",
+        properties: { file_type: "clear@clear", development: "false" },
+      });
+
+      const callsAfterClear = editor.decorationCalls.length;
+      const eventsAfterClear = reporter.events.length;
+      timers.advanceBy(100);
+      assert.strictEqual(editor.decorationCalls.length, callsAfterClear);
+      assert.strictEqual(reporter.events.length, eventsAfterClear);
+    } finally {
+      timers.restore();
+    }
+  });
+
+  test("Close なしで表示から外れると待機中の更新と装飾を破棄する", async () => {
+    const editor = host.createEditor("50200003-hidden.txt", [header("1"), "2"]);
+    host.setActiveEditor(editor);
+    await host.chooseFileType(zenginTransfer);
+
+    const reporter = host.reporters[0];
+    const eventsBeforeEdit = reporter.events.length;
+    const callsBeforeEdit = editor.decorationCalls.length;
+    const originalType = editor.decorationCalls.at(-1)?.type;
+    const timers = host.useFakeTimers();
+    try {
+      host.changeDocument(editor, [header("5"), "2"]);
+      assert.strictEqual(timers.pendingCount, 1);
+      assert.strictEqual(reporter.events.length, eventsBeforeEdit);
+
+      host.setVisibleEditors([]);
+      assert.strictEqual(timers.pendingCount, 0);
+      assert.strictEqual(originalType?.disposeCount, 1);
+      assert.strictEqual(editor.decorationCalls.length, callsBeforeEdit + 1);
+      assert.deepStrictEqual(editor.decorationCalls.at(-1)?.options, []);
+      assert.strictEqual(reporter.events.length, eventsBeforeEdit);
+
+      const callsAfterHide = editor.decorationCalls.length;
+      timers.advanceBy(100);
+      assert.strictEqual(editor.decorationCalls.length, callsAfterHide);
+      assert.strictEqual(reporter.events.length, eventsBeforeEdit);
+    } finally {
+      timers.restore();
+    }
+  });
+
+  test("破棄時に待機処理と購読を一度だけ破棄し、余分なイベントを送らない", async () => {
+    const editor = host.createEditor("50200003-dispose-pending.txt", [
+      header("1"),
+      "2",
+    ]);
+    host.setActiveEditor(editor);
+    await host.chooseFileType(zenginTransfer);
+
+    const reporter = host.reporters[0];
+    const eventsBeforeEdit = reporter.events.length;
+    const callsBeforeEdit = editor.decorationCalls.length;
+    const timers = host.useFakeTimers();
+    try {
+      host.changeDocument(editor, [header("5"), "2"]);
+      assert.strictEqual(timers.pendingCount, 1);
+      assert.strictEqual(reporter.events.length, eventsBeforeEdit);
+
+      host.dispose();
+      assert.strictEqual(timers.pendingCount, 0);
+      assert.strictEqual(host.commandDisposalCount, 1);
+      assert.deepStrictEqual(host.eventSubscriptionStats, {
+        activeEditor: { registered: 0, disposed: 0, active: 0 },
+        visibleEditors: { registered: 1, disposed: 1, active: 0 },
+        documentChanges: { registered: 1, disposed: 1, active: 0 },
+        documentClose: { registered: 1, disposed: 1, active: 0 },
+      });
+      assert.strictEqual(host.registeredCommands.has(commandId), false);
+      assert.strictEqual(reporter.disposeCount, 1);
+      assert.strictEqual(reporter.events.length, eventsBeforeEdit + 1);
+      assert.strictEqual(reporter.events.at(-1)?.name, "ext.deactivate");
+
+      host.dispose();
+      const eventsAfterDispose = reporter.events.length;
+      timers.advanceBy(100);
+      assert.strictEqual(editor.decorationCalls.length, callsBeforeEdit);
+      assert.strictEqual(reporter.events.length, eventsAfterDispose);
+      assert.strictEqual(reporter.disposeCount, 1);
+      assert.strictEqual(host.commandDisposalCount, 1);
+      assert.strictEqual(
+        host.eventSubscriptionStats.visibleEditors.disposed,
+        1,
+      );
+      assert.strictEqual(
+        host.eventSubscriptionStats.documentChanges.disposed,
+        1,
+      );
+      assert.strictEqual(host.eventSubscriptionStats.documentClose.disposed, 1);
+    } finally {
+      timers.restore();
+    }
+  });
+
   test("空形式で装飾を解除し、同じ文書の再適用と破棄を保つ", async () => {
     const editor = host.createEditor("50200001.txt", ["2"]);
     host.setActiveEditor(editor);
@@ -258,20 +585,15 @@ suite("固定長表示の現行挙動", () => {
       properties: { file_type: "clear@clear", development: "false" },
     });
 
-    const clearedType = editor.decorationCalls.at(-1)?.type;
     const reporter = host.reporters[0];
     const eventsBeforeSwitch = reporter.events.length;
     const replacementEditor = host.createEditor("50200001.txt", ["2"]);
     host.setActiveEditor(replacementEditor);
-    assert.strictEqual(clearedType?.disposeCount, 1);
-    assert.strictEqual(replacementEditor.decorationCalls.length, 1);
-    assert.deepStrictEqual(replacementEditor.decorationCalls[0].options, []);
+    assert.strictEqual(replacementEditor.decorationCalls.length, 0);
     assert.strictEqual(reporter.events.length, eventsBeforeSwitch);
-    const replacementType = replacementEditor.decorationCalls[0].type;
 
     host.dispose();
-    assert.strictEqual(clearedType?.disposeCount, 1);
-    assert.strictEqual(replacementType.disposeCount, 1);
+    assert.strictEqual(originalType?.disposeCount, 1);
     assert.strictEqual(reporter.events.at(-1)?.name, "ext.deactivate");
     assert.deepStrictEqual(reporter.events.at(-1)?.properties, {
       development: "false",
