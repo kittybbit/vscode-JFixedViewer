@@ -33,7 +33,6 @@ export interface FixedWidthDecorationPort {
 
 class FixedWidthDecoration implements FixedWidthDecorationPort {
   private readonly definitionsByType: Map<string, FixedWidthDefinition>;
-  private readonly modeByType = new Map<string, string | undefined>();
   public readonly choices: FixedWidthChoice[];
 
   public constructor(definitions: readonly FixedWidthDefinition[]) {
@@ -59,14 +58,13 @@ class FixedWidthDecoration implements FixedWidthDecorationPort {
       return [];
     }
 
-    let mode = this.modeByType.get(fileType);
+    let mode: string | undefined;
     const fields: FixedWidthDecorationField[] = [];
     for (const line of lines) {
       const projection = this.projectLine(definition, line, mode);
       mode = projection.mode;
       fields.push(...projection.fields);
     }
-    this.modeByType.set(fileType, mode);
     return fields;
   }
 

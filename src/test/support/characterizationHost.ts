@@ -3,6 +3,42 @@ import path = require("node:path");
 type Disposable = { dispose(): void };
 type Listener<T> = (value: T) => void;
 type Position = { line: number; character: number };
+type FakeDocument = {
+  uri: { toString(): string };
+  fileName: string;
+  lines: string[];
+  readonly lineCount: number;
+  lineAt(index: number): { text: string; isEmptyOrWhitespace: boolean };
+  getText(): string;
+};
+
+class CharacterizedDocument implements FakeDocument {
+  public readonly uri: FakeDocument["uri"];
+  public readonly fileName: string;
+  public lines: string[];
+
+  public constructor(fileName: string, lines: string[], uri: string) {
+    this.uri = { toString: () => uri };
+    this.fileName = fileName;
+    this.lines = [...lines];
+  }
+
+  public get lineCount(): number {
+    return this.lines.length;
+  }
+
+  public lineAt(index: number): {
+    text: string;
+    isEmptyOrWhitespace: boolean;
+  } {
+    const text = this.lines[index];
+    return { text, isEmptyOrWhitespace: /^\s*$/u.test(text) };
+  }
+
+  public getText(): string {
+    return this.lines.join("\n");
+  }
+}
 type DecorationOption = {
   range: { start: Position; end: Position };
   hoverMessage?: { value: string; isTrusted: boolean };
@@ -14,15 +50,29 @@ type LoadedExtension = {
 
 class FakeEventEmitter<T> {
   private listeners = new Set<Listener<T>>();
+  private subscriptionCount = 0;
+  private disposalCount = 0;
+
+  public get subscriptionStats() {
+    return {
+      registered: this.subscriptionCount,
+      disposed: this.disposalCount,
+      active: this.listeners.size,
+    };
+  }
 
   public event = (
     listener: Listener<T>,
     _thisArgs?: unknown,
     disposables?: Disposable[],
   ): Disposable => {
+    this.subscriptionCount += 1;
     this.listeners.add(listener);
     const disposable = {
-      dispose: () => this.listeners.delete(listener),
+      dispose: () => {
+        this.disposalCount += 1;
+        this.listeners.delete(listener);
+      },
     };
     disposables?.push(disposable);
     return disposable;
@@ -96,11 +146,7 @@ class FakeReporter {
 }
 
 export type FakeEditor = {
-  document: {
-    fileName: string;
-    lineCount: number;
-    lineAt(index: number): { text: string; isEmptyOrWhitespace: boolean };
-  };
+  document: FakeDocument;
   decorationCalls: Array<{
     type: FakeDecorationType;
     options: DecorationOption[];
@@ -111,10 +157,14 @@ export type FakeEditor = {
 function createFakeWindow(
   host: CharacterizationHost,
   activeEditorEmitter: FakeEventEmitter<FakeEditor | undefined>,
+  visibleEditorEmitter: FakeEventEmitter<readonly FakeEditor[]>,
 ) {
   return {
     get activeTextEditor() {
       return host.activeTextEditor;
+    },
+    get visibleTextEditors() {
+      return host.visibleTextEditors;
     },
     showQuickPick: async () => {
       return host.nextQuickPick;
@@ -125,6 +175,17 @@ function createFakeWindow(
       return decoration;
     },
     onDidChangeActiveTextEditor: activeEditorEmitter.event,
+    onDidChangeVisibleTextEditors: visibleEditorEmitter.event,
+  };
+}
+
+function createFakeWorkspace(host: CharacterizationHost) {
+  return {
+    get textDocuments() {
+      return host.textDocuments;
+    },
+    onDidChangeTextDocument: host.documentChangeEmitter.event,
+    onDidCloseTextDocument: host.documentCloseEmitter.event,
   };
 }
 
@@ -136,7 +197,10 @@ function createFakeCommands(host: CharacterizationHost) {
     ) => {
       host.registeredCommands.set(name, callback);
       return {
-        dispose: () => host.registeredCommands.delete(name),
+        dispose: () => {
+          host.commandDisposalCount += 1;
+          host.registeredCommands.delete(name);
+        },
       };
     },
   };
@@ -145,6 +209,7 @@ function createFakeCommands(host: CharacterizationHost) {
 function createFakeVscode(
   host: CharacterizationHost,
   activeEditorEmitter: FakeEventEmitter<FakeEditor | undefined>,
+  visibleEditorEmitter: FakeEventEmitter<readonly FakeEditor[]>,
 ): Record<string, unknown> {
   return {
     EventEmitter: FakeEventEmitter,
@@ -152,9 +217,87 @@ function createFakeVscode(
     Range: FakeRange,
     MarkdownString: FakeMarkdownString,
     ThemeColor: FakeThemeColor,
-    window: createFakeWindow(host, activeEditorEmitter),
+    window: createFakeWindow(host, activeEditorEmitter, visibleEditorEmitter),
+    workspace: createFakeWorkspace(host),
     commands: createFakeCommands(host),
   };
+}
+
+type TimerCallback = () => void;
+type ScheduledTimer = { callback: TimerCallback; dueAt: number };
+
+class FakeTimerClock {
+  private readonly timers = new Map<number, ScheduledTimer>();
+  private readonly previousSetTimeout = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "setTimeout",
+  );
+  private readonly previousClearTimeout = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "clearTimeout",
+  );
+  private nextTimerId = 0;
+  private now = 0;
+
+  public get pendingCount(): number {
+    return this.timers.size;
+  }
+
+  public install(): void {
+    const runtimeGlobal = globalThis as unknown as Record<string, unknown>;
+    runtimeGlobal.setTimeout = (callback: TimerCallback, milliseconds = 0) =>
+      this.schedule(callback, milliseconds);
+    runtimeGlobal.clearTimeout = (timerId: number) => {
+      this.timers.delete(timerId);
+    };
+  }
+
+  public advanceBy(milliseconds: number): void {
+    const target = this.now + milliseconds;
+    let timer = this.nextDueTimer(target);
+    while (timer) {
+      this.timers.delete(timer.id);
+      this.now = timer.scheduled.dueAt;
+      timer.scheduled.callback();
+      timer = this.nextDueTimer(target);
+    }
+    this.now = target;
+  }
+
+  public restore(): void {
+    this.timers.clear();
+    this.restoreGlobal("setTimeout", this.previousSetTimeout);
+    this.restoreGlobal("clearTimeout", this.previousClearTimeout);
+  }
+
+  private schedule(callback: TimerCallback, milliseconds: number): number {
+    const timerId = ++this.nextTimerId;
+    this.timers.set(timerId, {
+      callback,
+      dueAt: this.now + Math.max(milliseconds, 0),
+    });
+    return timerId;
+  }
+
+  private nextDueTimer(
+    target: number,
+  ): { id: number; scheduled: ScheduledTimer } | undefined {
+    return [...this.timers.entries()]
+      .map(([id, scheduled]) => ({ id, scheduled }))
+      .filter(({ scheduled }) => scheduled.dueAt <= target)
+      .sort((left, right) => left.scheduled.dueAt - right.scheduled.dueAt)[0];
+  }
+
+  private restoreGlobal(
+    name: string,
+    descriptor: PropertyDescriptor | undefined,
+  ): void {
+    if (descriptor) {
+      Object.defineProperty(globalThis, name, descriptor);
+    } else {
+      delete (globalThis as unknown as Record<string, unknown>)[name];
+    }
+  }
 }
 
 export class CharacterizationHost {
@@ -165,19 +308,47 @@ export class CharacterizationHost {
   >();
   public readonly decorationTypes: FakeDecorationType[] = [];
   public readonly reporters: FakeReporter[] = [];
+  public readonly documentChangeEmitter = new FakeEventEmitter<{
+    document: FakeDocument;
+    contentChanges: unknown[];
+  }>();
+  public readonly documentCloseEmitter = new FakeEventEmitter<FakeDocument>();
+  public commandDisposalCount = 0;
   public nextQuickPick: string | undefined;
   public activeTextEditor: FakeEditor | undefined;
+  public visibleTextEditors: readonly FakeEditor[] = [];
 
   private readonly activeEditorEmitter = new FakeEventEmitter<
     FakeEditor | undefined
   >();
+  private readonly visibleEditorEmitter = new FakeEventEmitter<
+    readonly FakeEditor[]
+  >();
+  private readonly documentsByUri = new Map<string, FakeDocument>();
   private readonly vscode: Record<string, unknown>;
   private loadedExtension: LoadedExtension | undefined;
   private globalDescriptors = new Map<string, PropertyDescriptor | undefined>();
   private disposed = false;
 
   public constructor() {
-    this.vscode = createFakeVscode(this, this.activeEditorEmitter);
+    this.vscode = createFakeVscode(
+      this,
+      this.activeEditorEmitter,
+      this.visibleEditorEmitter,
+    );
+  }
+
+  public get textDocuments(): FakeDocument[] {
+    return [...this.documentsByUri.values()];
+  }
+
+  public get eventSubscriptionStats() {
+    return {
+      activeEditor: this.activeEditorEmitter.subscriptionStats,
+      visibleEditors: this.visibleEditorEmitter.subscriptionStats,
+      documentChanges: this.documentChangeEmitter.subscriptionStats,
+      documentClose: this.documentCloseEmitter.subscriptionStats,
+    };
   }
 
   public start(): void {
@@ -193,16 +364,14 @@ export class CharacterizationHost {
     this.activateExtension(extension);
   }
 
-  public createEditor(fileName: string, lines: string[]): FakeEditor {
+  public createEditor(
+    fileName: string,
+    lines: string[],
+    uri = fileName,
+  ): FakeEditor {
+    const document = this.getOrCreateDocument(fileName, lines, uri);
     const editor: FakeEditor = {
-      document: {
-        fileName,
-        lineCount: lines.length,
-        lineAt: (index) => {
-          const text = lines[index];
-          return { text, isEmptyOrWhitespace: /^\s*$/u.test(text) };
-        },
-      },
+      document,
       decorationCalls: [],
       setDecorations(type, options) {
         this.decorationCalls.push({ type, options });
@@ -213,7 +382,68 @@ export class CharacterizationHost {
 
   public setActiveEditor(editor: FakeEditor | undefined): void {
     this.activeTextEditor = editor;
+    this.setVisibleEditors(editor ? [editor] : []);
     this.activeEditorEmitter.fire(editor);
+  }
+
+  public setVisibleEditors(editors: readonly FakeEditor[]): void {
+    this.visibleTextEditors = editors;
+    this.visibleEditorEmitter.fire(editors);
+  }
+
+  public changeDocument(
+    editor: FakeEditor,
+    lines: string[],
+    contentChangeCount = 1,
+  ): void {
+    editor.document.lines = [...lines];
+    this.documentChangeEmitter.fire({
+      document: editor.document,
+      contentChanges: Array.from({ length: contentChangeCount }, () => ({})),
+    });
+  }
+
+  public sendEmptyDocumentChange(editor: FakeEditor): void {
+    this.documentChangeEmitter.fire({
+      document: editor.document,
+      contentChanges: [],
+    });
+  }
+
+  public closeDocument(editor: FakeEditor): void {
+    const uri = editor.document.uri.toString();
+    this.setVisibleEditors(
+      this.visibleTextEditors.filter(
+        (visible) => visible.document.uri.toString() !== uri,
+      ),
+    );
+    this.documentCloseEmitter.fire(editor.document);
+    this.documentsByUri.delete(uri);
+  }
+
+  public useFakeTimers(): FakeTimerClock {
+    const clock = new FakeTimerClock();
+    clock.install();
+    return clock;
+  }
+
+  private getOrCreateDocument(
+    fileName: string,
+    lines: string[],
+    uri: string,
+  ): FakeDocument {
+    const existingDocument = this.documentsByUri.get(uri);
+    if (existingDocument) {
+      return existingDocument;
+    }
+
+    const document = new CharacterizedDocument(fileName, lines, uri);
+    this.documentsByUri.set(uri, document);
+    return document;
+  }
+
+  public async waitForPendingRender(): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 125));
   }
 
   public async chooseFileType(label: string | undefined): Promise<void> {

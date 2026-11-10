@@ -11,12 +11,16 @@
 
 ## 現在の状態
 
-- 機能は `PLAN_APPROVED`。独立再レビューで `plan-reviewer` が Ready と判定し、利用者が計画を承認した。
+- 計画は `PLAN_COMMITTED`（`5615f9204cf4683c5cf14e02c334ddb3b020a290`）。独立再レビューで
+  `plan-reviewer` が Ready と判定し、利用者が計画を承認した。
+- スライス1は `SLICE_READY`。独立再レビューで `implementation-reviewer` が Ready と判定した。
+  再レビュー対象の全差分 SHA256 は `3402ed7a8c793131ad06379404a1858fa023afceffb3bb0304ad0b833d6b7564`。
+  スライス2は未着手。先行する確認用コミットの GitHub チェック通過後に開始する。
 - 受付証跡は `/private/tmp/jfixedviewer-intake.v9dYPz/evidence.txt`。
   計画の初回レビューで指摘された表の整形を修正した。
 - 再レビュー対象の3文書の SHA256 と文書検証は
   `/private/tmp/jfixedviewer-plan-format.xA2Bkf/evidence.txt` に記録した。
-  本節は判定と承認を反映した記録で、実装範囲は同じ。計画コミット後にスライス1を開始する。
+  本節は判定と承認を反映した記録で、実装範囲は同じ。
 
 [ライフサイクル状態](../../README.md#ライフサイクル状態)に従う。
 
@@ -111,6 +115,63 @@
 - 1,000行の合成文書で100ミリ秒以内に10件の編集通知を続け、最後の通知からの待機後に、
   1回の解析と各表示1回の更新で最新内容を描画することをテストする。時間はテスト側で制御する。
   実ホストで編集を妨げる描画の遅延が再現する場合は、実装担当が計測結果を添えて Main に戻す。
+
+### 実装結果と証跡
+
+- 受け入れ条件を満たした。Application の解析モードを呼び出し単位にし、Presentation で URI ごとの形式と
+  表示中のエディターごとの装飾を管理する。編集を100ミリ秒まとめて再解析し、同じ URI の分割表示に
+  同一結果を反映する。閉じて開き直した文書の形式を保ち、解除・表示消失・破棄では待機処理と装飾を破棄する。
+- 変更した承認対象パス:
+  `src/application/fixedWidth/FixedWidthDecoration.ts`、
+  `src/presentation/vscode/FixedWidthPresentation.ts`、`src/test/extension.test.ts`、
+  `src/test/support/characterizationHost.ts`、`docs/specs/architecture.md`、
+  `docs/requirements/use-cases/uc-display-fixed-width.md`、
+  `docs/requirements/use-cases/uc-switch-editors.md`、
+  `docs/requirements/use-cases/uc-clear-decorations.md`、`README.md`、`CHANGELOG.md`、
+  本ファイル。
+- ホストテストで全銀・JPX・ホバー・UTF-16 範囲・テレメトリを維持し、ヘッダーの編集、別 URI の独立、
+  分割表示、解除、同じ URI の再オープン、1000行への10回編集を確認した。Desktop 1.145.2 で9件、
+  最小対応版 1.75.0 のスモーク、Web 安定版のスモークが通過した。
+- Main による実画面確認も Desktop 1.145.2 と Web 安定版
+  (`c4453f8ea430795f941c1b2ff6c9321135a74a02`) で通過した。2文書間のモード分離、ヘッダー編集と Undo、
+  同 URI の分割同期と解除、再オープン、クリーン状態、原文と保存バイトの維持を確認した。
+  入力・バンドル識別情報は `/private/tmp/jfixed-host-ui.dMwuVJ/final-inputs.txt`、結果は同フォルダーの
+  `desktop-final.log` と `web-final.log`。
+- 型チェック、テスト準備、アーキテクチャ7件、本番ビルド、Desktop、Desktop 1.75.0、Web の終了コードは
+  すべて0。ログと結果一覧は `/private/tmp/jfixedviewer-slice1.9XKYl8/evidence/` の
+  `types.log`、`test-prepare.log`、`architecture.log`、`production-build.log`、`desktop.log`、
+  `desktop-min.log`、`web.log`、`status.txt`。
+- Qlty 0.645.0、設定 SHA256
+  `ef66ff4bc2c0987ea6ce019c5370b11aed4a3ebbb448ad64473d913bec0af6e`、lockfile SHA256
+  `4b3f5831ca7e1381037527fe7026b4a1a21d3f20b16b6cde39f8590a2a7832ec`。比較ベースと最終の
+  `qlty check --all --sarif --no-fix`、
+  `qlty smells --all --sarif --no-snippets` は終了コード0で検出0件。
+  最終の `npm run qlty` も終了コード0。base/final は各49ジョブで197件のプラグイン×対象を検査し、
+  実ファイルパスは各64件。SARIF、標準エラー、パス一覧、総合結果は
+  同証跡フォルダーの `base-check.sarif`、`base-smells.sarif`、`final-check.sarif`、
+  `final-smells.sarif`、`*-stderr`、`base-paths.log`、`final-paths.log`、`final-qlty.log`、
+  `final-qlty-metadata.log`、`base-status.txt`、`final-status.txt`、`final-qlty-status.txt`、
+  `final-qlty-metadata-status.txt`。
+- `TRACEABILITY.md` は変更していない。要件2〜4とユースケース、ホスト検証の対応および結果区分は計画どおりで、
+  新しい対応関係や検証結果の分類は生じていない。
+- Qlty は `qlty.toml` の既存の未対応キーについて警告したが、検査は完了し検出はなかった。Web の実画面ログに
+  VS Code の翻訳リソース 404 が出たが、操作シナリオは完了し、製品動作への影響は確認されなかった。
+- 独立実装レビューでは製品コードの不備はなく、待機中の再選択・解除・表示消失・破棄と不要イベント、
+  購読の一度だけの破棄に関するテスト不足が指摘された。承認済みの2テストパスだけを更新し、再選択・解除・
+  Close を伴わない非表示・拡張の破棄をフェイク時計の保留数、描画数、イベント数、購読破棄数で検証した。
+  URI 分離テストも同じ `path` で scheme、authority、query、fragment が異なる URI に更新した。
+- 指摘修正後に `npm run test:prepare` と Desktop 1.145.2 を再実行し、13件すべて通過した。
+  Markdown lint（変更Markdown 7件）、`git diff --check`、`npm run qlty`、
+  Qlty の最終 SARIF check と smells も終了コード0、検出0件。出力は証跡フォルダーの
+  `review-fix-test-prepare.log`、
+  `review-fix-desktop.log`、`review-fix-qlty.log`、`review-fix-check.sarif`、
+  `review-fix-smells.sarif`、`review-fix-check.stderr`、`review-fix-smells.stderr`、
+  `review-fix-status.txt`、`review-fix-check-status.txt`、`review-fix-smells-status.txt`。
+  文書検査の出力は `review-fix-markdownlint.log` と `review-fix-diff-check.log`。
+- 製品コード、プレゼンテーション SHA256 (`4a9cfabb97652cdb95fc8418b4df2a0c8fbc1c9955bd6533aaf4e948b15b31aa`)、
+  UI 検証用バンドルは不変。したがって前記 Desktop/Web 実画面検証を再利用した。識別情報と操作結果は
+  `/private/tmp/jfixed-host-ui.dMwuVJ/final-inputs.txt`、`desktop-final.log`、`web-final.log`。
+- 人によるスライス完了承認は利用者の指示どおり `Pending`。この差分の独立再レビューは通過済み。
 
 ## スライス2. 境界の見た目を選べる設定
 
