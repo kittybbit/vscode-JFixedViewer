@@ -15,7 +15,9 @@
   `plan-reviewer` が Ready と判定し、利用者が計画を承認した。
 - スライス1は `SLICE_READY`。独立再レビューで `implementation-reviewer` が Ready と判定した。
   再レビュー対象の全差分 SHA256 は `3402ed7a8c793131ad06379404a1858fa023afceffb3bb0304ad0b833d6b7564`。
-  スライス2は未着手。先行する確認用コミットの GitHub チェック通過後に開始する。
+- スライス2は `SLICE_READY`。独立再レビューで `implementation-reviewer` が Ready と判定した。
+  対象の追跡差分 SHA256 は `6bffeb7eb6d046e84946e0dbd98d33540e28fb55150750faf217b80036be8d01`。
+  新規ファイルを含む10パスの SHA256 manifest はスライス2の実装証跡に記録した。
 - 受付証跡は `/private/tmp/jfixedviewer-intake.v9dYPz/evidence.txt`。
   計画の初回レビューで指摘された表の整形を修正した。
 - 再レビュー対象の3文書の SHA256 と文書検証は
@@ -28,11 +30,15 @@
 
 1. スライス1のブランチは `codex/fixed-width-display-improvements`。
    PR の対象は `main`。計画開始時のベースは上記 SHA。
-   計画承認後のコミットはこのブランチに置く。実装のベースとする計画コミットは承認後に記録する。
+   [ドラフト PR #14](https://github.com/kittybbit/vscode-JFixedViewer/pull/14) の最新ヘッドは
+   `99984bb94b9084ff163f804004ba6d7de79d4ba6`。このヘッドで Verify と CodeQL が通過した。
+   CodeQL は `dynamic` の実行で同じヘッドをチェックアウトした。
+   チェック一覧、解析対象、リポジトリルールの参照は `/private/tmp/jfixedviewer-pr14.ThrukH/`。
+   Qlty Cloud のチェックは一覧に現れず、`main` の適用ルールに個別の必須指定はない。
 2. スライス2のブランチは `codex/fixed-width-boundary-styles`。
    PR の対象はスライス1のブランチ。開始前に先行 PR の最新ヘッドと Verify、CodeQL、
    その他の必須チェックおよび適用される Qlty Cloud の通過を確認し、SHA と結果を記録する。
-   CodeQL の解析リビジョンとヘッドの対応も記録する。後続ブランチのベースはその先行ヘッド。
+   先行ヘッド `99984bb94b9084ff163f804004ba6d7de79d4ba6` をこのブランチのベースとした。
 3. スライス2のヘッドに全スライスを含め、同じ PR に終了差分を追加する。
    PR の URL、ベースとヘッド、終了コミット、最新チェック、実際のマージ結果は順に記録する。
    最下位の PR から統合する。マージ時の取り込み先や方式、対象 SHA は承認時に特定する。
@@ -227,6 +233,76 @@
   複数フォルダーで片方だけに設定を置いて両方を表示し、設定の適用範囲も確認する。
 - 縦線がかすれる、色が本文を隠す、あるいは終端が折り返しで別の位置に見える場合は
   再現条件を記録して解消する。現在のホスト API では要件を満たせない場合は Main に戻す。
+
+### スライス2の実装結果と証跡
+
+- 状態は `IMPLEMENTED`。承認済み計画コミット `5615f9204cf4683c5cf14e02c334ddb3b020a290` に沿って
+  3方式、色・幅、既定値と不正値のフォールバックを実装した。resource スコープで設定を読み、
+  設定変更時は可視の選択済み文書を URI ごとに一度だけ更新する。非表示文書は設定変更時に
+  解析せず、再表示時に最新設定を読む。可視範囲に装飾し、論理上のホバー値を保つ。
+  実在しない行末の境界を出さず、交互色用ハンドルも方式切替時に破棄する。
+- 変更した承認対象パスは `package.json`、`src/presentation/vscode/FixedWidthPresentation.ts`、
+  `src/presentation/vscode/decorationStyle.ts`（新規）、`src/test/extension.test.ts`、
+  `src/test/support/characterizationHost.ts`、`src/test/smoke.ts`、
+  `docs/requirements/use-cases/uc-display-fixed-width.md`、`README.md`、`CHANGELOG.md`、本ファイル。
+  計画外の製品パスと依存関係は変更していない。
+- ホストテストでは3方式、色と幅の正常値・不正値、短い行のクリップ、実終端、行ごとの交互色、
+  全角と補助文字を含む短い JPX 行 `2Ａ😀`、日本語ホバー、同一 URI の分割表示、別 URI の非波及、
+  旧背景ハンドルの一度だけの破棄を確認した。レビュー修正テストは非表示文書での `lineAt` 不呼出し、
+  再表示時に最新設定が反映されること、同一 URI の分割表示を一度だけ解析すること、別 URI を変更しないことも確認する。
+  共有スモークは既存コマンドと設定3件の既定値を確認する。
+- Desktop 1.145.2 の拡張テスト15件、Desktop 1.75.0 と Web stable のスモークは終了コード0。
+  型チェック、テスト準備、本番ビルド、アーキテクチャテスト7件も終了コード0。
+  Markdown lint は変更 Markdown 4件で0件、`git diff --check` も通過。
+- レビュー修正と整形後に `npm run test:prepare`、Desktop 1.145.2 `npm run test:desktop` を再実行し、
+  いずれも終了コード0、拡張テストは15件すべて通過した。本番ビルドも終了コード0。
+- Main による Desktop 1.145.2 と Web stable
+  (`c4453f8ea430795f941c1b2ff6c9321135a74a02`) の実画面確認は責務分割後の最終ビルドで通過した。
+  3方式、テーマ色、太さ、折り返し、短い JPX 行のホバー、全銀、設定のフォルダー範囲、
+  元データ・保存内容・未保存状態の維持を確認した。入力とログは
+  `/private/tmp/jfixed-style-ui.fMsLlS/review-final-inputs.txt`、`desktop-review-final.log`、
+  `web-review-final.log`。設定変更レビュー修正時の中間再確認ログは同じフォルダーの
+  `review-fix-inputs.txt`、`desktop-review-fix.log`、`web-review-fix.log`。
+- 最終製品ビルドの生成物 SHA256 は次のとおり。
+  - `dist/extension.js`:
+    `dfe1de16ca7103576b1cc2b1bd9d808bbcd476104a5f24095fd214c73d07aa53`
+  - `dist/web.js`:
+    `aae023659432f50c826c2957b4175d9d6b5dadf7a84818b5f3aebf98d3353631`
+- 実画面が読み込んだ smoke 配布物の SHA256 は次のとおり。
+  - `out/smoke-extension/dist/extension.js`:
+    `35c8268ee5820f2126d2d3a7d6fe58f97b2924b8d3238c83d9e80c41c2f41a52`
+  - `out/smoke-extension/dist/web.js`:
+    `6e1f5afabd405d09bea59dfc5310f90decd8f503fc965d3383dbe4c8560c763b`
+  - `out/smoke-extension/dist/smoke.js`:
+    `a35a3d47b8cbef05623dedbddf877a7aede55e576867ba8ae36fafc956359be2`
+- `TASKS.md` を除く追跡対象の実装差分 SHA256 は
+  `9733e8291a7a62b25204778d6f37f6cf70584ccab059aebeb8e76598f1138a9d`。
+  新規 `decorationStyle.ts` は `e6198be1801a72279d0febb146f3218b60f14ab60082c8ab0ae5ec3d5ad7835e`。
+  全追跡差分と `TASKS.md` の最終 SHA256、10承認パスの manifest は
+  `/private/tmp/jfixed-style-ui.fMsLlS/slice2-evidence.txt` に記録した。
+- Qlty 0.645.0 はスライス2の正確な基準 `99984bb94b9084ff163f804004ba6d7de79d4ba6` と最終入力を
+  隔離スナップショットで比較した。check は基準・最終とも49ジョブで終了コード0、
+  対象は197・201 plugin-target。レビュー修正後の最終 SARIF 指摘は0件。
+  smells は基準18件・最終19件を解析し、レビュー修正後の最終 SARIF 指摘0件で終了コード0。
+  `npm run qlty` もレビュー修正後に再実行し終了コード0。
+  設定 SHA256 は
+  `ef66ff4bc2fc0987ea6ce019c5370b11aed4a3ebbb448ad64473d913bec0af6e`、
+  lockfile SHA256 は
+  `4b3f5831ca7e1381037527fe7026b4a1a21d3f20b16b6cde39f8590a2a7832ec`。
+  SARIF、全ジョブログ、パス一覧、入力 manifest、終了コードは
+  `/private/tmp/jfixedviewer-slice2-qlty-20261110/` に保存した。レビュー修正後の SARIF と
+  総合チェックは `final-review-fix-post-complexity-check.sarif`、
+  `final-review-fix-post-complexity-smells.sarif`、
+  `final-review-fix-post-complexity-npm-qlty.log` を参照する。
+  最終対象パスは66、今回の最終入力 manifest は
+  `final-review-fix-post-complexity-input-manifest.sha256`。各コマンドの終了コードは対応する
+  `final-review-fix-post-complexity-*.status` に記録した。
+  既存 `.qlty/qlty.toml` の未対応キー警告は出たが、解析は完了し検出はなかった。
+  最終 Qlty 後にこの証跡メタデータを追記した。
+- `TRACEABILITY.md` は変更していない。既存の仕様・ユースケース・ホスト検証の対応を維持し、
+  新しい対応関係や検証区分を追加していないため。
+- 既知の製品リスクはない。独立再レビューは通過済み。利用者の指示によりスライス1・2の人による
+  完了承認はともに `Pending` のまま。
 
 ## 各スライスの共通検証
 

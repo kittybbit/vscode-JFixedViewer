@@ -28,6 +28,10 @@ function optionsForLine(editor: FakeEditor, line: number) {
   );
 }
 
+function renderOptionsForLine(editor: FakeEditor, line: number) {
+  return optionsForLine(editor, line).map((option) => option.renderOptions);
+}
+
 function rowNames(editor: FakeEditor, line: number): string[] {
   return optionsForLine(editor, line).map((option) => {
     const match = option.hoverMessage?.value.match(/^\*\*(.*?)\*\*/u);
@@ -64,20 +68,33 @@ suite("固定長表示の現行挙動", () => {
     await host.chooseFileType(zenginAccount);
 
     const decorationStyle = host.decorationTypes[0].options as {
-      after: {
-        contentText: string;
-        borderColor: { id: string };
-        border: string;
-      };
       isWholeLine: boolean;
     };
-    assert.strictEqual(decorationStyle.after.contentText, "");
-    assert.strictEqual(
-      decorationStyle.after.borderColor.id,
-      "editor.selectionBackground",
-    );
-    assert.strictEqual(decorationStyle.after.border, "0.1em solid");
     assert.strictEqual(decorationStyle.isWholeLine, false);
+
+    const shortHeader = optionsForLine(zengin, 0);
+    assert.strictEqual(shortHeader[1].range.end.character, 3);
+    const defaultBoundary = renderOptionsForLine(zengin, 0)[1]?.after as {
+      contentText: string;
+      backgroundColor: { id: string };
+      width: string;
+      height: string;
+    };
+    assert.deepStrictEqual(
+      {
+        ...defaultBoundary,
+        backgroundColor: defaultBoundary.backgroundColor.id,
+      },
+      {
+        contentText: "",
+        backgroundColor: "editor.foreground",
+        width: "1px",
+        height: "1em",
+      },
+    );
+    const partialDataField = optionsForLine(zengin, 3)[1];
+    assert.strictEqual(partialDataField.range.end.character, 3);
+    assert.strictEqual(partialDataField.renderOptions, undefined);
 
     assert.strictEqual(host.registeredCommands.has(commandId), true);
     assert.deepStrictEqual(rowNames(zengin, 0).slice(0, 1), ["ヘッダー"]);
@@ -93,7 +110,7 @@ suite("固定長表示の現行挙動", () => {
         start: dataFields[1].range.start.character,
         end: dataFields[1].range.end.character,
       },
-      { start: 1, end: 7 },
+      { start: 1, end: 3 },
     );
     assert.strictEqual(zengin.document.lineAt(3).text.length, 3);
     assert.strictEqual(
@@ -101,22 +118,277 @@ suite("固定長表示の現行挙動", () => {
       "**データ**  \n位置: 2 - 7 (6桁)",
     );
     assert.strictEqual(dataFields[1].hoverMessage?.isTrusted, true);
-    assert.strictEqual(dataFields.at(-1)?.range.end.character, 200);
+    assert.strictEqual(dataFields.at(-1)?.range.end.character, 3);
 
-    const jpx = host.createEditor("jpx.txt", ["2😀"]);
+    const jpx = host.createEditor("jpx.txt", ["2Ａ😀"]);
     host.setActiveEditor(jpx);
     await host.chooseFileType(jpxFourPrices);
     assert.strictEqual(hasRow(jpx, 0, "レコード"), true);
+    assert.strictEqual(jpx.document.lineAt(0).text.length, 4);
+    assert.strictEqual(optionsForLine(jpx, 0)[1].range.end.character, 4);
     assert.strictEqual(
       optionsForLine(jpx, 0)[1].hoverMessage?.value,
       "**レコード**  \n位置: 2 - 4 (3桁)",
     );
+    assert.ok(optionsForLine(jpx, 0)[1].renderOptions?.after);
 
     const loan = host.createEditor("50200231-loan.txt", ["230"]);
     host.setActiveEditor(loan);
     await host.chooseFileType(zenginLoanCalculation);
     assert.strictEqual(hasRow(loan, 0, "データ(商業手形割引〔内訳〕)"), true);
     assert.strictEqual(hasRow(loan, 0, "データ(商業手形割引〔合計〕)"), false);
+  });
+
+  test("境界線、交互色、区切り記号の色と太さを切り替える", async () => {
+    const uri = "file:///boundary-style.txt";
+    const editor = host.createEditor(
+      "50200003-boundary-style.txt",
+      [header("1"), `2${"x".repeat(180)}`],
+      uri,
+    );
+    host.setActiveEditor(editor);
+    await host.chooseFileType(zenginTransfer);
+
+    const reporter = host.reporters[0];
+    const eventCount = reporter.events.length;
+    const headerFields = optionsForLine(editor, 0);
+    const fields = optionsForLine(editor, 1);
+    assert.ok(fields.length > 2);
+    const defaultLine = fields[0].renderOptions?.after as {
+      width: string;
+      backgroundColor: { id: string };
+    };
+    assert.deepStrictEqual(
+      {
+        ...defaultLine,
+        backgroundColor: defaultLine.backgroundColor.id,
+      },
+      {
+        contentText: "",
+        backgroundColor: "editor.foreground",
+        width: "1px",
+        height: "1em",
+      },
+    );
+
+    host.setConfiguration(uri, {
+      boundaryStyle: "marker",
+      boundaryColor: "invalid",
+      boundaryWidth: 7,
+    });
+    const marked = optionsForLine(editor, 1);
+    const marker = marked[0].renderOptions?.after as {
+      contentText: string;
+      color: { id: string };
+    };
+    assert.deepStrictEqual(
+      { contentText: marker.contentText, color: marker.color.id },
+      { contentText: "│", color: "editor.foreground" },
+    );
+    assert.strictEqual(marked.at(-1)?.renderOptions, undefined);
+
+    host.setConfiguration(uri, {
+      boundaryStyle: "line",
+      boundaryColor: "#1a2b3c",
+      boundaryWidth: 4,
+    });
+    const customLine = optionsForLine(editor, 1)[0].renderOptions?.after as {
+      width: string;
+      backgroundColor: string;
+    };
+    assert.deepStrictEqual(customLine, {
+      contentText: "",
+      backgroundColor: "#1a2b3c",
+      width: "4px",
+      height: "1em",
+    });
+
+    host.setConfiguration(uri, {
+      boundaryStyle: "alternating",
+      boundaryColor: "#1a2b3c",
+      boundaryWidth: 4,
+    });
+    const backgroundType = host.decorationTypes.find((type) => {
+      const options = type.options as { backgroundColor?: string };
+      return options.backgroundColor === "#1a2b3c40";
+    });
+    assert.ok(backgroundType);
+    const alternating = editor.decorationCalls.at(-1);
+    assert.strictEqual(alternating?.type, backgroundType);
+    assert.strictEqual(
+      alternating?.options.length,
+      Math.floor(headerFields.length / 2) + Math.floor(fields.length / 2),
+    );
+    assert.ok(
+      alternating?.options.every((option) => option.hoverMessage === undefined),
+    );
+    assert.strictEqual(reporter.events.length, eventCount);
+  });
+
+  test("各文書の設定範囲を保ち、色と太さの不正値を既定に戻す", async () => {
+    const firstUri = "file:///one/fixed.txt";
+    const secondUri = "file:///two/fixed.txt";
+    const lines = [header("1"), `2${"x".repeat(210)}`];
+    const first = host.createEditor("50200003-one-fixed.txt", lines, firstUri);
+    const firstSplit = host.createEditor(
+      "50200003-one-fixed.txt",
+      lines,
+      firstUri,
+    );
+    const second = host.createEditor(
+      "50200003-two-fixed.txt",
+      lines,
+      secondUri,
+    );
+
+    host.setActiveEditor(first);
+    host.setConfiguration(firstUri, {
+      boundaryStyle: "unknown",
+      boundaryColor: "#12345g",
+      boundaryWidth: 1.5,
+    });
+    await host.chooseFileType(zenginTransfer);
+    const firstDefaultLine = optionsForLine(first, 1)[0].renderOptions
+      ?.after as {
+      width: string;
+      backgroundColor: { id: string };
+    };
+    assert.deepStrictEqual(
+      {
+        ...firstDefaultLine,
+        backgroundColor: firstDefaultLine.backgroundColor.id,
+      },
+      {
+        contentText: "",
+        backgroundColor: "editor.foreground",
+        width: "1px",
+        height: "1em",
+      },
+    );
+
+    host.setActiveEditor(second);
+    await host.chooseFileType(zenginTransfer);
+    const firstCallsWhileHidden = first.document.lineAtCallCount;
+    const secondCallsBeforeConfiguration = second.document.lineAtCallCount;
+    const secondDecorationsBeforeConfiguration = second.decorationCalls.length;
+
+    host.setConfiguration(firstUri, {
+      boundaryStyle: "alternating",
+      boundaryColor: "#abcdef",
+      boundaryWidth: 2,
+    });
+    assert.strictEqual(first.document.lineAtCallCount, firstCallsWhileHidden);
+    assert.strictEqual(
+      second.document.lineAtCallCount,
+      secondCallsBeforeConfiguration,
+    );
+    assert.strictEqual(
+      second.decorationCalls.length,
+      secondDecorationsBeforeConfiguration,
+    );
+    assert.strictEqual(firstSplit.decorationCalls.length, 0);
+
+    host.setVisibleEditors([first, firstSplit, second]);
+    const firstType = first.decorationCalls.at(-2)?.type;
+    const secondType = second.decorationCalls.at(-1)?.type;
+    const firstSplitType = firstSplit.decorationCalls.at(-2)?.type;
+    assert.strictEqual(
+      first.document.lineAtCallCount,
+      firstCallsWhileHidden + first.document.lineCount,
+    );
+    assert.strictEqual(
+      second.document.lineAtCallCount,
+      secondCallsBeforeConfiguration,
+    );
+    assert.strictEqual(
+      second.decorationCalls.length,
+      secondDecorationsBeforeConfiguration,
+    );
+    const secondLine = optionsForLine(second, 1)[0].renderOptions?.after as {
+      width: string;
+      backgroundColor: { id: string };
+    };
+    assert.strictEqual(secondLine.backgroundColor.id, "editor.foreground");
+
+    const firstBackground = first.decorationCalls.at(-1);
+    const splitBackground = firstSplit.decorationCalls.at(-1);
+    const firstBackgroundType = firstBackground?.type;
+    const splitBackgroundType = splitBackground?.type;
+    assert.deepStrictEqual(
+      (firstBackground?.type.options as { backgroundColor: string })
+        .backgroundColor,
+      "#abcdef40",
+    );
+    assert.deepStrictEqual(
+      (splitBackground?.type.options as { backgroundColor: string })
+        .backgroundColor,
+      "#abcdef40",
+    );
+    assert.strictEqual(second.decorationCalls.at(-1)?.type, secondType);
+    assert.strictEqual(
+      (
+        optionsForLine(second, 1)[0].renderOptions?.after as {
+          backgroundColor: { id: string };
+        }
+      ).backgroundColor.id,
+      "editor.foreground",
+    );
+
+    const firstCallsBeforeVisibleConfiguration = first.document.lineAtCallCount;
+    const secondCallsBeforeVisibleConfiguration =
+      second.document.lineAtCallCount;
+    const secondDecorationsBeforeVisibleConfiguration =
+      second.decorationCalls.length;
+    host.setConfiguration(firstUri, {
+      boundaryStyle: "marker",
+      boundaryColor: "#abcdef",
+      boundaryWidth: 2,
+    });
+    assert.strictEqual(
+      first.document.lineAtCallCount,
+      firstCallsBeforeVisibleConfiguration + first.document.lineCount,
+    );
+    assert.strictEqual(
+      second.document.lineAtCallCount,
+      secondCallsBeforeVisibleConfiguration,
+    );
+    assert.strictEqual(
+      second.decorationCalls.length,
+      secondDecorationsBeforeVisibleConfiguration,
+    );
+    assert.strictEqual(firstBackgroundType?.disposeCount, 1);
+    assert.strictEqual(splitBackgroundType?.disposeCount, 1);
+    assert.ok(
+      first.decorationCalls
+        .filter((call) => call.type === firstType)
+        .at(-1)
+        ?.options.some(
+          (option) =>
+            (
+              option.renderOptions?.after as
+                | { contentText?: string }
+                | undefined
+            )?.contentText === "│",
+        ),
+    );
+    assert.ok(
+      firstSplit.decorationCalls
+        .filter((call) => call.type === firstSplitType)
+        .at(-1)
+        ?.options.some(
+          (option) =>
+            (
+              option.renderOptions?.after as
+                | { contentText?: string }
+                | undefined
+            )?.contentText === "│",
+        ),
+    );
+    assert.strictEqual(second.decorationCalls.at(-1)?.type, secondType);
+
+    host.dispose();
+    assert.strictEqual(firstBackgroundType?.disposeCount, 1);
+    assert.strictEqual(splitBackgroundType?.disposeCount, 1);
   });
 
   test("1回の解析ではモードを引き継ぎ、別文書では先頭から解析する", async () => {
@@ -573,7 +845,7 @@ suite("固定長表示の現行挙動", () => {
     host.setActiveEditor(editor);
     await host.chooseFileType(zenginAccount);
     const originalType = editor.decorationCalls.at(-1)?.type;
-    assert.strictEqual(optionsForLine(editor, 0).length, 13);
+    assert.strictEqual(optionsForLine(editor, 0).length, 1);
 
     const eventsBeforeClear = host.reporters[0].events.length;
     await host.chooseFileType(clearType);
