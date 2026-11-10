@@ -5,16 +5,427 @@
     {
       "file_type": "yonhonne_derivertive",
       "name": "四本値(デリバティブ)",
-      "finame_pattern": "/uFFFF",
+      "finame_pattern": "SH_DER\\.csv",
       "rows": [
         {
           "name": "レコード",
           "condition": "^2",
-          "columns": [
-            1, 3, 2, 4, 2, 3, 12, 1, 18, 1, 18, 8, 4, 1, 18, 8, 4, 1, 18, 8, 4,
-            1, 18, 8, 4, 18, 1, 18, 8, 4, 1, 18, 8, 4, 1, 18, 8, 4, 1, 18, 8, 4,
-            18, 1, 18, 1, 1, 18, 8, 4, 1, 18, 8, 4, 1, 18, 8, 4, 1, 18, 8, 4,
-            18, 8, 12, 3, 1, 1, 1, 1, 1, 18, 1, 18, 3, 6, 10, 3, 8, 1, 3, 18, 48
+          "fields": [
+            {
+              "name": "レコード区分",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "ファイル識別",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "商品取引識別",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "ポスト区分",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "銘柄コード",
+              "length": 12,
+              "type": "C"
+            },
+            {
+              "name": "サインフラグ",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "基準値段",
+              "length": 18,
+              "type": "C"
+            },
+            {
+              "name": "サインフラグ",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "前場始値成立値段",
+              "length": 18,
+              "type": "C"
+            },
+            {
+              "name": "前場始値成立日付",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "前場始値成立時刻",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "サインフラグ",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "前場高値成立値段",
+              "length": 18,
+              "type": "C"
+            },
+            {
+              "name": "前場高値成立日付",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "前場高値成立時刻",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "サインフラグ",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "前場安値成立値段",
+              "length": 18,
+              "type": "C"
+            },
+            {
+              "name": "前場安値成立日付",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "前場安値成立時刻",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "サインフラグ",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "前場終値成立値段",
+              "length": 18,
+              "type": "C"
+            },
+            {
+              "name": "前場終値成立日付",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "前場終値成立時刻",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "前場取引高",
+              "length": 18,
+              "type": "C"
+            },
+            {
+              "name": "サインフラグ",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "日中始値成立値段（後場始値成立値段）",
+              "length": 18,
+              "type": "C"
+            },
+            {
+              "name": "日中始値成立日付（後場始値成立日付）",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "日中始値成立時刻（後場始値成立時刻）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "サインフラグ",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "日中高値成立値段（後場高値成立値段）",
+              "length": 18,
+              "type": "C"
+            },
+            {
+              "name": "日中高値成立日付（後場高値成立日付）",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "日中高値成立時刻（後場高値成立時刻）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "サインフラグ",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "日中安値成立値段（後場安値成立値段）",
+              "length": 18,
+              "type": "C"
+            },
+            {
+              "name": "日中安値成立日付（後場安値成立日付）",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "日中安値成立時刻（後場安値成立時刻）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "サインフラグ",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "日中終値成立値段（後場終値成立値段）",
+              "length": 18,
+              "type": "C"
+            },
+            {
+              "name": "日中終値成立日付（後場終値成立日付）",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "日中終値成立時刻（後場終値成立時刻）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "日中取引高（後場取引高）",
+              "length": 18,
+              "type": "C"
+            },
+            {
+              "name": "サインフラグ",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "特別気配",
+              "length": 18,
+              "type": "C"
+            },
+            {
+              "name": "符号",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "サインフラグ",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "ナイトセッション始値成立値段",
+              "length": 18,
+              "type": "C"
+            },
+            {
+              "name": "ナイトセッション始値成立日付",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "ナイトセッション始値成立時刻",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "サインフラグ",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "ナイトセッション高値成立値段",
+              "length": 18,
+              "type": "C"
+            },
+            {
+              "name": "ナイトセッション高値成立日付",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "ナイトセッション高値成立時刻",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "サインフラグ",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "ナイトセッション安値成立値段",
+              "length": 18,
+              "type": "C"
+            },
+            {
+              "name": "ナイトセッション安値成立日付",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "ナイトセッション安値成立時刻",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "サインフラグ",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "ナイトセッション終値成立値段",
+              "length": 18,
+              "type": "C"
+            },
+            {
+              "name": "ナイトセッション終値成立日付",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "ナイトセッション終値成立時刻",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "ナイトセッション取引高",
+              "length": 18,
+              "type": "C"
+            },
+            {
+              "name": "年月日",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 12,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 18,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 18,
+              "type": "C"
+            },
+            {
+              "name": "商品グループ群コード",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "商品グループコード",
+              "length": 6,
+              "type": "C"
+            },
+            {
+              "name": "商品コード",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "プロダクトタイプコード",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "限月",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "商品タイプ",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "権利行使価格",
+              "length": 18,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 48,
+              "type": "C"
+            }
           ]
         }
       ]

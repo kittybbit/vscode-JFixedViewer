@@ -12,7 +12,12 @@ type RawRow = {
   mode_rule?: string;
   mode_rule_position?: number;
   mode?: string;
-  columns: number[];
+  fields?: {
+    name?: string;
+    length: number;
+    type?: string;
+  }[];
+  columns?: number[];
 };
 
 type RawFile = {
@@ -35,7 +40,7 @@ function compileRows(rows: readonly RawRow[]): FixedWidthRowRule[] {
     modeRule: row.mode_rule ? new RegExp(row.mode_rule) : undefined,
     modeRulePosition: row.mode_rule_position,
     mode: row.mode ? new RegExp(row.mode) : undefined,
-    columns: row.columns,
+    fields: row.fields ?? row.columns?.map((length) => ({ length })),
   }));
 }
 

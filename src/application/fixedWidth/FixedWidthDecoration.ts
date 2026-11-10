@@ -12,6 +12,9 @@ export type FixedWidthLine = {
 export type FixedWidthDecorationField = {
   line: number;
   name: string;
+  fieldName?: string;
+  fieldNumber: number;
+  type?: string;
   start: number;
   end: number;
   width: number;

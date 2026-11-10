@@ -4,7 +4,13 @@ export type FixedWidthRowRule = {
   modeRule?: RegExp;
   modeRulePosition?: number;
   mode?: RegExp;
-  columns: number[];
+  fields?: readonly FixedWidthFieldDefinition[];
+};
+
+export type FixedWidthFieldDefinition = {
+  name?: string;
+  length: number;
+  type?: string;
 };
 
 export type FixedWidthDefinition = {
@@ -16,6 +22,9 @@ export type FixedWidthDefinition = {
 
 export type FixedWidthField = {
   name: string;
+  fieldName?: string;
+  fieldNumber: number;
+  type?: string;
   start: number;
   end: number;
   width: number;
@@ -61,8 +70,17 @@ function updateMode(
 
 function fieldsForRow(row: FixedWidthRowRule): FixedWidthField[] {
   let start = 0;
-  return row.columns.map((width) => {
-    const field = { name: row.name, start, end: start + width, width };
+  return (row.fields ?? []).map((definition, index) => {
+    const width = definition.length;
+    const field = {
+      name: row.name,
+      fieldName: definition.name,
+      fieldNumber: index + 1,
+      type: definition.type,
+      start,
+      end: start + width,
+      width,
+    };
     start += width;
     return field;
   });

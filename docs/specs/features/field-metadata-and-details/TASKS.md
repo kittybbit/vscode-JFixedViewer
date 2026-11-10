@@ -10,7 +10,7 @@
 
 ## 現在の状態
 
-- 機能は `PLAN_APPROVED`。計画コミット後にスライス1へ進む。
+- 機能は `PLAN_COMMITTED`。承認済みの計画コミット後、スライス1を実装した。
 - 比較ベースは `1e9e333924a949944150a79e60dd177b55a71044`。
   計画を準備するブランチは `codex/field-metadata-and-details`。
 - 2026年11月10日に `plan-reviewer` が計画全体を独立レビューし、Ready と判定した。
@@ -63,8 +63,50 @@
 
 ## スライス1. 項目の詳細表示と JPX サンプル
 
-状態は `PLANNED`。項目名が分かるホバーとカーソルの強調を追加し、JPX 四本値で一通り使えるようにする。
-`main` を対象とする1層目。着手には計画承認と計画コミットが必要。
+状態は `SLICE_READY`。項目名が分かるホバーとカーソルの強調を追加し、JPX 四本値で一通り使えるようにした。
+`main` を対象とする1層目。ベースは承認済み計画コミット `47e55e960b9a5cb46df9c7783b7a90b26dac141f`。
+
+### 実装結果と検証証跡
+
+- 独立レビューは Ready。指摘3件の解消と追加の指摘がないことを確認した。
+  レビュー対象の全差分の SHA-256 は次のとおり。完了承認は利用者の指示に従い保留する。
+  `5eb40f86d5d748c24fa77f3c47ef83d25cbe8eaccf4cf2c16ebf0b299e9041a4`
+- 全銀の既存 `columns` はインフラストラクチャ層で読み込み時に `fields` へ正規化した。
+  ドメインは共通項目表現から位置・番号を投影し、旧ホバー表示を維持する。
+  JPX は v4.0 §3.4.4.2 の83項目名・型・順序・幅を持つ定義にし、項目名を安全な文字列として表示する。
+- カーソル位置の範囲をエディター単位に表示する。境界では次項目を選び、実際の行末、空白行と不一致行は解除する。
+  行ごとの範囲は1回だけ作り、カーソル移動時に対象行だけを参照する。編集、形式変更、解除、非表示、拡張破棄を確認した。
+- [JPX サンプル](../../../../sample/jpx/SH_DER.csv)は657バイト、BOMなし、ASCII、LF終端。
+  取引識別 `01`、ポスト区分 `F2`、`IDX/NK225/NK225F/A2/FUT`、銘柄コード `161120018` を設定した。
+  予備の空白・ゼロ、基準値段の `+` を公式仕様に合わせた。取引なし時の成立日付・時刻24項目は
+  v4.0 §3.4.4.2 の項番と桁範囲に従ってゼロ埋めし、657バイトを維持した。
+  `.vscodeignore` の VSIX 一覧で `sample/` が除外されることを確認した。
+- 公式照合元は JPX 総研データフィードサービス仕様書 v4.0 §3.4.4.2 と別紙。
+  読み込み済みの証跡は `/private/tmp/jfixedviewer-jpx-0.pdf`、`-1.pdf`、`-2.pdf` と
+  `/private/tmp/jfixedviewer-jpx-v4.txt`、`/private/tmp/jfixedviewer-jpx-codes.txt`。
+  配信ファイル名 `SH_DER.csv` と銘柄コードの根拠は以下に記録する。
+  - [JPX データフィードサービス仕様書](https://www.jpx.co.jp/markets/paid-info-equities/reference/co3pgt0000004g0w-att/JPXReferenceDFS.zip)
+  - [証券コード協議会「先物・オプション取引識別コード仕様」](https://www.jpx.co.jp/sicc/securities-code/nlsgeu0000032d48-att/%28HP%29sakimono20250526.pdf)
+- JPX の項番・桁範囲による日付・時刻24項目の独立検査、`npm run test:prepare`、型検査、
+  アーキテクチャ、Desktop 回帰17件、`git diff --check` は Pass。
+  修正後サンプルの実画面は Desktop と Web で Pass。
+  復元後の Desktop 回帰17件のログは `/private/tmp/jfv-rf2.FvwV3tzr/` に保存した。
+  JPX サンプルの UI ログと入力ハッシュは `/private/tmp/jfv-ui-r1.h99zZoLA/` に保存した。
+- Qlty 0.645.0 の基準証跡は `/private/tmp/jfixedviewer-field-meta-quality-base.s902REYl/`。
+  文書整形前の証跡は `/private/tmp/jfv-qf2.86Z9mjAR/`。
+  最終検査の入力、SARIF、結果は `/private/tmp/jfv-s1-ok.5iOzcjcd/` に保存する。
+- 先行候補の型・prepare・architecture、Desktop 回帰17件、Qlty のログは
+  `/private/tmp/jfv-rf1.B8hePMpa/` と `/private/tmp/jfv-qf1.BfxBQmjh/` に保存した。
+- 旧 `columns` の回帰テストは `characterizationHost.ts` から生 JSON をローダーへ注入する。
+  旧行名・項目位置・ホバーと、`A😀BC` のUTF-16範囲 `[3, 5)` を確認し、
+  行末で可視範囲をクリップしつつ定義幅のホバー `位置: 4 - 6 (3桁)` を維持する。
+  組み込み全銀に対する境界・短行など新旧共通のテストは残した。
+- 実装パスはこの節の「承認候補パス」一覧と一致する。`.serena/` は既存の未追跡項目であり、読み書きしていない。
+  レビュー修正の製品・テスト差分は承認候補パス内である。
+  `TASKS.md` と `TRACEABILITY.md` は検証結果と対応付けに合わせて更新し、差分検査を行った。
+- 計画承認は `Approved`。スライス1の完了承認とスライス2の完了承認、終了承認、マージ承認は `Pending`。
+  2026年11月10日の利用者指示に従い、実装の独立レビューで指摘が解消した後は、完了承認を待たず次スライスへ進む。
+  独立レビューと完了コミット・PRは Main の担当。
 
 ### 詳細表示の責務と境界
 

@@ -1,4 +1,6 @@
 import * as assert from "assert";
+import { readFileSync } from "node:fs";
+import path = require("node:path");
 import {
   CharacterizationHost,
   FakeEditor,
@@ -12,6 +14,123 @@ const zenginLoanCalculation = "全銀協規定形式/借入金計算書";
 const zenginForeignCurrency = "全銀協規定形式/外貨預金入出金取引明細";
 const jpxFourPrices = "JPX/四本値(デリバティブ)";
 const clearType = "なし/なし";
+const jpxFourPricesFieldNames = [
+  "レコード区分",
+  "ファイル識別",
+  "商品取引識別",
+  "予備",
+  "予備",
+  "ポスト区分",
+  "銘柄コード",
+  "サインフラグ",
+  "基準値段",
+  "サインフラグ",
+  "前場始値成立値段",
+  "前場始値成立日付",
+  "前場始値成立時刻",
+  "サインフラグ",
+  "前場高値成立値段",
+  "前場高値成立日付",
+  "前場高値成立時刻",
+  "サインフラグ",
+  "前場安値成立値段",
+  "前場安値成立日付",
+  "前場安値成立時刻",
+  "サインフラグ",
+  "前場終値成立値段",
+  "前場終値成立日付",
+  "前場終値成立時刻",
+  "前場取引高",
+  "サインフラグ",
+  "日中始値成立値段（後場始値成立値段）",
+  "日中始値成立日付（後場始値成立日付）",
+  "日中始値成立時刻（後場始値成立時刻）",
+  "サインフラグ",
+  "日中高値成立値段（後場高値成立値段）",
+  "日中高値成立日付（後場高値成立日付）",
+  "日中高値成立時刻（後場高値成立時刻）",
+  "サインフラグ",
+  "日中安値成立値段（後場安値成立値段）",
+  "日中安値成立日付（後場安値成立日付）",
+  "日中安値成立時刻（後場安値成立時刻）",
+  "サインフラグ",
+  "日中終値成立値段（後場終値成立値段）",
+  "日中終値成立日付（後場終値成立日付）",
+  "日中終値成立時刻（後場終値成立時刻）",
+  "日中取引高（後場取引高）",
+  "サインフラグ",
+  "特別気配",
+  "符号",
+  "サインフラグ",
+  "ナイトセッション始値成立値段",
+  "ナイトセッション始値成立日付",
+  "ナイトセッション始値成立時刻",
+  "サインフラグ",
+  "ナイトセッション高値成立値段",
+  "ナイトセッション高値成立日付",
+  "ナイトセッション高値成立時刻",
+  "サインフラグ",
+  "ナイトセッション安値成立値段",
+  "ナイトセッション安値成立日付",
+  "ナイトセッション安値成立時刻",
+  "サインフラグ",
+  "ナイトセッション終値成立値段",
+  "ナイトセッション終値成立日付",
+  "ナイトセッション終値成立時刻",
+  "ナイトセッション取引高",
+  "年月日",
+  "予備",
+  "予備",
+  "予備",
+  "予備",
+  "予備",
+  "予備",
+  "予備",
+  "予備",
+  "予備",
+  "予備",
+  "商品グループ群コード",
+  "商品グループコード",
+  "商品コード",
+  "プロダクトタイプコード",
+  "限月",
+  "予備",
+  "商品タイプ",
+  "権利行使価格",
+  "予備",
+];
+const jpxFourPricesFieldWidths = [
+  1, 3, 2, 4, 2, 3, 12, 1, 18, 1, 18, 8, 4, 1, 18, 8, 4, 1, 18, 8, 4, 1, 18, 8,
+  4, 18, 1, 18, 8, 4, 1, 18, 8, 4, 1, 18, 8, 4, 1, 18, 8, 4, 18, 1, 18, 1, 1,
+  18, 8, 4, 1, 18, 8, 4, 1, 18, 8, 4, 1, 18, 8, 4, 18, 8, 12, 3, 1, 1, 1, 1, 1,
+  18, 1, 18, 3, 6, 10, 3, 8, 1, 3, 18, 48,
+];
+const jpxNoTradeDateTimeFields = [
+  { fieldNumber: 12, start: 66, end: 73 },
+  { fieldNumber: 13, start: 74, end: 77 },
+  { fieldNumber: 16, start: 97, end: 104 },
+  { fieldNumber: 17, start: 105, end: 108 },
+  { fieldNumber: 20, start: 128, end: 135 },
+  { fieldNumber: 21, start: 136, end: 139 },
+  { fieldNumber: 24, start: 159, end: 166 },
+  { fieldNumber: 25, start: 167, end: 170 },
+  { fieldNumber: 29, start: 208, end: 215 },
+  { fieldNumber: 30, start: 216, end: 219 },
+  { fieldNumber: 33, start: 239, end: 246 },
+  { fieldNumber: 34, start: 247, end: 250 },
+  { fieldNumber: 37, start: 270, end: 277 },
+  { fieldNumber: 38, start: 278, end: 281 },
+  { fieldNumber: 41, start: 301, end: 308 },
+  { fieldNumber: 42, start: 309, end: 312 },
+  { fieldNumber: 49, start: 370, end: 377 },
+  { fieldNumber: 50, start: 378, end: 381 },
+  { fieldNumber: 53, start: 401, end: 408 },
+  { fieldNumber: 54, start: 409, end: 412 },
+  { fieldNumber: 57, start: 432, end: 439 },
+  { fieldNumber: 58, start: 440, end: 443 },
+  { fieldNumber: 61, start: 463, end: 470 },
+  { fieldNumber: 62, start: 471, end: 474 },
+];
 
 function header(mode: string): string {
   return `1${"0".repeat(61)}${mode}`;
@@ -28,6 +147,27 @@ function optionsForLine(editor: FakeEditor, line: number) {
   );
 }
 
+function cursorDecorationCall(editor: FakeEditor) {
+  return [...editor.decorationCalls].reverse().find(({ type }) => {
+    const options = type.options as {
+      backgroundColor?: { id?: string };
+    };
+    return (
+      options.backgroundColor?.id === "editor.wordHighlightStrongBackground"
+    );
+  });
+}
+
+function cursorRange(editor: FakeEditor) {
+  const range = cursorDecorationCall(editor)?.options[0]?.range;
+  return range
+    ? {
+        start: { line: range.start.line, character: range.start.character },
+        end: { line: range.end.line, character: range.end.character },
+      }
+    : undefined;
+}
+
 function renderOptionsForLine(editor: FakeEditor, line: number) {
   return optionsForLine(editor, line).map((option) => option.renderOptions);
 }
@@ -35,7 +175,7 @@ function renderOptionsForLine(editor: FakeEditor, line: number) {
 function rowNames(editor: FakeEditor, line: number): string[] {
   return optionsForLine(editor, line).map((option) => {
     const match = option.hoverMessage?.value.match(/^\*\*(.*?)\*\*/u);
-    return match?.[1] ?? "";
+    return match?.[1]?.split(" / ", 1)[0] ?? "";
   });
 }
 
@@ -113,11 +253,6 @@ suite("固定長表示の現行挙動", () => {
       { start: 1, end: 3 },
     );
     assert.strictEqual(zengin.document.lineAt(3).text.length, 3);
-    assert.strictEqual(
-      dataFields[1].hoverMessage?.value,
-      "**データ**  \n位置: 2 - 7 (6桁)",
-    );
-    assert.strictEqual(dataFields[1].hoverMessage?.isTrusted, true);
     assert.strictEqual(dataFields.at(-1)?.range.end.character, 3);
 
     const jpx = host.createEditor("jpx.txt", ["2Ａ😀"]);
@@ -128,7 +263,11 @@ suite("固定長表示の現行挙動", () => {
     assert.strictEqual(optionsForLine(jpx, 0)[1].range.end.character, 4);
     assert.strictEqual(
       optionsForLine(jpx, 0)[1].hoverMessage?.value,
-      "**レコード**  \n位置: 2 - 4 (3桁)",
+      "**レコード / ファイル識別 (項目 2)**  \n位置: 2 - 4 (3桁)\nデータ型: C",
+    );
+    assert.strictEqual(
+      optionsForLine(jpx, 0)[1].hoverMessage?.isTrusted,
+      false,
     );
     assert.ok(optionsForLine(jpx, 0)[1].renderOptions?.after);
 
@@ -137,6 +276,234 @@ suite("固定長表示の現行挙動", () => {
     await host.chooseFileType(zenginLoanCalculation);
     assert.strictEqual(hasRow(loan, 0, "データ(商業手形割引〔内訳〕)"), true);
     assert.strictEqual(hasRow(loan, 0, "データ(商業手形割引〔合計〕)"), false);
+  });
+
+  test("旧columns JSONをローダーへ注入し、旧ホバーとUTF-16範囲を保つ", async () => {
+    const legacyHost = new CharacterizationHost({
+      jpx: {
+        type: "legacy_fixture",
+        name: "旧形式",
+        files: [
+          {
+            file_type: "columns_compatibility",
+            name: "旧columns",
+            finame_pattern: "columns-fixture",
+            rows: [
+              {
+                name: "旧行",
+                condition: "^A",
+                columns: [3, 3],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    legacyHost.start();
+    try {
+      const editor = legacyHost.createEditor("columns-fixture.txt", ["A😀BC"]);
+      legacyHost.setActiveEditor(editor);
+      await legacyHost.chooseFileType("旧形式/旧columns");
+
+      const fields = optionsForLine(editor, 0);
+      assert.strictEqual(editor.document.lineAt(0).text.length, 5);
+      assert.strictEqual(fields.length, 2);
+      assert.deepStrictEqual(
+        fields.map((field) => ({
+          start: field.range.start.character,
+          end: field.range.end.character,
+        })),
+        [
+          { start: 0, end: 3 },
+          { start: 3, end: 5 },
+        ],
+      );
+      assert.strictEqual(
+        fields[0].hoverMessage?.value,
+        "**旧行**  \n位置: 1 - 3 (3桁)",
+      );
+      assert.strictEqual(
+        fields[1].hoverMessage?.value,
+        "**旧行**  \n位置: 4 - 6 (3桁)",
+      );
+      assert.strictEqual(fields[0].hoverMessage?.isTrusted, true);
+      assert.deepStrictEqual(rowNames(editor, 0), ["旧行", "旧行"]);
+    } finally {
+      legacyHost.dispose();
+    }
+  });
+
+  test("JPX サンプルの全項目を表示し、カーソル強調の範囲と寿命を保つ", async () => {
+    const samplePath = path.resolve(__dirname, "../../sample/jpx/SH_DER.csv");
+    const sampleBytes = readFileSync(samplePath);
+    assert.strictEqual(sampleBytes.length, 658);
+    assert.strictEqual(sampleBytes.subarray(0, 4).toString("ascii"), "2001");
+    assert.strictEqual(sampleBytes.at(-1), 0x0a);
+    assert.strictEqual(sampleBytes.includes(0x0d), false);
+    assert.strictEqual(
+      sampleBytes.subarray(0, -1).every((byte) => byte < 0x80),
+      true,
+    );
+
+    const record = sampleBytes.subarray(0, -1).toString("ascii");
+    assert.strictEqual(record.length, 657);
+    assert.strictEqual(record.slice(0, 1), "2");
+    assert.strictEqual(record.slice(1, 4), "001");
+    assert.strictEqual(record.slice(4, 6), "01");
+    assert.strictEqual(record.slice(6, 12), "      ");
+    assert.strictEqual(record.slice(12, 15), "F2 ");
+    assert.strictEqual(record.slice(15, 27), "161120018   ");
+    assert.strictEqual(record.slice(27, 28), "+");
+    assert.strictEqual(record.slice(28, 46), "000000000100000000");
+    assert.strictEqual(record.slice(492, 500), "20261110");
+    assert.strictEqual(record.slice(500, 520), " ".repeat(20));
+    assert.strictEqual(record.slice(520, 538), "0".repeat(18));
+    assert.strictEqual(record.slice(538, 539), " ");
+    assert.strictEqual(record.slice(539, 557), "0".repeat(18));
+    assert.strictEqual(record.slice(557, 560), "IDX");
+    assert.strictEqual(record.slice(560, 566), "NK225 ");
+    assert.strictEqual(record.slice(566, 576), "NK225F    ");
+    assert.strictEqual(record.slice(576, 579), "A2 ");
+    assert.strictEqual(record.slice(579, 587), "20261200");
+    assert.strictEqual(record.slice(587, 588), " ");
+    assert.strictEqual(record.slice(588, 591), "FUT");
+    assert.strictEqual(record.slice(591, 609), "0".repeat(18));
+    assert.strictEqual(record.slice(609), " ".repeat(48));
+    assert.strictEqual(jpxNoTradeDateTimeFields.length, 24);
+    for (const { start, end } of jpxNoTradeDateTimeFields) {
+      const width = end - start + 1;
+      assert.strictEqual(record.slice(start - 1, end), "0".repeat(width));
+    }
+    const primary = host.createEditor("SH_DER.csv", [record]);
+    host.setActiveEditor(primary);
+    await host.chooseFileType(jpxFourPrices);
+    const eventsBeforeCursorMoves = host.reporters[0].events.length;
+    assert.strictEqual(primary.document.getText(), record);
+
+    const initialFields = optionsForLine(primary, 0);
+    assert.strictEqual(initialFields.length, 83);
+    assert.deepStrictEqual(
+      initialFields.map(
+        (field) =>
+          field.hoverMessage?.value.match(
+            /^\*\*レコード \/ (.+) \(項目 /u,
+          )?.[1],
+      ),
+      jpxFourPricesFieldNames,
+    );
+    let fieldStart = 0;
+    for (const [index, field] of initialFields.entries()) {
+      assert.strictEqual(
+        field.hoverMessage?.value.endsWith("\nデータ型: C"),
+        true,
+      );
+      assert.deepStrictEqual(
+        {
+          start: field.range.start.character,
+          end: field.range.end.character,
+        },
+        {
+          start: fieldStart,
+          end: fieldStart + jpxFourPricesFieldWidths[index],
+        },
+      );
+      fieldStart += jpxFourPricesFieldWidths[index];
+    }
+    assert.strictEqual(fieldStart, 657);
+    for (const { fieldNumber, start, end } of jpxNoTradeDateTimeFields) {
+      assert.deepStrictEqual(
+        {
+          start: initialFields[fieldNumber - 1].range.start.character + 1,
+          end: initialFields[fieldNumber - 1].range.end.character,
+        },
+        { start, end },
+      );
+    }
+    assert.strictEqual(
+      initialFields[0].hoverMessage?.value,
+      "**レコード / レコード区分 (項目 1)**  \n位置: 1 - 1 (1桁)\nデータ型: C",
+    );
+    assert.strictEqual(
+      initialFields.at(-1)?.hoverMessage?.value,
+      "**レコード / 予備 (項目 83)**  \n位置: 610 - 657 (48桁)\nデータ型: C",
+    );
+
+    const split = host.createEditor(
+      "SH_DER.csv",
+      [],
+      primary.document.uri.toString(),
+    );
+    host.setVisibleEditors([primary, split]);
+    const primaryCursorType = cursorDecorationCall(primary)?.type;
+    const splitCursorType = cursorDecorationCall(split)?.type;
+    assert.notStrictEqual(primaryCursorType, splitCursorType);
+    assert.deepStrictEqual(cursorRange(primary), {
+      start: { line: 0, character: 0 },
+      end: { line: 0, character: 1 },
+    });
+    assert.deepStrictEqual(cursorRange(split), {
+      start: { line: 0, character: 0 },
+      end: { line: 0, character: 1 },
+    });
+
+    const lineAtCallsBeforeMove = primary.document.lineAtCallCount;
+    host.setSelection(primary, 0, 1);
+    assert.strictEqual(
+      primary.document.lineAtCallCount,
+      lineAtCallsBeforeMove + 1,
+    );
+    assert.deepStrictEqual(cursorRange(primary), {
+      start: { line: 0, character: 1 },
+      end: { line: 0, character: 4 },
+    });
+    assert.deepStrictEqual(cursorRange(split), {
+      start: { line: 0, character: 0 },
+      end: { line: 0, character: 1 },
+    });
+    host.setSelection(primary, 0, 657);
+    assert.deepStrictEqual(cursorDecorationCall(primary)?.options, []);
+    assert.strictEqual(
+      host.reporters[0].events.length,
+      eventsBeforeCursorMoves,
+    );
+    assert.strictEqual(primary.document.getText(), record);
+
+    host.setSelection(primary, 0, 1);
+    host.changeDocument(primary, ["2A", "   ", "x"]);
+    await host.waitForPendingRender();
+    assert.strictEqual(primary.document.getText(), "2A\n   \nx");
+    assert.deepStrictEqual(cursorRange(primary), {
+      start: { line: 0, character: 1 },
+      end: { line: 0, character: 2 },
+    });
+    host.setSelection(primary, 0, 2);
+    assert.deepStrictEqual(cursorDecorationCall(primary)?.options, []);
+    host.setSelection(primary, 1, 0);
+    assert.deepStrictEqual(cursorDecorationCall(primary)?.options, []);
+    host.setSelection(primary, 2, 0);
+    assert.deepStrictEqual(cursorDecorationCall(primary)?.options, []);
+
+    host.setActiveEditor(primary);
+    const previousCursorType = cursorDecorationCall(primary)?.type;
+    await host.chooseFileType(zenginAccount);
+    assert.strictEqual(previousCursorType?.disposeCount, 1);
+    await host.chooseFileType(jpxFourPrices);
+    const changedFormatCursorType = cursorDecorationCall(primary)?.type;
+    await host.chooseFileType(clearType);
+    assert.strictEqual(changedFormatCursorType?.disposeCount, 1);
+    assert.strictEqual(primaryCursorType?.disposeCount, 1);
+    assert.strictEqual(splitCursorType?.disposeCount, 1);
+
+    await host.chooseFileType(jpxFourPrices);
+    const hiddenCursorType = cursorDecorationCall(primary)?.type;
+    host.setVisibleEditors([]);
+    assert.strictEqual(hiddenCursorType?.disposeCount, 1);
+    assert.deepStrictEqual(cursorDecorationCall(primary)?.options, []);
+
+    host.setVisibleEditors([primary]);
+    const disposedCursorType = cursorDecorationCall(primary)?.type;
+    host.dispose();
+    assert.strictEqual(disposedCursorType?.disposeCount, 1);
   });
 
   test("境界線、交互色、区切り記号の色と太さを切り替える", async () => {
@@ -811,6 +1178,7 @@ suite("固定長表示の現行挙動", () => {
       assert.deepStrictEqual(host.eventSubscriptionStats, {
         activeEditor: { registered: 0, disposed: 0, active: 0 },
         visibleEditors: { registered: 1, disposed: 1, active: 0 },
+        editorSelections: { registered: 1, disposed: 1, active: 0 },
         documentChanges: { registered: 1, disposed: 1, active: 0 },
         documentClose: { registered: 1, disposed: 1, active: 0 },
       });
