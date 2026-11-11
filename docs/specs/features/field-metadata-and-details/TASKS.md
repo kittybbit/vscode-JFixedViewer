@@ -10,7 +10,9 @@
 
 ## 現在の状態
 
-- 機能は `PLAN_COMMITTED`。承認済みの計画コミット後、スライス1を実装した。
+- スライス1は `SLICE_COMMITTED`、スライス2は `SLICE_READY`。
+  スライス2の独立レビューは Ready。人による完了承認は一括承認まで `Pending`。
+  スライス2の作業ブランチは `codex/field-metadata-and-details-zengin`。
 - 比較ベースは `1e9e333924a949944150a79e60dd177b55a71044`。
   計画を準備するブランチは `codex/field-metadata-and-details`。
 - 2026年11月10日に `plan-reviewer` が計画全体を独立レビューし、Ready と判定した。
@@ -37,8 +39,13 @@
 ## GitHub スタック
 
 - 1層目は `codex/field-metadata-and-details` から `main` へ。計画時のベースは
-  `1e9e333924a949944150a79e60dd177b55a71044`。承認後の計画コミット、スライス1の
-  完了コミットと PR の URL・ヘッドは実績をここに追記する。
+  `1e9e333924a949944150a79e60dd177b55a71044`。
+  計画コミットは `47e55e960b9a5cb46df9c7783b7a90b26dac141f`。
+  スライス1は [PR #17](https://github.com/kittybbit/vscode-JFixedViewer/pull/17) で公開した。
+  最新ヘッドは `32ce97b0201d613398b9d1abf910a04354794874`。
+  Verify、CodeQL、両言語の Analyze がすべて通過し、CodeQL の解析リビジョンも同ヘッドと一致した。
+  チェックと適用ルールの記録は `/private/tmp/jfv-pr17.lXOINy1e/` にある。
+  このヘッドのチェック一覧に Cloud 固有の検査はなかった。
 - 2層目は `codex/field-metadata-and-details-zengin` から1層目のブランチへ。
   ベースは1層目のチェック通過済みの最新ヘッド。後続作業の前に Main が Verify、CodeQL の
   解析リビジョンとの対応、その他の必須チェックと適用される Cloud チェックを記録する。
@@ -63,7 +70,7 @@
 
 ## スライス1. 項目の詳細表示と JPX サンプル
 
-状態は `SLICE_READY`。項目名が分かるホバーとカーソルの強調を追加し、JPX 四本値で一通り使えるようにした。
+状態は `SLICE_COMMITTED`。項目名が分かるホバーとカーソルの強調を追加し、JPX 四本値で一通り使えるようにした。
 `main` を対象とする1層目。ベースは承認済み計画コミット `47e55e960b9a5cb46df9c7783b7a90b26dac141f`。
 
 ### 実装結果と検証証跡
@@ -166,9 +173,84 @@ VSIX の対象ファイル一覧で除外を確認する。他の空白検査と
 
 ## スライス2. 全銀33形式の照合とサンプル
 
-状態は `PLANNED`。全銀の組み込み全形式に公式仕様の項目情報を追加し、確認できた定義の誤りを修正する。
+状態は `SLICE_READY`。全銀の組み込み全形式に公式仕様の項目情報を追加し、定義の誤りを修正した。
 各形式とその表示分岐を開いて確認できるサンプルを同時に用意する。1層目の完了コミットと PR 公開、
-最新ヘッドの必須チェック通過を着手条件とする。
+最新ヘッドの必須チェック通過を着手条件とした。計画コミットは
+`47e55e960b9a5cb46df9c7783b7a90b26dac141f`、先行ベースと実装ブランチの開始 HEAD は
+`32ce97b0201d613398b9d1abf910a04354794874`。
+
+### スライス2の実装・検証証跡
+
+- `src/resource/definitions/zengin.json` の33形式・178行・2,699項目を AP-I-13 の公式表と照合した。
+  照合表は各項目の印刷ページ、表、行、元の項目名、型・桁数、内容を記録する。
+  継承・合成・可変タグ領域・繰返し項目の対応関係も含む。
+  - 照合表: `/private/tmp/jfv-s2-zengin-source-map.json`
+- SHA-256: `ad29da9dfbadd772d7a7248c244ae24e5dd84911abd6b4b4b415a62e225eb75a`
+- 公式仕様で確認した差異を修正した。
+  総合振込 EDI は113桁目に合わせた。
+  借入金計算書は内訳 `230` と合計 `231` を使う。
+  荷為替輸入信用状の発行・条件変更は `01` と `02` を使う。
+  全銀の既存形式 ID と手動選択の入口は維持した。
+- 独立レビューの指摘に従い、各形式の固有節と共通レイアウトの出典をREADMEと照合表で区別した。
+  継承レイアウトでも、種別コードは賞与・地方公務員・年金・照会結果・住宅ローンの固有節へ対応付けた。
+  §14・§16・§22・§23の共用元ページと形式固有ページも、行単位と項目単位の対応規則に明記した。
+- 同レビューで見つかった複合値と条件付き値をサンプルへ反映した。
+  信用状の条件変更用空白、通知銀行の指定条件、INVOICE/保険の既定値、TENOR・建値・付保コードを確認した。
+  会計性FXの差引表示・予約単位・530グループ日付と、外国送金SPOTのJPY・預金種目も更新した。
+  全銀サンプルテストに公式値・空白範囲・形式固有コードの固定期待を追加した。
+- 承認候補パスに挙げた `sample/zengin/` の33ファイルを用意した。
+  サンプルは ASCII と LF で構成する。
+  仕様のレコード長、順序、識別値、列挙値、集計値を満たす。
+  各ファイルに全表示分岐を含む。
+  `sample/README.md` は各形式の公式節・ページと JPX 仕様へのリンクを記載する。
+  可変タグ列と複合欄の表示方法も説明する。
+- 独立した構造・値監査は215レコードで178行定義を網羅し、曖昧な割当ては0。
+  公式レイアウト継承40行、列挙値578箇所、可変タグ6レコードを監査した。
+  件数・金額32項目と FX 取引グループ14件を確認し、差異は0。
+  監査スクリプトは `/private/tmp/jfixedviewer-audit-zengin.py` と、同ディレクトリの以下の5本。
+  `-aliases.py`、`-enums.py`、`-tags.py`、`-totals.py`、`-fx-groups.py`。
+- `npm run compile-tests` は Pass。
+  Mocha 回帰テストの実行コマンドは次のとおり。
+  `npm exec -- mocha --ui tdd out/test/extension.test.js --reporter dot`
+  17件すべて成功した。
+  既存の全銀・JPX 回帰を維持し、以下を確認する。
+  サンプルの長さ・行順・表示名・モード差と EDI 113/114桁を確認する。
+  借入 `230`/`231`、信用状 `01`/`02`、複合・条件付きの公式値と可変タグ ID も確認する。
+  カーソル装飾の単行参照を区別し、文書全体の再解析回数と設定範囲も確認する。
+- Main が実行した Desktop 回帰とスモークは18件 Pass。
+  P2固定期待を含む最新ログ: `/private/tmp/jfv-s2-r2-host.jPnU7ub6/desktop.log`
+  準備ログ: `/private/tmp/jfv-s2-r2-host.jPnU7ub6/prepare.log`
+  実行結果: `/private/tmp/jfv-s2-r2-host.jPnU7ub6/exit-status`
+- Desktop/Web の実 UI は6形式・10分岐で Pass。
+  Desktop: `/private/tmp/jfv-s2-fix-ui.IlNVEHaI/desktop.log`
+  Web: `/private/tmp/jfv-s2-fix-ui.IlNVEHaI/web.log`
+  入力 SHA: `/private/tmp/jfv-s2-fix-ui.IlNVEHaI/inputs.sha256`
+- 型・prepare・architecture・production・最小対応版・Web のホスト検証は Pass。
+  P2修正後の Desktop 回帰は18件すべて成功し、Desktop/Webの実UIも6形式・10分岐で Pass。
+  対応サンプルを使う6本の独立監査は、215レコード・178定義、継承40行、列挙578箇所、
+  タグ6レコード、集計32項目、FXグループ14件で差異0。
+  結果: `/private/tmp/jfv-s2-fix-audit.TYV80rXF/results.log`
+  サンプル入力 SHA: `/private/tmp/jfv-s2-fix-audit.TYV80rXF/inputs.sha256`
+- 最終 Qlty 0.645.0 は check 100パスと smells 19パスで指摘0。
+  metrics と総合チェックの終了コードは0、整形差分は0バイト。
+  全件の証跡は `/private/tmp/jfv-s2-ok-final.H8aS5Fmn/`。
+  最後の出典コメント2行は別検査で Pass。
+  `/private/tmp/jfv-s2-reviewed.SOMJ6ReX/comment-check.sarif` を参照する。
+- 最終 Desktop は18件 Pass。
+  `/private/tmp/jfv-s2-last-host.BYVCHQIF/desktop.log` を参照する。
+  最終コメント・整形後のテストも同一ASTで、上記結果を再利用した。
+  同ディレクトリの `final-comment-equivalence.json` に識別情報を残した。
+- `implementation-reviewer` が全39パスを再レビューし、Ready と判定した。
+  参照説明と複合・条件付きサンプル値の P2 は2件とも解消した。
+  レビュー差分の SHA-256 は以下。
+  `b7c28bcb013d658b045643cf02d3f72819083135cbc09bda096699361282820c`
+  対象と入力の記録は `/private/tmp/jfv-s2-reviewed.SOMJ6ReX/` にある。
+  この状態・証跡の追記は製品差分と分けて検証する。
+- スライス2の承認候補パス一覧と変更パスは一致する。
+  `.serena/` は既存の未追跡項目で、読み書きしていない。
+  独立レビューは Ready。人による完了承認は `Pending`。
+  全スライス実装後に完了承認をまとめる利用者指示を維持する。
+  実装上の未解決判断はない。
 
 ### 全銀定義の責務と境界
 
