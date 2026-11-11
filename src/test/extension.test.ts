@@ -1,5 +1,5 @@
 import * as assert from "assert";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import path = require("node:path");
 import {
   CharacterizationHost,
@@ -141,7 +141,7 @@ function foreignCurrencyHeader(mode: string): string {
 }
 
 function optionsForLine(editor: FakeEditor, line: number) {
-  const call = editor.decorationCalls.at(-1);
+  const call = fieldDecorationCalls(editor).at(-1);
   return (
     call?.options.filter((option) => option.range.start.line === line) ?? []
   );
@@ -154,6 +154,18 @@ function cursorDecorationCall(editor: FakeEditor) {
     };
     return (
       options.backgroundColor?.id === "editor.wordHighlightStrongBackground"
+    );
+  });
+}
+
+function fieldDecorationCalls(editor: FakeEditor) {
+  return editor.decorationCalls.filter(({ type }) => {
+    const options = type.options as {
+      backgroundColor?: { id?: string } | string;
+    };
+    return (
+      typeof options.backgroundColor !== "object" ||
+      options.backgroundColor?.id !== "editor.wordHighlightStrongBackground"
     );
   });
 }
@@ -174,7 +186,10 @@ function renderOptionsForLine(editor: FakeEditor, line: number) {
 
 function rowNames(editor: FakeEditor, line: number): string[] {
   return optionsForLine(editor, line).map((option) => {
-    const match = option.hoverMessage?.value.match(/^\*\*(.*?)\*\*/u);
+    const hover = option.hoverMessage?.value ?? "";
+    const match =
+      hover.match(/^\*\*(.*?)\*\*/u) ??
+      hover.match(/^(.+?) \/ .+ \(項目 \d+\)/u);
     return match?.[1]?.split(" / ", 1)[0] ?? "";
   });
 }
@@ -182,6 +197,223 @@ function rowNames(editor: FakeEditor, line: number): string[] {
 function hasRow(editor: FakeEditor, line: number, name: string): boolean {
   return rowNames(editor, line).includes(name);
 }
+
+function variableTagIds(
+  record: string,
+  tagOffset = 16,
+  countOffset = 11,
+): string[] {
+  const count = Number(record.slice(countOffset, countOffset + 2));
+  const ids: string[] = [];
+  let offset = tagOffset;
+  for (let index = 0; index < count; index += 1) {
+    const id = record.slice(offset, offset + 3);
+    const length = Number(record.slice(offset + 3, offset + 6));
+    assert.match(id, /^[A-Z0-9]{3}$/u);
+    assert.ok(Number.isInteger(length));
+    ids.push(id);
+    offset += 6 + length;
+  }
+  assert.ok(offset <= record.length);
+  return ids;
+}
+
+const zenginSimpleRows = "ヘッダー|データ|トレーラ|エンド";
+const zenginSamples = [
+  [
+    "50200001.furikomi_nyuukin_tuuchi_a.dat",
+    "振込入金通知(A)",
+    200,
+    zenginSimpleRows,
+  ],
+  [
+    "50200001.furikomi_nyuukin_tuuchi_b.dat",
+    "振込入金通知(B)",
+    200,
+    zenginSimpleRows,
+  ],
+  [
+    "50200003.nyuusyukkin_torihiki_meisai.dat",
+    "入出金取引明細",
+    200,
+    "ヘッダー|データ(普通預金・当座預金・貯蓄預金)|トレーラ|ヘッダー|データ(通知預金・定期預金・積立定期預金)|トレーラ|エンド",
+  ],
+  [
+    "50200004.zanndaka_tuuchi_yokin.dat",
+    "残高通知(預金)",
+    200,
+    zenginSimpleRows,
+  ],
+  [
+    "50200111.kyuuyo_furikomi_minkan.dat",
+    "給与振込(民間)",
+    120,
+    zenginSimpleRows,
+  ],
+  [
+    "50200112.syouyo_furikomi_minkan.dat",
+    "賞与振込(民間)",
+    120,
+    zenginSimpleRows,
+  ],
+  [
+    "50200171.kyuuyo_furikomi_chihoukoumuin.dat",
+    "給与振込(地方公務員)",
+    120,
+    zenginSimpleRows,
+  ],
+  [
+    "50200172.syouyo_furikomi_chihoukoumuin.dat",
+    "賞与振込(地方公務員)",
+    120,
+    zenginSimpleRows,
+  ],
+  [
+    "50200121.sougou_furikomi.dat",
+    "総合振込",
+    120,
+    "ヘッダー|データ|データ(EDI)|トレーラ|エンド",
+  ],
+  [
+    "50200141.kabushiki_haitoukin_furikomi.dat",
+    "株式配当金振込",
+    120,
+    zenginSimpleRows,
+  ],
+  [
+    "50200143.nenkin_shintaku_keiyaku.dat",
+    "年金信託契約に係る年金・一時金給付金振込",
+    120,
+    zenginSimpleRows,
+  ],
+  [
+    "50200144.kouteki_nenkin_hoken.dat",
+    "公的年金保険の年金・一時金給付金振込",
+    120,
+    zenginSimpleRows,
+  ],
+  [
+    "50200145.iryou_hoken_kyufukin_furikomi.dat",
+    "医療保険の給付金振込",
+    120,
+    zenginSimpleRows,
+  ],
+  [
+    "50200198.furikomi_kouza_shokai_irai_meisai.dat",
+    "振込口座照会(依頼明細)",
+    120,
+    zenginSimpleRows,
+  ],
+  [
+    "50200199.furikomi_kouza_shokai_shori_kekka_meisai.dat",
+    "振込口座照会(処理結果明細)",
+    120,
+    zenginSimpleRows,
+  ],
+  [
+    "50200191.yokin_kouza_furikae_irai_meisai.dat",
+    "預金口座振替(依頼明細)",
+    120,
+    zenginSimpleRows,
+  ],
+  [
+    "50200191.yokin_kouza_furikae_shori_kekka_meisai.dat",
+    "預金口座振替(処理結果明細)",
+    120,
+    zenginSimpleRows,
+  ],
+  [
+    "50200193.yokin_kouza_furikae_henkou_tuuchi.dat",
+    "預金口座振替変更通知",
+    120,
+    zenginSimpleRows,
+  ],
+  [
+    "50200211.jyuutaku_loan_kankei_zaikei_loan.dat",
+    "住宅ローン関係(財形ローン)",
+    550,
+    zenginSimpleRows,
+  ],
+  [
+    "50200212.jyuutaku_loan_kankei_sonota.dat",
+    "住宅ローン関係(その他)",
+    550,
+    zenginSimpleRows,
+  ],
+  [
+    "50200300.zaikei_chochiku_kankei_irai_meisai.dat",
+    "財形貯蓄関係(依頼明細)",
+    300,
+    zenginSimpleRows,
+  ],
+  [
+    "50200301.zaikei_chochiku_kankei_shori_kekka_meisai_tumitate_naiyou.dat",
+    "財形貯蓄関係(処理結果明細:積立内容)",
+    300,
+    zenginSimpleRows,
+  ],
+  [
+    "50200302.zaikei_chochiku_kankei_shori_kekka_meisai_rishi_hokyuu.dat",
+    "財形貯蓄関係(処理結果明細:利子補給)",
+    300,
+    zenginSimpleRows,
+  ],
+  [
+    "50200309.zaikei_chochiku_kankei_shori_kekka_meisai_sonota.dat",
+    "財形貯蓄関係(処理結果明細:その他) ",
+    300,
+    zenginSimpleRows,
+  ],
+  [
+    "50200231.kariirekin_keisansho.dat",
+    "借入金計算書",
+    250,
+    "ヘッダー|データ(手形貸付・証書貸付)|データ(商業手形割引〔内訳〕)|データ(商業手形割引〔合計〕)|トレーラ|エンド",
+  ],
+  [
+    "50200232.kariirekin_zaikoumeisai.dat",
+    "借入金残高明細 ",
+    250,
+    "ヘッダー|データ(手形貸付・証書貸付)|データ(商業手形割引)|トレーラ|エンド",
+  ],
+  [
+    "50200233.kariirekin_zandaka_goukei.dat",
+    "借入金残高合計",
+    250,
+    zenginSimpleRows,
+  ],
+  [
+    "50200425.fx_torihiki_meisai_kaikeisei.dat",
+    "外国為替取引明細(会計性)",
+    250,
+    "ヘッダー|データ(本体情報)|データ(輸出手形買取)|データ(輸出手形買取内訳)|データ(利息・手数料)|トレーラ|ヘッダー|データ(本体情報)|データ(輸入手形決済)|データ(輸入手形決済内訳)|トレーラ|ヘッダー|データ(本体情報)|データ(輸出手形取立支払)|データ(輸出手形取立支払内訳)|トレーラ|ヘッダー|データ(本体情報)|データ(仕向送金取組)|データ(仕向送金取組内訳)|トレーラ|ヘッダー|データ(本体情報)|データ(被仕向送金支払)|データ(被仕向送金支払内訳)|トレーラ|ヘッダー|データ(本体情報)|データ(利息・手数料情報（都度請求）)|トレーラ|ヘッダー|データ(利息・手数料一括請求（合計）)|データ(利息・手数料一括請求（内訳）)|トレーラ|ヘッダー|データ(為替予約（先物予約締結）)|トレーラ|ヘッダー|データ(為替予約（先物予約履行）)|トレーラ|ヘッダー|データ(為替予約（先物予約残高明細）)|トレーラ|エンド",
+  ],
+  [
+    "50200426.fx_torihiki_meisai_hikaikeisei.dat",
+    "外国為替取引明細(非会計性)",
+    250,
+    "ヘッダー|データ(輸出信用状到着案内（固定レコード）)|データ(輸出信用状到着案内（可変レコード）)|トレーラ|ヘッダー|データ(輸入船積書類到着案内（固定レコード）)|データ(輸入船積書類到着案内（可変レコード）)|トレーラ|ヘッダー|データ(被仕向送金到着案内（固定レコード）)|データ(被仕向送金到着案内（可変レコード）)|データ(利息・手数料)|トレーラ|ヘッダー|データ(輸出手形経過情報（固定レコード）)|データ(輸出手形経過情報（可変レコード）)|トレーラ|エンド",
+  ],
+  ["50200427.fx_kanren_jouhou.dat", "外国為替関連情報", 250, zenginSimpleRows],
+  [
+    "50200435.gaikoku_soukin_irai.dat",
+    "外国送金依頼",
+    250,
+    "ヘッダー|データ(本体情報)|データ(会計処理内訳)|データ(送金指図内訳（可変レコード）)|トレーラ|エンド",
+  ],
+  [
+    "50200428.nigawase_yunyuu_lc_hakkou_irai.dat",
+    "荷為替輸入信用状発行依頼",
+    250,
+    "ヘッダー|データ(本体情報(1))|データ(本体情報(2))|データ(本体情報(3))|データ(取引情報(1))|データ(取引情報(2))|データ(取引情報(3))|データ(取引情報(4))|データ(取引情報(5))|データ(取引情報(6))|データ(取引情報(7))|データ(本体情報(1))|データ(本体情報(2))|データ(本体情報(3))|データ(取引情報(1))|データ(取引情報(2))|データ(内訳情報)|トレーラ|エンド",
+  ],
+  [
+    "50200009.gaika_yokin_nyuushukkin_torihiki_meisai.dat",
+    "外貨預金入出金取引明細",
+    250,
+    "ヘッダー|データ(本体情報(1)：普通預金･当座預金･貯蓄預金の場合)|データ(内訳情報)|トレーラ|ヘッダー|データ(本体情報(2)：通知預金･定期預金･積立定期預金の場合)|データ(内訳情報)|トレーラ|エンド",
+  ],
+] as const;
 
 suite("固定長表示の現行挙動", () => {
   let host: CharacterizationHost;
@@ -276,6 +508,295 @@ suite("固定長表示の現行挙動", () => {
     await host.chooseFileType(zenginLoanCalculation);
     assert.strictEqual(hasRow(loan, 0, "データ(商業手形割引〔内訳〕)"), true);
     assert.strictEqual(hasRow(loan, 0, "データ(商業手形割引〔合計〕)"), false);
+  });
+
+  test("全銀33形式のサンプルを公式レコード行へ割り当てる", async function () {
+    this.timeout(10000);
+    const sampleDirectory = path.resolve(__dirname, "../../sample/zengin");
+    const expectedFiles = zenginSamples.map(([fileName]) => fileName).sort();
+    assert.strictEqual(zenginSamples.length, 33);
+    assert.strictEqual(new Set(expectedFiles).size, 33);
+    assert.deepStrictEqual(readdirSync(sampleDirectory).sort(), expectedFiles);
+
+    for (const [
+      fileName,
+      formatName,
+      recordBytes,
+      rowSequence,
+    ] of zenginSamples) {
+      const sampleBytes = readFileSync(path.join(sampleDirectory, fileName));
+      assert.strictEqual(sampleBytes.at(-1), 0x0a, fileName);
+      assert.strictEqual(sampleBytes.includes(0x0d), false, fileName);
+      assert.strictEqual(
+        sampleBytes.every((byte) => byte < 0x80),
+        true,
+        fileName,
+      );
+
+      const records = sampleBytes.subarray(0, -1).toString("ascii").split("\n");
+      const expectedRows = rowSequence.split("|");
+      assert.strictEqual(records.length, expectedRows.length, fileName);
+      assert.match(fileName.slice(0, 8), /^\d{8}$/u);
+      for (const record of records) {
+        assert.strictEqual(record.length, recordBytes, fileName);
+      }
+
+      const editor = host.createEditor(fileName, records);
+      host.setActiveEditor(editor);
+      await host.chooseFileType(`全銀協規定形式/${formatName}`);
+      await host.waitForPendingRender();
+      for (const [line, expectedRow] of expectedRows.entries()) {
+        const fieldRows = rowNames(editor, line);
+        assert.ok(
+          fieldRows.length > 0,
+          `${fileName}:${line + 1} has no fields`,
+        );
+        assert.deepStrictEqual(
+          [...new Set(fieldRows)],
+          [expectedRow],
+          `${fileName}:${line + 1}`,
+        );
+      }
+    }
+
+    const generalTransfer = readFileSync(
+      path.join(sampleDirectory, "50200121.sougou_furikomi.dat"),
+      "ascii",
+    ).split("\n");
+    assert.strictEqual(generalTransfer[1]?.[112], " ");
+    assert.strictEqual(generalTransfer[1]?.[113], " ");
+    assert.strictEqual(generalTransfer[2]?.[112], "Y");
+    assert.strictEqual(generalTransfer[2]?.[113], " ");
+
+    const loan = readFileSync(
+      path.join(sampleDirectory, "50200231.kariirekin_keisansho.dat"),
+      "ascii",
+    ).split("\n");
+    assert.strictEqual(loan[2]?.slice(0, 3), "230");
+    assert.strictEqual(loan[3]?.slice(0, 3), "231");
+
+    const letterOfCredit = readFileSync(
+      path.join(sampleDirectory, "50200428.nigawase_yunyuu_lc_hakkou_irai.dat"),
+      "ascii",
+    ).split("\n");
+    assert.strictEqual(letterOfCredit[1]?.slice(7, 9), "01");
+    assert.strictEqual(letterOfCredit[11]?.slice(7, 9), "02");
+
+    const assertOfficialBytes = (
+      record: string,
+      position: readonly [number, number],
+      expected: string,
+    ) => {
+      const [start, end] = position;
+      assert.strictEqual(
+        record.slice(start - 1, end),
+        expected,
+        `Official bytes ${start}-${end}`,
+      );
+    };
+
+    const assertKindCode = (
+      fileName: string,
+      kindCode: string,
+      specification: string,
+    ) => {
+      const header =
+        readFileSync(path.join(sampleDirectory, fileName), "ascii").split(
+          "\n",
+        )[0] ?? "";
+      assert.strictEqual(
+        header.slice(1, kindCode.length + 1),
+        kindCode,
+        `${specification} kind code`,
+      );
+    };
+
+    assertKindCode(
+      "50200112.syouyo_furikomi_minkan.dat",
+      "12",
+      "AP-I-13 §5 p31",
+    );
+    assertKindCode(
+      "50200171.kyuuyo_furikomi_chihoukoumuin.dat",
+      "71",
+      "AP-I-13 §6 p32",
+    );
+    assertKindCode(
+      "50200172.syouyo_furikomi_chihoukoumuin.dat",
+      "72",
+      "AP-I-13 §7 p33",
+    );
+    assertKindCode(
+      "50200143.nenkin_shintaku_keiyaku.dat",
+      "43",
+      "AP-I-13 §10 p38",
+    );
+    assertKindCode(
+      "50200144.kouteki_nenkin_hoken.dat",
+      "44",
+      "AP-I-13 §11 p39",
+    );
+    assertKindCode(
+      "50200145.iryou_hoken_kyufukin_furikomi.dat",
+      "45",
+      "AP-I-13 §12 p40",
+    );
+    assertKindCode(
+      "50200199.furikomi_kouza_shokai_shori_kekka_meisai.dat",
+      "99",
+      "AP-I-13 §14 p43",
+    );
+    assertKindCode(
+      "50200191.yokin_kouza_furikae_shori_kekka_meisai.dat",
+      "91",
+      "AP-I-13 §15 p44",
+    );
+    assertKindCode(
+      "50200212.jyuutaku_loan_kankei_sonota.dat",
+      "12",
+      "AP-I-13 §19 p55",
+    );
+    assertKindCode(
+      "50200302.zaikei_chochiku_kankei_shori_kekka_meisai_rishi_hokyuu.dat",
+      "2",
+      "AP-I-13 §22 p64",
+    );
+    assertKindCode(
+      "50200309.zaikei_chochiku_kankei_shori_kekka_meisai_sonota.dat",
+      "9",
+      "AP-I-13 §23 p65",
+    );
+
+    // AP-I-13 §31 p151 の発行ヘッダーは発行依頼時の信用状番号・発行日を空白とし、
+    // 通知銀行を指定しない場合は銀行情報も空白にする。
+    const issueHeader = letterOfCredit[1] ?? "";
+    assertOfficialBytes(issueHeader, [10, 25], " ".repeat(16));
+    assertOfficialBytes(issueHeader, [26, 33], " ".repeat(8));
+    assertOfficialBytes(issueHeader, [69, 69], "1");
+    assertOfficialBytes(issueHeader, [70, 209], " ".repeat(140));
+
+    const issueTrade1 = letterOfCredit[4] ?? "";
+    // AP-I-13 §31 p153 のTENORコード。
+    assertOfficialBytes(issueTrade1, [75, 75], "1");
+    assertOfficialBytes(issueTrade1, [76, 76], "1");
+    assertOfficialBytes(issueTrade1, [102, 102], "1");
+    // AP-I-13 §31 p154 の掛率・決済条件・譲渡条件。
+    assertOfficialBytes(issueTrade1, [138, 140], "100");
+    assertOfficialBytes(issueTrade1, [211, 211], "1");
+    assertOfficialBytes(issueTrade1, [212, 212], "1");
+    assertOfficialBytes(issueTrade1, [213, 213], "1");
+    assertOfficialBytes(issueTrade1, [214, 248], " ".repeat(35));
+
+    const issueTrade2 = letterOfCredit[5] ?? "";
+    // AP-I-13 §31 p155 の信用状期限と船積期限。
+    assertOfficialBytes(issueTrade2, [9, 16], "20261231");
+    assertOfficialBytes(issueTrade2, [46, 53], " ".repeat(8));
+    assertOfficialBytes(issueTrade2, [63, 70], "20261215");
+    assertOfficialBytes(issueTrade2, [71, 78], " ".repeat(8));
+
+    const invoiceAndInsurance = letterOfCredit[6] ?? "";
+    // AP-I-13 §31 p156 のINVOICE通数、保険証券通数、保険料率既定値。
+    assertOfficialBytes(invoiceAndInsurance, [8, 9], "01");
+    assertOfficialBytes(invoiceAndInsurance, [81, 82], "01");
+    assertOfficialBytes(invoiceAndInsurance, [83, 85], "110");
+
+    const issueTrade6 = letterOfCredit[9] ?? "";
+    // AP-I-13 §31 p160 の建値・付保条件。
+    assertOfficialBytes(issueTrade6, [128, 128], "1");
+    assertOfficialBytes(issueTrade6, [129, 138], " ".repeat(10));
+    assertOfficialBytes(
+      issueTrade6,
+      [139, 168],
+      "TOKYO                         ",
+    );
+    assertOfficialBytes(issueTrade6, [169, 169], "2");
+    assertOfficialBytes(issueTrade6, [170, 219], " ".repeat(50));
+
+    const changeHeader = letterOfCredit[11] ?? "";
+    // AP-I-13 §31 p151 の変更依頼は既存の信用状番号・発行日を指定する。
+    assertOfficialBytes(changeHeader, [10, 25], "LC000001        ");
+    assertOfficialBytes(changeHeader, [26, 33], "20261101");
+    assertOfficialBytes(changeHeader, [69, 69], "1");
+    assertOfficialBytes(changeHeader, [70, 209], " ".repeat(140));
+
+    const changeTrade1 = letterOfCredit[14] ?? "";
+    // AP-I-13 §31 p163 では変更依頼用の取引情報(1)は空白指定。
+    assertOfficialBytes(changeTrade1, [75, 248], " ".repeat(174));
+
+    const changeTrade2 = letterOfCredit[15] ?? "";
+    // AP-I-13 §31 p164 の期限、船積場所、到着場所。
+    assertOfficialBytes(changeTrade2, [9, 16], "20261231");
+    assertOfficialBytes(changeTrade2, [46, 53], " ".repeat(8));
+    assertOfficialBytes(changeTrade2, [83, 147], " ".repeat(65));
+    assertOfficialBytes(changeTrade2, [148, 212], " ".repeat(65));
+
+    const fxNonAccounting = readFileSync(
+      path.join(sampleDirectory, "50200426.fx_torihiki_meisai_hikaikeisei.dat"),
+      "ascii",
+    ).split("\n");
+    // AP-I-13 §28 pp.125, 128, 130, 133 の非会計FXタグID。
+    assert.deepStrictEqual(variableTagIds(fxNonAccounting[2] ?? ""), [
+      "APT",
+      "MCD",
+      "MCT",
+      "PTO",
+    ]);
+    assert.deepStrictEqual(variableTagIds(fxNonAccounting[6] ?? ""), [
+      "DLC",
+      "BRW",
+      "MCD",
+      "ORG",
+      "DFT",
+      "INV",
+      "BLD",
+      "IPC",
+    ]);
+    assert.deepStrictEqual(variableTagIds(fxNonAccounting[10] ?? ""), [
+      "RBN",
+      "BSN",
+    ]);
+    assert.deepStrictEqual(variableTagIds(fxNonAccounting[15] ?? ""), ["PCN"]);
+
+    const foreignRemittance = readFileSync(
+      path.join(sampleDirectory, "50200435.gaikoku_soukin_irai.dat"),
+      "ascii",
+    ).split("\n");
+    // AP-I-13 §30 p145 の外国送金タグとp144のSPOT条件・引落口座。
+    assert.deepStrictEqual(variableTagIds(foreignRemittance[3] ?? ""), [
+      "BNN",
+      "BNA",
+      "BAN",
+      "BAB",
+    ]);
+
+    const lcDetail = letterOfCredit[16] ?? "";
+    // AP-I-13 §31 p165 の信用状内訳タグID。
+    assert.deepStrictEqual(variableTagIds(lcDetail, 12, 7), ["CVN", "ADC"]);
+
+    const fxAccounting = readFileSync(
+      path.join(sampleDirectory, "50200425.fx_torihiki_meisai_kaikeisei.dat"),
+      "ascii",
+    ).split("\n");
+    // AP-I-13 §27 pp112, 114, 117–118 の差引表示・予約相場通貨。
+    assertOfficialBytes(fxAccounting[31] ?? "", [72, 72], "1");
+    assertOfficialBytes(fxAccounting[35] ?? "", [138, 138], "1");
+    assertOfficialBytes(fxAccounting[38] ?? "", [125, 125], "1");
+    assertOfficialBytes(fxAccounting[41] ?? "", [138, 138], "1");
+    // AP-I-13 §27 p83 の為替予約残高明細は勘定日を空白にする。
+    assertOfficialBytes(fxAccounting[40] ?? "", [5, 7], "530");
+    assertOfficialBytes(fxAccounting[40] ?? "", [26, 41], " ".repeat(16));
+    for (const group of ["510", "520"]) {
+      const header =
+        fxAccounting.find(
+          (record) => record[0] === "1" && record.slice(4, 7) === group,
+        ) ?? "";
+      assertOfficialBytes(header, [26, 41], "20261101".repeat(2));
+    }
+
+    // AP-I-13 §30 p144 のSPOT区分と引落口座条件。
+    assertOfficialBytes(foreignRemittance[2] ?? "", [10, 11], "01");
+    assertOfficialBytes(foreignRemittance[2] ?? "", [66, 68], "JPY");
+    assertOfficialBytes(foreignRemittance[2] ?? "", [69, 69], "1");
   });
 
   test("旧columns JSONをローダーへ注入し、旧ホバーとUTF-16範囲を保つ", async () => {
@@ -580,7 +1101,7 @@ suite("固定長表示の現行挙動", () => {
       return options.backgroundColor === "#1a2b3c40";
     });
     assert.ok(backgroundType);
-    const alternating = editor.decorationCalls.at(-1);
+    const alternating = fieldDecorationCalls(editor).at(-1);
     assert.strictEqual(alternating?.type, backgroundType);
     assert.strictEqual(
       alternating?.options.length,
@@ -635,41 +1156,56 @@ suite("固定長表示の現行挙動", () => {
 
     host.setActiveEditor(second);
     await host.chooseFileType(zenginTransfer);
-    const firstCallsWhileHidden = first.document.lineAtCallCount;
-    const secondCallsBeforeConfiguration = second.document.lineAtCallCount;
-    const secondDecorationsBeforeConfiguration = second.decorationCalls.length;
+    const firstLineCallsWhileHidden = first.document.lineAtCallCount;
+    const secondLineCallsBeforeConfiguration = second.document.lineAtCallCount;
+    const firstCallsBeforeConfiguration = fieldDecorationCalls(first).length;
+    const firstCallsWhileHidden = fieldDecorationCalls(first).length;
+    const secondCallsBeforeConfiguration = fieldDecorationCalls(second).length;
 
     host.setConfiguration(firstUri, {
       boundaryStyle: "alternating",
       boundaryColor: "#abcdef",
       boundaryWidth: 2,
     });
-    assert.strictEqual(first.document.lineAtCallCount, firstCallsWhileHidden);
     assert.strictEqual(
-      second.document.lineAtCallCount,
+      fieldDecorationCalls(first).length,
+      firstCallsWhileHidden,
+    );
+    assert.strictEqual(
+      fieldDecorationCalls(second).length,
       secondCallsBeforeConfiguration,
     );
-    assert.strictEqual(
-      second.decorationCalls.length,
-      secondDecorationsBeforeConfiguration,
-    );
-    assert.strictEqual(firstSplit.decorationCalls.length, 0);
-
-    host.setVisibleEditors([first, firstSplit, second]);
-    const firstType = first.decorationCalls.at(-2)?.type;
-    const secondType = second.decorationCalls.at(-1)?.type;
-    const firstSplitType = firstSplit.decorationCalls.at(-2)?.type;
     assert.strictEqual(
       first.document.lineAtCallCount,
-      firstCallsWhileHidden + first.document.lineCount,
+      firstLineCallsWhileHidden,
     );
     assert.strictEqual(
       second.document.lineAtCallCount,
+      secondLineCallsBeforeConfiguration,
+    );
+    assert.strictEqual(fieldDecorationCalls(firstSplit).length, 0);
+
+    const firstLineCallsBeforeVisible = first.document.lineAtCallCount;
+    const secondLineCallsBeforeVisible = second.document.lineAtCallCount;
+    host.setVisibleEditors([first, firstSplit, second]);
+    const firstType = fieldDecorationCalls(first).at(-1)?.type;
+    const secondType = fieldDecorationCalls(second).at(-1)?.type;
+    const firstSplitType = fieldDecorationCalls(firstSplit).at(-1)?.type;
+    assert.strictEqual(
+      fieldDecorationCalls(first).length,
+      firstCallsBeforeConfiguration + 2,
+    );
+    assert.strictEqual(
+      fieldDecorationCalls(second).length,
       secondCallsBeforeConfiguration,
     );
     assert.strictEqual(
-      second.decorationCalls.length,
-      secondDecorationsBeforeConfiguration,
+      first.document.lineAtCallCount,
+      firstLineCallsBeforeVisible + first.document.lineCount + 2,
+    );
+    assert.strictEqual(
+      second.document.lineAtCallCount,
+      secondLineCallsBeforeVisible,
     );
     const secondLine = optionsForLine(second, 1)[0].renderOptions?.after as {
       width: string;
@@ -677,8 +1213,8 @@ suite("固定長表示の現行挙動", () => {
     };
     assert.strictEqual(secondLine.backgroundColor.id, "editor.foreground");
 
-    const firstBackground = first.decorationCalls.at(-1);
-    const splitBackground = firstSplit.decorationCalls.at(-1);
+    const firstBackground = fieldDecorationCalls(first).at(-1);
+    const splitBackground = fieldDecorationCalls(firstSplit).at(-1);
     const firstBackgroundType = firstBackground?.type;
     const splitBackgroundType = splitBackground?.type;
     assert.deepStrictEqual(
@@ -691,7 +1227,7 @@ suite("固定長表示の現行挙動", () => {
         .backgroundColor,
       "#abcdef40",
     );
-    assert.strictEqual(second.decorationCalls.at(-1)?.type, secondType);
+    assert.strictEqual(fieldDecorationCalls(second).at(-1)?.type, secondType);
     assert.strictEqual(
       (
         optionsForLine(second, 1)[0].renderOptions?.after as {
@@ -701,35 +1237,41 @@ suite("固定長表示の現行挙動", () => {
       "editor.foreground",
     );
 
-    const firstCallsBeforeVisibleConfiguration = first.document.lineAtCallCount;
+    const firstCallsBeforeVisibleConfiguration =
+      fieldDecorationCalls(first).length;
     const secondCallsBeforeVisibleConfiguration =
+      fieldDecorationCalls(second).length;
+    const firstLineCallsBeforeVisibleConfiguration =
+      first.document.lineAtCallCount;
+    const secondLineCallsBeforeVisibleConfiguration =
       second.document.lineAtCallCount;
-    const secondDecorationsBeforeVisibleConfiguration =
-      second.decorationCalls.length;
     host.setConfiguration(firstUri, {
       boundaryStyle: "marker",
       boundaryColor: "#abcdef",
       boundaryWidth: 2,
     });
     assert.strictEqual(
-      first.document.lineAtCallCount,
-      firstCallsBeforeVisibleConfiguration + first.document.lineCount,
+      fieldDecorationCalls(first).length,
+      firstCallsBeforeVisibleConfiguration + 2,
     );
     assert.strictEqual(
-      second.document.lineAtCallCount,
+      fieldDecorationCalls(second).length,
       secondCallsBeforeVisibleConfiguration,
     );
     assert.strictEqual(
-      second.decorationCalls.length,
-      secondDecorationsBeforeVisibleConfiguration,
+      first.document.lineAtCallCount,
+      firstLineCallsBeforeVisibleConfiguration + first.document.lineCount + 2,
+    );
+    assert.strictEqual(
+      second.document.lineAtCallCount,
+      secondLineCallsBeforeVisibleConfiguration,
     );
     assert.strictEqual(firstBackgroundType?.disposeCount, 1);
     assert.strictEqual(splitBackgroundType?.disposeCount, 1);
-    assert.ok(
-      first.decorationCalls
-        .filter((call) => call.type === firstType)
-        .at(-1)
-        ?.options.some(
+    const firstMarkerCall = [...fieldDecorationCalls(first)]
+      .reverse()
+      .find((call) =>
+        call.options.some(
           (option) =>
             (
               option.renderOptions?.after as
@@ -737,12 +1279,11 @@ suite("固定長表示の現行挙動", () => {
                 | undefined
             )?.contentText === "│",
         ),
-    );
-    assert.ok(
-      firstSplit.decorationCalls
-        .filter((call) => call.type === firstSplitType)
-        .at(-1)
-        ?.options.some(
+      );
+    const splitMarkerCall = [...fieldDecorationCalls(firstSplit)]
+      .reverse()
+      .find((call) =>
+        call.options.some(
           (option) =>
             (
               option.renderOptions?.after as
@@ -750,8 +1291,10 @@ suite("固定長表示の現行挙動", () => {
                 | undefined
             )?.contentText === "│",
         ),
-    );
-    assert.strictEqual(second.decorationCalls.at(-1)?.type, secondType);
+      );
+    assert.ok(firstMarkerCall);
+    assert.ok(splitMarkerCall);
+    assert.strictEqual(fieldDecorationCalls(second).at(-1)?.type, secondType);
 
     host.dispose();
     assert.strictEqual(firstBackgroundType?.disposeCount, 1);
@@ -759,8 +1302,8 @@ suite("固定長表示の現行挙動", () => {
   });
 
   test("1回の解析ではモードを引き継ぎ、別文書では先頭から解析する", async () => {
-    const normal = `2${"x".repeat(112)} `;
-    const edi = `2${"x".repeat(112)}Y`;
+    const normal = `2${"x".repeat(111)} Y`;
+    const edi = `2${"x".repeat(111)}Y `;
     const general = host.createEditor("50200121-general.txt", [normal, edi]);
     host.setActiveEditor(general);
     await host.chooseFileType(zenginGeneralTransfer);
@@ -772,7 +1315,7 @@ suite("固定長表示の現行挙動", () => {
     const first = host.createEditor("50200003-first.txt", [header("5"), "2"]);
     host.setActiveEditor(first);
     await host.chooseFileType(zenginTransfer);
-    const firstType = first.decorationCalls.at(-1)?.type;
+    const firstType = fieldDecorationCalls(first).at(-1)?.type;
     assert.strictEqual(
       hasRow(first, 1, "データ(通知預金・定期預金・積立定期預金)"),
       true,
@@ -782,7 +1325,8 @@ suite("固定長表示の現行挙動", () => {
     host.setActiveEditor(sameType);
     await host.chooseFileType(zenginTransfer);
     assert.deepStrictEqual(optionsForLine(sameType, 0), []);
-    const sameTypeHandleBeforeForeign = sameType.decorationCalls.at(-1)?.type;
+    const sameTypeHandleBeforeForeign =
+      fieldDecorationCalls(sameType).at(-1)?.type;
 
     const otherType = host.createEditor("50200009-foreign.txt", [
       foreignCurrencyHeader("1"),
@@ -801,14 +1345,14 @@ suite("固定長表示の現行挙動", () => {
     const beforeSwitch = host.reporters[0].events.length;
     host.setActiveEditor(sameType);
     assert.deepStrictEqual(optionsForLine(sameType, 0), []);
-    const sameTypeHeadHandle = sameType.decorationCalls.at(-1)?.type;
+    const sameTypeHeadHandle = fieldDecorationCalls(sameType).at(-1)?.type;
     assert.strictEqual(sameTypeHandleBeforeForeign?.disposeCount, 1);
     assert.strictEqual(host.reporters[0].events.length, beforeSwitch);
 
     host.setActiveEditor(first);
     assert.strictEqual(sameTypeHeadHandle?.disposeCount, 1);
     assert.strictEqual(firstType?.disposeCount, 1);
-    assert.strictEqual(first.decorationCalls.length, 3);
+    assert.strictEqual(fieldDecorationCalls(first).length, 3);
     assert.strictEqual(
       hasRow(first, 1, "データ(通知預金・定期預金・積立定期預金)"),
       true,
@@ -854,11 +1398,11 @@ suite("固定長表示の現行挙動", () => {
     const editor = host.createEditor("50200001.txt", ["2"]);
     host.setActiveEditor(editor);
     await host.chooseFileType(zenginAccount);
-    const originalType = editor.decorationCalls.at(-1)?.type;
-    const callCount = editor.decorationCalls.length;
+    const originalType = fieldDecorationCalls(editor).at(-1)?.type;
+    const callCount = fieldDecorationCalls(editor).length;
     const eventsBeforeCancel = reporter.events.length;
     await host.chooseFileType(undefined);
-    assert.strictEqual(editor.decorationCalls.length, callCount);
+    assert.strictEqual(fieldDecorationCalls(editor).length, callCount);
     assert.strictEqual(originalType?.disposeCount, 0);
     assert.strictEqual(reporter.events.length, eventsBeforeCancel + 1);
     assert.deepStrictEqual(reporter.events.at(-1), {
@@ -870,7 +1414,7 @@ suite("固定長表示の現行挙動", () => {
     const eventsBeforeSwitch = reporter.events.length;
     host.setActiveEditor(replacementEditor);
     assert.strictEqual(originalType?.disposeCount, 1);
-    assert.strictEqual(replacementEditor.decorationCalls.length, 1);
+    assert.strictEqual(fieldDecorationCalls(replacementEditor).length, 1);
     assert.strictEqual(reporter.events.length, eventsBeforeSwitch);
   });
 
@@ -883,15 +1427,18 @@ suite("固定長表示の現行挙動", () => {
       true,
     );
 
-    const originalType = editor.decorationCalls.at(-1)?.type;
-    const callsBeforeEdit = editor.decorationCalls.length;
+    const originalType = fieldDecorationCalls(editor).at(-1)?.type;
+    const callsBeforeEdit = fieldDecorationCalls(editor).length;
     host.changeDocument(editor, [header("1"), "2"]);
     host.changeDocument(editor, [header("5"), "2"]);
     host.changeDocument(editor, [header("1"), "2"]);
     host.sendEmptyDocumentChange(editor);
     await host.waitForPendingRender();
 
-    assert.strictEqual(editor.decorationCalls.length, callsBeforeEdit + 1);
+    assert.strictEqual(
+      fieldDecorationCalls(editor).length,
+      callsBeforeEdit + 1,
+    );
     assert.strictEqual(
       hasRow(editor, 1, "データ(普通預金・当座預金・貯蓄預金)"),
       true,
@@ -900,7 +1447,7 @@ suite("固定長表示の現行挙動", () => {
       hasRow(editor, 1, "データ(通知預金・定期預金・積立定期預金)"),
       false,
     );
-    assert.strictEqual(editor.decorationCalls.at(-1)?.type, originalType);
+    assert.strictEqual(fieldDecorationCalls(editor).at(-1)?.type, originalType);
     assert.strictEqual(originalType?.disposeCount, 0);
 
     host.changeDocument(editor, [header("5"), "2"]);
@@ -920,7 +1467,7 @@ suite("固定長表示の現行挙動", () => {
     host.setActiveEditor(unselected);
     host.changeDocument(unselected, [header("5"), "2"]);
     await host.waitForPendingRender();
-    assert.strictEqual(unselected.decorationCalls.length, 0);
+    assert.strictEqual(fieldDecorationCalls(unselected).length, 0);
   });
 
   test("1000行を10回編集しても、最後の通知から一度だけ描画する", async () => {
@@ -931,8 +1478,8 @@ suite("固定長表示の現行挙動", () => {
     const split = host.createEditor("50200003.txt", [], uri);
     host.setVisibleEditors([primary, split]);
 
-    const primaryCallsBefore = primary.decorationCalls.length;
-    const splitCallsBefore = split.decorationCalls.length;
+    const primaryCallsBefore = fieldDecorationCalls(primary).length;
+    const splitCallsBefore = fieldDecorationCalls(split).length;
     const timers = host.useFakeTimers();
     try {
       for (let edit = 1; edit <= 10; edit += 1) {
@@ -945,14 +1492,20 @@ suite("固定長表示の現行挙動", () => {
       }
 
       timers.advanceBy(99);
-      assert.strictEqual(primary.decorationCalls.length, primaryCallsBefore);
-      assert.strictEqual(split.decorationCalls.length, splitCallsBefore);
+      assert.strictEqual(
+        fieldDecorationCalls(primary).length,
+        primaryCallsBefore,
+      );
+      assert.strictEqual(fieldDecorationCalls(split).length, splitCallsBefore);
       timers.advanceBy(1);
       assert.strictEqual(
-        primary.decorationCalls.length,
+        fieldDecorationCalls(primary).length,
         primaryCallsBefore + 1,
       );
-      assert.strictEqual(split.decorationCalls.length, splitCallsBefore + 1);
+      assert.strictEqual(
+        fieldDecorationCalls(split).length,
+        splitCallsBefore + 1,
+      );
       assert.strictEqual(primary.document.lineCount, 1000);
       assert.strictEqual(hasRow(primary, 999, "エンド"), true);
       assert.strictEqual(hasRow(split, 999, "エンド"), true);
@@ -993,10 +1546,10 @@ suite("固定長表示の現行挙動", () => {
       hasRow(split, 1, "データ(通知預金・定期預金・積立定期預金)"),
       true,
     );
-    assert.strictEqual(sameNameOtherUri.decorationCalls.length, 0);
+    assert.strictEqual(fieldDecorationCalls(sameNameOtherUri).length, 0);
     assert.notStrictEqual(
-      primary.decorationCalls.at(-1)?.type,
-      split.decorationCalls.at(-1)?.type,
+      fieldDecorationCalls(primary).at(-1)?.type,
+      fieldDecorationCalls(split).at(-1)?.type,
     );
 
     host.changeDocument(primary, [header("1"), "2"]);
@@ -1009,18 +1562,18 @@ suite("固定長表示の現行挙動", () => {
       hasRow(split, 1, "データ(普通預金・当座預金・貯蓄預金)"),
       true,
     );
-    assert.strictEqual(sameNameOtherUri.decorationCalls.length, 0);
+    assert.strictEqual(fieldDecorationCalls(sameNameOtherUri).length, 0);
 
     host.setActiveEditor(primary);
     host.setVisibleEditors([primary, split, sameNameOtherUri]);
-    const primaryType = primary.decorationCalls.at(-1)?.type;
-    const splitType = split.decorationCalls.at(-1)?.type;
+    const primaryType = fieldDecorationCalls(primary).at(-1)?.type;
+    const splitType = fieldDecorationCalls(split).at(-1)?.type;
     await host.chooseFileType(clearType);
     assert.strictEqual(primaryType?.disposeCount, 1);
     assert.strictEqual(splitType?.disposeCount, 1);
-    assert.deepStrictEqual(primary.decorationCalls.at(-1)?.options, []);
-    assert.deepStrictEqual(split.decorationCalls.at(-1)?.options, []);
-    assert.strictEqual(sameNameOtherUri.decorationCalls.length, 0);
+    assert.deepStrictEqual(fieldDecorationCalls(primary).at(-1)?.options, []);
+    assert.deepStrictEqual(fieldDecorationCalls(split).at(-1)?.options, []);
+    assert.strictEqual(fieldDecorationCalls(sameNameOtherUri).length, 0);
   });
 
   test("閉じて開き直した URI は形式を保ち、古い待機処理を破棄する", async () => {
@@ -1031,8 +1584,8 @@ suite("固定長表示の現行挙動", () => {
     host.changeDocument(editor, [header("1"), "2"]);
     host.closeDocument(editor);
     await host.waitForPendingRender();
-    assert.strictEqual(editor.decorationCalls.length, 2);
-    assert.deepStrictEqual(editor.decorationCalls.at(-1)?.options, []);
+    assert.strictEqual(fieldDecorationCalls(editor).length, 2);
+    assert.deepStrictEqual(fieldDecorationCalls(editor).at(-1)?.options, []);
 
     const reopened = host.createEditor("50200003.txt", [header("1"), "2"], uri);
     host.setVisibleEditors([reopened]);
@@ -1042,12 +1595,15 @@ suite("固定長表示の現行挙動", () => {
     );
 
     host.changeDocument(reopened, [header("5"), "2"]);
-    const callsBeforeDispose = reopened.decorationCalls.length;
-    const currentType = reopened.decorationCalls.at(-1)?.type;
+    const callsBeforeDispose = fieldDecorationCalls(reopened).length;
+    const currentType = fieldDecorationCalls(reopened).at(-1)?.type;
     host.dispose();
     assert.strictEqual(currentType?.disposeCount, 1);
     await host.waitForPendingRender();
-    assert.strictEqual(reopened.decorationCalls.length, callsBeforeDispose);
+    assert.strictEqual(
+      fieldDecorationCalls(reopened).length,
+      callsBeforeDispose,
+    );
   });
 
   test("待機中に再選択すると古い更新を取り消し、余分なイベントを送らない", async () => {
@@ -1060,8 +1616,8 @@ suite("固定長表示の現行挙動", () => {
 
     const reporter = host.reporters[0];
     const eventsBeforeEdit = reporter.events.length;
-    const callsBeforeEdit = editor.decorationCalls.length;
-    const originalType = editor.decorationCalls.at(-1)?.type;
+    const callsBeforeEdit = fieldDecorationCalls(editor).length;
+    const originalType = fieldDecorationCalls(editor).at(-1)?.type;
     const timers = host.useFakeTimers();
     try {
       host.changeDocument(editor, [header("5"), "2"]);
@@ -1071,14 +1627,23 @@ suite("固定長表示の現行挙動", () => {
       await host.chooseFileType(zenginTransfer);
       assert.strictEqual(timers.pendingCount, 0);
       assert.strictEqual(originalType?.disposeCount, 0);
-      assert.strictEqual(editor.decorationCalls.length, callsBeforeEdit + 1);
-      assert.strictEqual(editor.decorationCalls.at(-1)?.type, originalType);
+      assert.strictEqual(
+        fieldDecorationCalls(editor).length,
+        callsBeforeEdit + 1,
+      );
+      assert.strictEqual(
+        fieldDecorationCalls(editor).at(-1)?.type,
+        originalType,
+      );
       assert.strictEqual(reporter.events.length, eventsBeforeEdit + 1);
 
-      const callsAfterReselection = editor.decorationCalls.length;
+      const callsAfterReselection = fieldDecorationCalls(editor).length;
       const eventsAfterReselection = reporter.events.length;
       timers.advanceBy(100);
-      assert.strictEqual(editor.decorationCalls.length, callsAfterReselection);
+      assert.strictEqual(
+        fieldDecorationCalls(editor).length,
+        callsAfterReselection,
+      );
       assert.strictEqual(reporter.events.length, eventsAfterReselection);
     } finally {
       timers.restore();
@@ -1095,8 +1660,8 @@ suite("固定長表示の現行挙動", () => {
 
     const reporter = host.reporters[0];
     const eventsBeforeEdit = reporter.events.length;
-    const callsBeforeEdit = editor.decorationCalls.length;
-    const originalType = editor.decorationCalls.at(-1)?.type;
+    const callsBeforeEdit = fieldDecorationCalls(editor).length;
+    const originalType = fieldDecorationCalls(editor).at(-1)?.type;
     const timers = host.useFakeTimers();
     try {
       host.changeDocument(editor, [header("5"), "2"]);
@@ -1106,18 +1671,21 @@ suite("固定長表示の現行挙動", () => {
       await host.chooseFileType(clearType);
       assert.strictEqual(timers.pendingCount, 0);
       assert.strictEqual(originalType?.disposeCount, 1);
-      assert.strictEqual(editor.decorationCalls.length, callsBeforeEdit + 1);
-      assert.deepStrictEqual(editor.decorationCalls.at(-1)?.options, []);
+      assert.strictEqual(
+        fieldDecorationCalls(editor).length,
+        callsBeforeEdit + 1,
+      );
+      assert.deepStrictEqual(fieldDecorationCalls(editor).at(-1)?.options, []);
       assert.strictEqual(reporter.events.length, eventsBeforeEdit + 1);
       assert.deepStrictEqual(reporter.events.at(-1), {
         name: "ext.decorate",
         properties: { file_type: "clear@clear", development: "false" },
       });
 
-      const callsAfterClear = editor.decorationCalls.length;
+      const callsAfterClear = fieldDecorationCalls(editor).length;
       const eventsAfterClear = reporter.events.length;
       timers.advanceBy(100);
-      assert.strictEqual(editor.decorationCalls.length, callsAfterClear);
+      assert.strictEqual(fieldDecorationCalls(editor).length, callsAfterClear);
       assert.strictEqual(reporter.events.length, eventsAfterClear);
     } finally {
       timers.restore();
@@ -1131,8 +1699,8 @@ suite("固定長表示の現行挙動", () => {
 
     const reporter = host.reporters[0];
     const eventsBeforeEdit = reporter.events.length;
-    const callsBeforeEdit = editor.decorationCalls.length;
-    const originalType = editor.decorationCalls.at(-1)?.type;
+    const callsBeforeEdit = fieldDecorationCalls(editor).length;
+    const originalType = fieldDecorationCalls(editor).at(-1)?.type;
     const timers = host.useFakeTimers();
     try {
       host.changeDocument(editor, [header("5"), "2"]);
@@ -1142,13 +1710,16 @@ suite("固定長表示の現行挙動", () => {
       host.setVisibleEditors([]);
       assert.strictEqual(timers.pendingCount, 0);
       assert.strictEqual(originalType?.disposeCount, 1);
-      assert.strictEqual(editor.decorationCalls.length, callsBeforeEdit + 1);
-      assert.deepStrictEqual(editor.decorationCalls.at(-1)?.options, []);
+      assert.strictEqual(
+        fieldDecorationCalls(editor).length,
+        callsBeforeEdit + 1,
+      );
+      assert.deepStrictEqual(fieldDecorationCalls(editor).at(-1)?.options, []);
       assert.strictEqual(reporter.events.length, eventsBeforeEdit);
 
-      const callsAfterHide = editor.decorationCalls.length;
+      const callsAfterHide = fieldDecorationCalls(editor).length;
       timers.advanceBy(100);
-      assert.strictEqual(editor.decorationCalls.length, callsAfterHide);
+      assert.strictEqual(fieldDecorationCalls(editor).length, callsAfterHide);
       assert.strictEqual(reporter.events.length, eventsBeforeEdit);
     } finally {
       timers.restore();
@@ -1165,7 +1736,7 @@ suite("固定長表示の現行挙動", () => {
 
     const reporter = host.reporters[0];
     const eventsBeforeEdit = reporter.events.length;
-    const callsBeforeEdit = editor.decorationCalls.length;
+    const callsBeforeEdit = fieldDecorationCalls(editor).length;
     const timers = host.useFakeTimers();
     try {
       host.changeDocument(editor, [header("5"), "2"]);
@@ -1190,7 +1761,7 @@ suite("固定長表示の現行挙動", () => {
       host.dispose();
       const eventsAfterDispose = reporter.events.length;
       timers.advanceBy(100);
-      assert.strictEqual(editor.decorationCalls.length, callsBeforeEdit);
+      assert.strictEqual(fieldDecorationCalls(editor).length, callsBeforeEdit);
       assert.strictEqual(reporter.events.length, eventsAfterDispose);
       assert.strictEqual(reporter.disposeCount, 1);
       assert.strictEqual(host.commandDisposalCount, 1);
@@ -1212,13 +1783,13 @@ suite("固定長表示の現行挙動", () => {
     const editor = host.createEditor("50200001.txt", ["2"]);
     host.setActiveEditor(editor);
     await host.chooseFileType(zenginAccount);
-    const originalType = editor.decorationCalls.at(-1)?.type;
+    const originalType = fieldDecorationCalls(editor).at(-1)?.type;
     assert.strictEqual(optionsForLine(editor, 0).length, 1);
 
     const eventsBeforeClear = host.reporters[0].events.length;
     await host.chooseFileType(clearType);
     assert.strictEqual(originalType?.disposeCount, 1);
-    assert.deepStrictEqual(editor.decorationCalls.at(-1)?.options, []);
+    assert.deepStrictEqual(fieldDecorationCalls(editor).at(-1)?.options, []);
     assert.strictEqual(host.reporters[0].events.length, eventsBeforeClear + 1);
     assert.deepStrictEqual(host.reporters[0].events.at(-1), {
       name: "ext.decorate",
@@ -1229,7 +1800,7 @@ suite("固定長表示の現行挙動", () => {
     const eventsBeforeSwitch = reporter.events.length;
     const replacementEditor = host.createEditor("50200001.txt", ["2"]);
     host.setActiveEditor(replacementEditor);
-    assert.strictEqual(replacementEditor.decorationCalls.length, 0);
+    assert.strictEqual(fieldDecorationCalls(replacementEditor).length, 0);
     assert.strictEqual(reporter.events.length, eventsBeforeSwitch);
 
     host.dispose();
