@@ -1,11 +1,15 @@
 import * as vscode from "vscode";
 import type {
+  FixedWidthDecorationField,
   FixedWidthDecorationPort,
   FixedWidthLine,
 } from "../../application/fixedWidth/FixedWidthDecoration";
 import type { TelemetryPort } from "../../application/telemetry/TelemetryPort";
 import {
   createFieldDecorations,
+  createCursorFieldDecoration,
+  findCursorField,
+  groupFieldsByLine,
   readBoundarySettings,
 } from "./decorationStyle";
 
@@ -15,6 +19,8 @@ const renderDelay = 100;
 type EditorDecoration = {
   fileType: string;
   decorationType: vscode.TextEditorDecorationType;
+  cursorDecorationType?: vscode.TextEditorDecorationType;
+  fieldsByLine: ReadonlyMap<number, readonly FixedWidthDecorationField[]>;
   alternatingDecorationType?: vscode.TextEditorDecorationType;
   alternatingBackgroundKey?: string;
 };
@@ -22,6 +28,13 @@ type EditorDecoration = {
 type PendingRender = {
   document: vscode.TextDocument;
   timeout: ReturnType<typeof setTimeout>;
+};
+
+type EditorDecorationUpdate = {
+  fileType: string;
+  decorations: ReturnType<typeof createFieldDecorations>;
+  fieldsByLine: ReadonlyMap<number, readonly FixedWidthDecorationField[]>;
+  hasFieldMetadata: boolean;
 };
 
 export class FixedWidthPresentation implements vscode.Disposable {
@@ -43,6 +56,7 @@ export class FixedWidthPresentation implements vscode.Disposable {
     try {
       this.registerCommand();
       this.listenToVisibleEditors();
+      this.listenToEditorSelections();
       this.listenToDocumentChanges();
       this.listenToConfigurationChanges();
     } catch (error) {
@@ -94,6 +108,17 @@ export class FixedWidthPresentation implements vscode.Disposable {
       vscode.workspace.onDidCloseTextDocument((document) =>
         this.cancelPendingRender(document),
       ),
+    );
+  }
+
+  private listenToEditorSelections(): void {
+    this.subscriptions.push(
+      vscode.window.onDidChangeTextEditorSelection((event) => {
+        const current = this.decorationByEditor.get(event.textEditor);
+        if (current) {
+          this.updateCursorFieldDecoration(event.textEditor, current);
+        }
+      }),
     );
   }
 
@@ -207,35 +232,91 @@ export class FixedWidthPresentation implements vscode.Disposable {
     const settings = readBoundarySettings(document.uri);
     const fields = this.decoration.decorate(fileType, lines);
     const decorations = createFieldDecorations(fields, lines, settings);
+    const fieldsByLine = groupFieldsByLine(fields);
+    const update: EditorDecorationUpdate = {
+      fileType,
+      decorations,
+      fieldsByLine,
+      hasFieldMetadata: fields.some((field) => field.fieldName !== undefined),
+    };
 
     const uri = document.uri.toString();
     for (const editor of vscode.window.visibleTextEditors) {
       if (editor.document.uri.toString() === uri) {
-        this.setEditorDecorations(editor, fileType, decorations);
+        this.setEditorDecorations(editor, update);
       }
     }
   }
 
   private setEditorDecorations(
     editor: vscode.TextEditor,
-    fileType: string,
-    decorations: ReturnType<typeof createFieldDecorations>,
+    update: EditorDecorationUpdate,
   ): void {
-    let current = this.decorationByEditor.get(editor);
-    if (!current || current.fileType !== fileType) {
-      if (current) {
-        this.clearEditor(editor);
-      }
-      current = {
-        fileType,
-        decorationType: vscode.window.createTextEditorDecorationType({
-          isWholeLine: false,
-        }),
-      };
-      this.decorationByEditor.set(editor, current);
+    const current = this.getOrCreateEditorDecoration(editor, update.fileType);
+    current.fieldsByLine = update.fieldsByLine;
+    this.ensureCursorDecoration(current, update.hasFieldMetadata);
+    this.updateCursorFieldDecoration(editor, current);
+    editor.setDecorations(current.decorationType, update.decorations.options);
+    this.updateAlternatingDecoration(editor, current, update.decorations);
+  }
+
+  private getOrCreateEditorDecoration(
+    editor: vscode.TextEditor,
+    fileType: string,
+  ): EditorDecoration {
+    const current = this.decorationByEditor.get(editor);
+    if (current?.fileType === fileType) {
+      return current;
     }
-    editor.setDecorations(current.decorationType, decorations.options);
-    this.updateAlternatingDecoration(editor, current, decorations);
+    if (current) {
+      this.clearEditor(editor);
+    }
+    const created = this.createEditorDecoration(fileType);
+    this.decorationByEditor.set(editor, created);
+    return created;
+  }
+
+  private createEditorDecoration(fileType: string): EditorDecoration {
+    return {
+      fileType,
+      decorationType: vscode.window.createTextEditorDecorationType({
+        isWholeLine: false,
+      }),
+      fieldsByLine: new Map(),
+    };
+  }
+
+  private ensureCursorDecoration(
+    current: EditorDecoration,
+    hasFieldMetadata: boolean,
+  ): void {
+    if (hasFieldMetadata && !current.cursorDecorationType) {
+      current.cursorDecorationType =
+        vscode.window.createTextEditorDecorationType({
+          isWholeLine: false,
+          backgroundColor: new vscode.ThemeColor(
+            "editor.wordHighlightStrongBackground",
+          ),
+        });
+    }
+  }
+
+  private updateCursorFieldDecoration(
+    editor: vscode.TextEditor,
+    current: EditorDecoration,
+  ): void {
+    const decorationType = current.cursorDecorationType;
+    if (!decorationType) {
+      return;
+    }
+
+    const position = editor.selection.active;
+    const lineLength = editor.document.lineAt(position.line).text.length;
+    const field = findCursorField(current.fieldsByLine, position, lineLength);
+    const selection = field
+      ? createCursorFieldDecoration(field, lineLength)
+      : undefined;
+    editor.setDecorations(decorationType, selection ? [selection] : []);
   }
 
   private updateAlternatingDecoration(
@@ -347,6 +428,10 @@ export class FixedWidthPresentation implements vscode.Disposable {
       return;
     }
     this.clearAlternatingDecoration(editor, current);
+    if (current.cursorDecorationType) {
+      editor.setDecorations(current.cursorDecorationType, []);
+      current.cursorDecorationType.dispose();
+    }
     editor.setDecorations(current.decorationType, []);
     current.decorationType.dispose();
     this.decorationByEditor.delete(editor);
@@ -392,6 +477,7 @@ export class FixedWidthPresentation implements vscode.Disposable {
     this.pendingRenderByDocument.clear();
     for (const current of this.decorationByEditor.values()) {
       current.alternatingDecorationType?.dispose();
+      current.cursorDecorationType?.dispose();
       current.decorationType.dispose();
     }
     this.decorationByEditor.clear();

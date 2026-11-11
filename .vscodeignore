@@ -27,6 +27,7 @@ scripts/
 
 # ソースコード
 src/
+sample/
 
 # その他
 .browserslistrc

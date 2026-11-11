@@ -21,7 +21,14 @@ export type FieldDecorations = {
 
 type FieldDecorationInput = Pick<
   FixedWidthDecorationField,
-  "line" | "start" | "end" | "width" | "name"
+  | "line"
+  | "start"
+  | "end"
+  | "width"
+  | "name"
+  | "fieldName"
+  | "fieldNumber"
+  | "type"
 >;
 
 type FieldDecorationContext = {
@@ -95,6 +102,45 @@ export function createFieldDecorations(
     alternatingBackgroundKey:
       settings.color || "theme:editor.rangeHighlightBackground",
   };
+}
+
+export function createCursorFieldDecoration(
+  field: FieldDecorationInput,
+  lineLength: number,
+): vscode.DecorationOptions | undefined {
+  const range = createVisibleRange(field, lineLength);
+  return range ? { range } : undefined;
+}
+
+export function groupFieldsByLine(
+  fields: readonly FixedWidthDecorationField[],
+): ReadonlyMap<number, readonly FixedWidthDecorationField[]> {
+  const fieldsByLine = new Map<number, FixedWidthDecorationField[]>();
+  for (const field of fields) {
+    const fieldsForLine = fieldsByLine.get(field.line) ?? [];
+    fieldsForLine.push(field);
+    fieldsByLine.set(field.line, fieldsForLine);
+  }
+  return fieldsByLine;
+}
+
+export function findCursorField(
+  fieldsByLine: ReadonlyMap<number, readonly FixedWidthDecorationField[]>,
+  position: { line: number; character: number },
+  lineLength: number,
+): FixedWidthDecorationField | undefined {
+  if (position.character >= lineLength) {
+    return undefined;
+  }
+
+  return fieldsByLine
+    .get(position.line)
+    ?.find(
+      (candidate) =>
+        candidate.fieldName !== undefined &&
+        candidate.start <= position.character &&
+        position.character < candidate.end,
+    );
 }
 
 function createFieldDecorationsForField(
@@ -178,10 +224,23 @@ function createBoundaryRenderOptions(
 function createHoverMessage(
   field: FieldDecorationInput,
 ): vscode.MarkdownString {
-  const hover = new vscode.MarkdownString(
-    `**${field.name}**  \n位置: ${field.start + 1} - ${field.end} (${field.width}桁)`,
-  );
-  hover.isTrusted = true;
+  const hover = new vscode.MarkdownString();
+  if (field.fieldName) {
+    hover.appendMarkdown("**");
+    hover.appendText(
+      `${field.name} / ${field.fieldName} (項目 ${field.fieldNumber})`,
+    );
+    hover.appendMarkdown("**  \n位置: ");
+    hover.appendText(`${field.start + 1} - ${field.end} (${field.width}桁)`);
+    hover.appendMarkdown("\nデータ型: ");
+    hover.appendText(field.type ?? "不明");
+  } else {
+    hover.appendMarkdown("**");
+    hover.appendText(field.name);
+    hover.appendMarkdown("**  \n位置: ");
+    hover.appendText(`${field.start + 1} - ${field.end} (${field.width}桁)`);
+    hover.isTrusted = true;
+  }
   return hover;
 }
 

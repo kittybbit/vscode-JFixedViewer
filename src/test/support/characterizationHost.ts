@@ -3,6 +3,11 @@ import path = require("node:path");
 type Disposable = { dispose(): void };
 type Listener<T> = (value: T) => void;
 type Position = { line: number; character: number };
+type EditorEvents = {
+  active: FakeEventEmitter<FakeEditor | undefined>;
+  visible: FakeEventEmitter<readonly FakeEditor[]>;
+  selection: FakeEventEmitter<{ textEditor: FakeEditor }>;
+};
 type FakeDocument = {
   uri: { toString(): string };
   fileName: string;
@@ -115,7 +120,21 @@ class FakeRange {
 class FakeMarkdownString {
   public isTrusted = false;
 
-  public constructor(public readonly value: string) {}
+  public value: string;
+
+  public constructor(value = "") {
+    this.value = value;
+  }
+
+  public appendText(value: string): FakeMarkdownString {
+    this.value += value;
+    return this;
+  }
+
+  public appendMarkdown(value: string): FakeMarkdownString {
+    this.value += value;
+    return this;
+  }
 }
 
 class FakeThemeColor {
@@ -158,8 +177,24 @@ class FakeReporter {
   }
 }
 
+type BuiltInDefinitionOverrides = Partial<
+  Record<"clear" | "jpx" | "zengin", unknown>
+>;
+
+function addDefinitionOverrides(
+  mockedModules: Map<string, unknown>,
+  definitionOverrides: BuiltInDefinitionOverrides,
+): void {
+  for (const [name, definition] of Object.entries(definitionOverrides)) {
+    if (definition !== undefined) {
+      mockedModules.set(`../../resource/definitions/${name}.json`, definition);
+    }
+  }
+}
+
 export type FakeEditor = {
   document: FakeDocument;
+  selection: { active: Position };
   decorationCalls: Array<{
     type: FakeDecorationType;
     options: DecorationOption[];
@@ -169,8 +204,7 @@ export type FakeEditor = {
 
 function createFakeWindow(
   host: CharacterizationHost,
-  activeEditorEmitter: FakeEventEmitter<FakeEditor | undefined>,
-  visibleEditorEmitter: FakeEventEmitter<readonly FakeEditor[]>,
+  editorEvents: EditorEvents,
 ) {
   return {
     get activeTextEditor() {
@@ -187,8 +221,9 @@ function createFakeWindow(
       host.decorationTypes.push(decoration);
       return decoration;
     },
-    onDidChangeActiveTextEditor: activeEditorEmitter.event,
-    onDidChangeVisibleTextEditors: visibleEditorEmitter.event,
+    onDidChangeActiveTextEditor: editorEvents.active.event,
+    onDidChangeVisibleTextEditors: editorEvents.visible.event,
+    onDidChangeTextEditorSelection: editorEvents.selection.event,
   };
 }
 
@@ -226,8 +261,7 @@ function createFakeCommands(host: CharacterizationHost) {
 
 function createFakeVscode(
   host: CharacterizationHost,
-  activeEditorEmitter: FakeEventEmitter<FakeEditor | undefined>,
-  visibleEditorEmitter: FakeEventEmitter<readonly FakeEditor[]>,
+  editorEvents: EditorEvents,
 ): Record<string, unknown> {
   return {
     EventEmitter: FakeEventEmitter,
@@ -235,7 +269,7 @@ function createFakeVscode(
     Range: FakeRange,
     MarkdownString: FakeMarkdownString,
     ThemeColor: FakeThemeColor,
-    window: createFakeWindow(host, activeEditorEmitter, visibleEditorEmitter),
+    window: createFakeWindow(host, editorEvents),
     workspace: createFakeWorkspace(host),
     commands: createFakeCommands(host),
   };
@@ -348,6 +382,9 @@ export class CharacterizationHost {
   private readonly visibleEditorEmitter = new FakeEventEmitter<
     readonly FakeEditor[]
   >();
+  private readonly selectionEmitter = new FakeEventEmitter<{
+    textEditor: FakeEditor;
+  }>();
   private readonly documentsByUri = new Map<string, FakeDocument>();
   private readonly configurationByUri = new Map<string, Configuration>();
   private readonly vscode: Record<string, unknown>;
@@ -355,12 +392,14 @@ export class CharacterizationHost {
   private globalDescriptors = new Map<string, PropertyDescriptor | undefined>();
   private disposed = false;
 
-  public constructor() {
-    this.vscode = createFakeVscode(
-      this,
-      this.activeEditorEmitter,
-      this.visibleEditorEmitter,
-    );
+  public constructor(
+    private readonly definitionOverrides: BuiltInDefinitionOverrides = {},
+  ) {
+    this.vscode = createFakeVscode(this, {
+      active: this.activeEditorEmitter,
+      visible: this.visibleEditorEmitter,
+      selection: this.selectionEmitter,
+    });
   }
 
   public get textDocuments(): FakeDocument[] {
@@ -371,6 +410,7 @@ export class CharacterizationHost {
     return {
       activeEditor: this.activeEditorEmitter.subscriptionStats,
       visibleEditors: this.visibleEditorEmitter.subscriptionStats,
+      editorSelections: this.selectionEmitter.subscriptionStats,
       documentChanges: this.documentChangeEmitter.subscriptionStats,
       documentClose: this.documentCloseEmitter.subscriptionStats,
     };
@@ -397,6 +437,7 @@ export class CharacterizationHost {
     const document = this.getOrCreateDocument(fileName, lines, uri);
     const editor: FakeEditor = {
       document,
+      selection: { active: { line: 0, character: 0 } },
       decorationCalls: [],
       setDecorations(type, options) {
         this.decorationCalls.push({ type, options });
@@ -414,6 +455,15 @@ export class CharacterizationHost {
   public setVisibleEditors(editors: readonly FakeEditor[]): void {
     this.visibleTextEditors = editors;
     this.visibleEditorEmitter.fire(editors);
+  }
+
+  public setSelection(
+    editor: FakeEditor,
+    line: number,
+    character: number,
+  ): void {
+    editor.selection.active = { line, character };
+    this.selectionEmitter.fire({ textEditor: editor });
   }
 
   public changeDocument(
@@ -557,6 +607,7 @@ export class CharacterizationHost {
         },
       ],
     ]);
+    addDefinitionOverrides(mockedModules, this.definitionOverrides);
 
     moduleApi._load = (request, parent, isMain) => {
       const replacement = mockedModules.get(request);
