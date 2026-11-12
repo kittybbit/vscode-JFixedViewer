@@ -4,6 +4,7 @@
 受け入れ条件と回帰テストの根拠に使う。
 
 - [固定長の項目を表示する](uc-display-fixed-width.md)
+- [固定長レコードを検証する](uc-validate-fixed-width.md)
 - [項目の装飾を解除する](uc-clear-decorations.md)
 - [エディターを切り替える](uc-switch-editors.md)
 

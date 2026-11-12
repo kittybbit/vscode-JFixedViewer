@@ -9,7 +9,7 @@ type EditorEvents = {
   selection: FakeEventEmitter<{ textEditor: FakeEditor }>;
 };
 type FakeDocument = {
-  uri: { toString(): string };
+  uri: FakeUri;
   fileName: string;
   lines: string[];
   readonly lineCount: number;
@@ -25,7 +25,7 @@ class CharacterizedDocument implements FakeDocument {
   private lineAtCalls = 0;
 
   public constructor(fileName: string, lines: string[], uri: string) {
-    this.uri = { toString: () => uri };
+    this.uri = new FakeUri(uri);
     this.fileName = fileName;
     this.lines = [...lines];
   }
@@ -60,6 +60,7 @@ type Configuration = {
   boundaryStyle?: unknown;
   boundaryColor?: unknown;
   boundaryWidth?: unknown;
+  validationEnabled?: unknown;
 };
 type LoadedExtension = {
   activate(context: { subscriptions: Disposable[] }): unknown;
@@ -115,6 +116,59 @@ class FakeRange {
     public readonly start: FakePosition,
     public readonly end: FakePosition,
   ) {}
+}
+
+class FakeUri {
+  public constructor(private readonly value: string) {}
+
+  public static parse(value: string): FakeUri {
+    return new FakeUri(value);
+  }
+
+  public toString(): string {
+    return this.value;
+  }
+}
+
+class FakeDiagnostic {
+  public source: string | undefined;
+  public code: string | number | undefined;
+
+  public constructor(
+    public readonly range: FakeRange,
+    public readonly message: string,
+    public readonly severity: number,
+  ) {}
+}
+
+class FakeDiagnosticCollection implements Disposable {
+  private readonly diagnostics = new Map<string, FakeDiagnostic[]>();
+  public disposeCount = 0;
+  public setCount = 0;
+
+  public constructor(public readonly name: string) {}
+
+  public set(uri: FakeUri, diagnostics: readonly FakeDiagnostic[]): void {
+    this.setCount += 1;
+    this.diagnostics.set(uri.toString(), [...diagnostics]);
+  }
+
+  public delete(uri: FakeUri): void {
+    this.diagnostics.delete(uri.toString());
+  }
+
+  public clear(): void {
+    this.diagnostics.clear();
+  }
+
+  public get(uri: FakeUri): readonly FakeDiagnostic[] | undefined {
+    return this.diagnostics.get(uri.toString());
+  }
+
+  public dispose(): void {
+    this.disposeCount += 1;
+    this.clear();
+  }
 }
 
 class FakeMarkdownString {
@@ -265,13 +319,28 @@ function createFakeVscode(
 ): Record<string, unknown> {
   return {
     EventEmitter: FakeEventEmitter,
+    Uri: FakeUri,
     Position: FakePosition,
     Range: FakeRange,
     MarkdownString: FakeMarkdownString,
+    Diagnostic: FakeDiagnostic,
+    DiagnosticSeverity: {
+      Error: 0,
+      Warning: 1,
+      Information: 2,
+      Hint: 3,
+    },
     ThemeColor: FakeThemeColor,
     window: createFakeWindow(host, editorEvents),
     workspace: createFakeWorkspace(host),
     commands: createFakeCommands(host),
+    languages: {
+      createDiagnosticCollection: (name: string) => {
+        const collection = new FakeDiagnosticCollection(name);
+        host.diagnosticCollections.push(collection);
+        return collection;
+      },
+    },
   };
 }
 
@@ -359,6 +428,7 @@ export class CharacterizationHost {
     (...args: unknown[]) => unknown
   >();
   public readonly decorationTypes: FakeDecorationType[] = [];
+  public readonly diagnosticCollections: FakeDiagnosticCollection[] = [];
   public readonly reporters: FakeReporter[] = [];
   public readonly documentChangeEmitter = new FakeEventEmitter<{
     document: FakeDocument;
@@ -414,6 +484,12 @@ export class CharacterizationHost {
       documentChanges: this.documentChangeEmitter.subscriptionStats,
       documentClose: this.documentCloseEmitter.subscriptionStats,
     };
+  }
+
+  public diagnosticsFor(
+    editor: FakeEditor,
+  ): readonly FakeDiagnostic[] | undefined {
+    return this.diagnosticCollections[0]?.get(editor.document.uri as FakeUri);
   }
 
   public start(): void {

@@ -12,6 +12,7 @@ import {
   groupFieldsByLine,
   readBoundarySettings,
 } from "./decorationStyle";
+import { readValidationEnabled, toDiagnostics } from "./diagnostics";
 
 const commandId = "vscode-JFixedViewer.FiletypePicker";
 const renderDelay = 100;
@@ -45,6 +46,7 @@ export class FixedWidthPresentation implements vscode.Disposable {
     EditorDecoration
   >();
   private readonly pendingRenderByDocument = new Map<string, PendingRender>();
+  private diagnostics!: vscode.DiagnosticCollection;
   private disposed = false;
 
   public constructor(
@@ -54,6 +56,9 @@ export class FixedWidthPresentation implements vscode.Disposable {
 
   public start(): void {
     try {
+      this.diagnostics =
+        vscode.languages.createDiagnosticCollection("jfixedviewer");
+      this.subscriptions.push(this.diagnostics);
       this.registerCommand();
       this.listenToVisibleEditors();
       this.listenToEditorSelections();
@@ -106,9 +111,14 @@ export class FixedWidthPresentation implements vscode.Disposable {
     );
     this.subscriptions.push(
       vscode.workspace.onDidCloseTextDocument((document) =>
-        this.cancelPendingRender(document),
+        this.closeDocument(document),
       ),
     );
+  }
+
+  private closeDocument(document: vscode.TextDocument): void {
+    this.cancelPendingRender(document);
+    this.diagnostics.delete(document.uri);
   }
 
   private listenToEditorSelections(): void {
@@ -168,7 +178,21 @@ export class FixedWidthPresentation implements vscode.Disposable {
 
     this.clearHiddenEditorDecorations(editors);
     this.cancelRendersForHiddenDocuments(editors);
+    this.clearHiddenDocumentDiagnostics(editors);
     this.decorateNewlyVisibleEditors(editors);
+  }
+
+  private clearHiddenDocumentDiagnostics(
+    editors: readonly vscode.TextEditor[],
+  ): void {
+    const visibleUris = new Set(
+      editors.map(({ document }) => document.uri.toString()),
+    );
+    for (const uri of this.fileTypeByDocument.keys()) {
+      if (!visibleUris.has(uri)) {
+        this.diagnostics.delete(vscode.Uri.parse(uri));
+      }
+    }
   }
 
   private clearHiddenEditorDecorations(
@@ -216,6 +240,7 @@ export class FixedWidthPresentation implements vscode.Disposable {
     this.cancelPendingRender(document);
     if (fileType === "clear@clear") {
       this.fileTypeByDocument.delete(uri);
+      this.diagnostics.delete(document.uri);
       this.clearDocumentDecorations(uri);
       return;
     }
@@ -230,7 +255,13 @@ export class FixedWidthPresentation implements vscode.Disposable {
   ): void {
     const lines = [...this.documentLines(document)];
     const settings = readBoundarySettings(document.uri);
-    const fields = this.decoration.decorate(fileType, lines);
+    const analysis = this.decoration.analyze(
+      fileType,
+      lines,
+      readValidationEnabled(document.uri),
+    );
+    const fields = analysis.fields;
+    this.diagnostics.set(document.uri, toDiagnostics(analysis.issues));
     const decorations = createFieldDecorations(fields, lines, settings);
     const fieldsByLine = groupFieldsByLine(fields);
     const update: EditorDecorationUpdate = {
@@ -392,13 +423,10 @@ export class FixedWidthPresentation implements vscode.Disposable {
       return;
     }
     this.pendingRenderByDocument.delete(uri);
-    if (this.disposed || !this.isDocumentOpen(document)) {
+    if (!this.hasVisibleSelection(uri)) {
       return;
     }
-    const fileType = this.fileTypeByDocument.get(uri);
-    if (fileType !== undefined) {
-      this.decorateDocument(document, fileType);
-    }
+    this.decorateDocument(document, this.fileTypeByDocument.get(uri)!);
   }
 
   private cancelPendingRender(document: vscode.TextDocument): void {
@@ -408,10 +436,6 @@ export class FixedWidthPresentation implements vscode.Disposable {
       clearTimeout(pending.timeout);
       this.pendingRenderByDocument.delete(uri);
     }
-  }
-
-  private isDocumentOpen(document: vscode.TextDocument): boolean {
-    return vscode.workspace.textDocuments.includes(document);
   }
 
   private clearDocumentDecorations(uri: string): void {
