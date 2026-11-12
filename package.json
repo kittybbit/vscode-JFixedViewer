@@ -63,6 +63,12 @@
           "default": 1,
           "scope": "resource",
           "description": "境界線の太さをピクセル単位で指定します。"
+        },
+        "jfixedviewer.validationEnabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "description": "選択した固定長形式でレコードを検証します。"
         }
       }
     }

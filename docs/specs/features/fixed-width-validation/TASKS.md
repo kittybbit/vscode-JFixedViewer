@@ -2,20 +2,21 @@
 
 ## 作業概要
 
-- [仕様](SPECS.md)の R1〜R8 を1スライスで実現する。現在は `PLAN_APPROVED`、実装は未着手。
+- [仕様](SPECS.md)の R1〜R8 を1スライスで実現する。4指摘の修正後、独立再レビューを指摘0件で通過。
 - レコード長、N 型の文字種、未知のレコードを、選択済みで表示中の文書の「問題」に示す。
 - 必読文書は [SDD 方針](../../README.md)、[検証方針](../../validation.md)、
   [証跡方針](../../evidence.md)、[アーキテクチャ](../../architecture.md)。
-- 独立計画レビューは指摘0件で通過。次は Main が計画をコミットし、実装担当へ渡す。
+- 独立計画レビューは指摘0件で通過し、計画コミット後に実装を完了した。
 
 ## 現在の状態
 
-- ライフサイクル状態 `PLAN_APPROVED`、担当 Main、記録の版 `plan-main-v1`、作成日 2026-11-12。
-- 正確なベース `37d6ab7965266d30526e1590e93ecdf4f544cb20`、ブランチ `codex/fixed-width-validation`。
-- 無関係な未追跡 `.serena/` は対象外。改名なし。計画文書以外の変更なし。
+- ライフサイクル状態 `SLICE_APPROVED`、担当 Main、記録の版 `slice-main-v1`、作成日 2026-11-12。
+- 実装ベースは計画コミット `ee42aa32df552932b3c3a2b55b8609da896afd4e`、ブランチは `codex/fixed-width-validation`。
+- 実装入力一覧と全パス SHA-256 は `/private/tmp/jfixed-validation-s1-final-evidence-20261112/input-manifest.json`。
+  無関係な未追跡 `.serena/`、キャッシュ、生成物、証跡ファイルは入力外。改名なし。
 - Main は N 型で全 SP を許容し、C・型なし・`-` の文字種を検証しないこと、
   表示中の文書だけを対象とすること、診断上限後も装飾解析を続けることに同意済み。
-- 受付証跡と計画文書検証の参照は本書末尾。入力内容の SHA-256 は引き継ぎ記録に添える。
+- 受付・計画の証跡は本書末尾、実装と最終検証の要約・参照は「実装・検証結果」に記録する。
 
 [ライフサイクル状態](../../README.md#ライフサイクル状態)に従う。
 
@@ -37,7 +38,7 @@
 
 ## 人による承認
 
-- 計画は `Waived`、完了・終了・マージは `Pending`。
+- 計画・完了は `Waived`、終了・マージは `Pending`。
   Main は2026-11-12、今回の利用者指示と指摘0件の独立レビューに基づき計画承認を省略した。
   対象はスライス1の「正確な変更対象」の全パス、仕様 R1〜R8、検証と終了範囲。
   レビュー担当は `/root/validation_plan_review`、判定は `PLAN_READY`、指摘は0件。
@@ -45,6 +46,12 @@
   TASKS `da336225b76455708d54e231af0358aa19caa9371700119826e0c56868155b04`、
   TRACEABILITY `e1af5ab3a2cd22a63bd00c05ef60a041b790d3331cdd7259f68f5b0b1d4ee40a`。
   この追記は状態と承認省略のメタデータだけで、実質的な計画内容は変更していない。
+- Main は指摘0件の独立再レビューに基づき、今回の利用者指示に従って完了承認を省略した。
+  対象はスライス1の承認済み17パスの全実装差分と検証記録。
+  レビュー担当 `/root/validation_implementation_review`、判定 `SLICE_READY`、前回4指摘は解消済み。
+  レビュー済み tree は `6651d778319d022ff012b5c93ce14be0d833a2b4`、
+  差分 SHA-256 は `a86fef249c16ef398ea83115c2e44fee8008eb8059b05e2ae3bbc324870f41b5`。
+  本追記は状態・判定・承認省略のみ。製品・検証条件・受け入れ条件は変更していない。
 - 今回の利用者指示は、AI レビューで指摘がない場合に人の承認を省略して先へ進むというもの。
   Main が対応する独立レビューで指摘0件となった正確な範囲に結び付け、各段階を
   `Waived`（利用者指示に基づく省略）として記録する。人が承認したという記録にはしない。
@@ -183,12 +190,57 @@
 
 ### 準備状況とリスク
 
-- 計画レビューと計画承認省略は完了。実装の最終検証、独立レビュー、完了承認省略、コミット、PR は未実施。
+- 計画・実装の独立レビューと承認省略、最終検証は完了。次は完了コミットと PR 公開。
 - Main は N の全 SP を許容することで必須性を判定しない点と、C の文字種を対象外にする点を受容した。
   利用者には UTF-16 文字位置ベースで、バイト長・業務上の妥当性の保証ではない旨を説明する。
 - 非表示文書では診断を消す範囲、1000件上限は今回の仕様とし、README と新規ユースケースに明記する。
-- 残るリスクの担当は Main。通常の走査で重大な応答低下、サンプル誤検知、ホストの不整合があれば
-  準備完了とせず、必要な再計画または範囲内修正を判断する。
+- 残るリスクの担当は Main。業務上の必須性・妥当性とバイト長は判定しない。再計測した10,000行の
+  解析では検証有効時の不正入力で中央値約9.6%の時間増加と約0.87 MB の追加ヒープを観測した。
+  性能値は実行環境依存であり、重大な応答低下・サンプル誤検知・ホスト不整合があれば準備完了としない。
+
+## 実装・検証結果
+
+- R1〜R8 と境界条件は実装した。純粋な検証はドメイン層、1回の文書走査は application、
+  VS Code 診断と resource 設定は presentation に置き、既存 `decorate()`、装飾、ホバー、選択状態、
+  テレメトリ、最小対応版を維持した。
+- `npm run test:prepare`、`npm exec -- tsc -p . --noEmit`、
+  `npm exec -- webpack --mode production --devtool false`、`npm run test:architecture`、
+  各終了コード0。拡張テスト22件、architecture 7件が pass。
+  `test-prepare-review1.*`、`tsc-noemit-review1.*`、`production-webpack-review1.*`、
+  `architecture-review1.*`、`desktop-stable-review1.*` に生出力と終了コードを保存した。
+- Desktop stable 1.145.2 は23件（拡張22件と実ホスト smoke）、最小版1.75.0と
+  Web stable Chromium smoke も pass。
+  生出力と終了コードは `desktop-min-review1.*`、`web-review1.*` と同フォルダーに保存した。
+- Qlty 0.645.0、`.qlty/qlty.toml` SHA-256
+  `ef66ff4bc2fc0987ea6ce019c5370b11aed4a3ebbb448ad64473d913bec0af6e`、
+  `package-lock.json` SHA-256 `4b3f5831ca7e1381037527fe7026b4a1a21d3f20b16b6cde39f8590a2a7832ec`。
+  基準 SARIF 2.1.0 は check が1件（計画の `TRACEABILITY.md` の prettier:fmt）、smells は0件・19ファイル。
+  修正後の総合 Qlty と公式 SARIF は各0件、smells は21ファイルを解析した。
+  実行 ID・対象パス・キャッシュ結果を含むパス一覧と生出力は証跡フォルダーに保存する。
+  `qlty-paths-final.json` と `review1-*` の stdout/stderr/終了コードを参照する。
+- 性能比較は Node v24.21.0、macOS arm64、10,000行・50,000 UTF-16 文字・20,000項目、
+  2回 warm-up 後5回測定。正常入力は検証無効3.927 ms / 有効3.061 ms、不正入力は無効2.678 ms / 有効2.935 ms。
+  不正入力の有効時は1001件（1000診断と `VALIDATION_LIMIT` 1件）、他条件は0件。
+  ヒープ差と各測定値は `performance-review1.json`。
+- 文書 lint、相対リンク、設定 JSON と scope/default、`git diff --check` は pass。
+  結果と入力は `documentation-final.*` および `input-manifest.json` に記録する。
+- 完了承認は `Waived`。初回4指摘を解消し、同じ担当の全差分再レビューで指摘0件を確認した。
+
+## 独立実装レビューと修正
+
+- 初回レビュー担当 `/root/validation_implementation_review` は、tree
+  `b61b6ee827c1c14e9dd0c0dc06e2d54bb25c3c9c`、diff SHA-256
+  `032863f3aeed55b367817dd8f25dbb5d414048328c4c0d64199e2684bf67ea3f` に対して
+  P2 指摘4件を返した。レビュー後も基準は計画コミットのまま。
+- 指摘1: 短い行の長さ範囲は実在する最後の文字を示す。`AB` / 期待長5を `[1,2)` に修正した。
+  空入力は純関数で `[0,0)`、application は空行を skip する境界テストを追加した。
+- 指摘2: 未知行の範囲を行全体にし、`XYZ` を `[0,3)` とするテストを追加した。
+- 指摘3: 打切り DTO と表示を `VALIDATION_LIMIT`、文書先頭 `[0,0)`、Information に統一した。
+  0/1000/1001件と上限後の装飾・モード遷移、VS Code 診断変換を検証した。
+- 指摘4: Qlty パス一覧を推定 union から実行ログ由来へ更新した。
+  SARIF、`invoke-*.yaml` と smells の実対象を関連付けた。
+- 修正後のテスト、ホスト検証、品質検査の結果と hash は証跡フォルダーの
+  `input-manifest.json` と各 raw log に記録した。同じレビュー担当への再レビュー待ち。
 
 ## 調査と文書検証の証跡
 

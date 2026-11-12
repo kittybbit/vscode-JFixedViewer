@@ -5,6 +5,9 @@ import {
   CharacterizationHost,
   FakeEditor,
 } from "./support/characterizationHost";
+import { createFixedWidthDecoration } from "../application/fixedWidth/FixedWidthDecoration";
+import { projectFields } from "../domain/fixedWidth/projectFields";
+import { validateRecord } from "../domain/fixedWidth/validateRecord";
 
 const commandId = "vscode-JFixedViewer.FiletypePicker";
 const zenginAccount = "全銀協規定形式/振込入金通知(A)";
@@ -427,6 +430,375 @@ suite("固定長表示の現行挙動", () => {
     host.dispose();
   });
 
+  test("ドメインの範囲は実在する文字を示し、未知行全体と空入力を扱う", () => {
+    const rows = [
+      {
+        name: "データ",
+        condition: /^/u,
+        fields: [{ name: "値", length: 5 }],
+      },
+    ];
+    const shortProjection = projectFields("AB", rows, undefined);
+    assert.deepStrictEqual(validateRecord("AB", shortProjection), [
+      {
+        code: "INVALID_LENGTH",
+        start: 1,
+        end: 2,
+        expectedLength: 5,
+        actualLength: 2,
+      },
+    ]);
+
+    const emptyProjection = projectFields("", rows, undefined);
+    assert.deepStrictEqual(validateRecord("", emptyProjection), [
+      {
+        code: "INVALID_LENGTH",
+        start: 0,
+        end: 0,
+        expectedLength: 5,
+        actualLength: 0,
+      },
+    ]);
+    const emptyAnalysis = createFixedWidthDecoration([
+      {
+        fileType: "test@empty",
+        name: "試験/空行",
+        fileNamePattern: /.*/u,
+        rows,
+      },
+    ]).analyze(
+      "test@empty",
+      [{ line: 0, text: "", isEmptyOrWhitespace: true }],
+      true,
+    );
+    assert.deepStrictEqual(emptyAnalysis.issues, []);
+
+    assert.deepStrictEqual(
+      validateRecord("XYZ", projectFields("XYZ", [], undefined)),
+      [{ code: "UNKNOWN_RECORD", start: 0, end: 3 }],
+    );
+  });
+
+  test("検証は文字位置で長さとN型を診断し、空白項目と文字型を誤検知しない", () => {
+    const decoration = createFixedWidthDecoration([
+      {
+        fileType: "test@custom",
+        name: "試験/検証",
+        fileNamePattern: /.*/u,
+        rows: [
+          {
+            name: "データ",
+            condition: /^(?=[0-9 A０-９])/u,
+            fields: [
+              { name: "区分", length: 1, type: "C" },
+              { name: "金額", length: 2, type: "N" },
+              { name: "自由項目", length: 2, type: "C" },
+            ],
+          },
+        ],
+      },
+    ]);
+    const lines = [
+      "A12ab",
+      "A  \u0000!",
+      "A1 ab",
+      "A1",
+      "xabc",
+      "A12abZZ",
+      "A１２ab",
+    ].map((text, line) => ({
+      line,
+      text,
+      isEmptyOrWhitespace: /^\s*$/u.test(text),
+    }));
+
+    const analysis = decoration.analyze("test@custom", lines, true);
+    assert.deepStrictEqual(
+      analysis.issues.map((issue) => ({ code: issue.code, line: issue.line })),
+      [
+        { code: "INVALID_TYPE", line: 2 },
+        { code: "INVALID_LENGTH", line: 3 },
+        { code: "UNKNOWN_RECORD", line: 4 },
+        { code: "INVALID_LENGTH", line: 5 },
+        { code: "INVALID_TYPE", line: 6 },
+      ],
+    );
+    assert.deepStrictEqual(analysis.issues[0], {
+      code: "INVALID_TYPE",
+      line: 2,
+      start: 1,
+      end: 3,
+      fieldName: "金額",
+      fieldNumber: 2,
+    });
+    assert.deepStrictEqual(analysis.issues[1], {
+      code: "INVALID_LENGTH",
+      line: 3,
+      start: 1,
+      end: 2,
+      expectedLength: 5,
+      actualLength: 2,
+    });
+    assert.deepStrictEqual(analysis.issues[2], {
+      code: "UNKNOWN_RECORD",
+      line: 4,
+      start: 0,
+      end: 4,
+    });
+    assert.deepStrictEqual(analysis.issues[3], {
+      code: "INVALID_LENGTH",
+      line: 5,
+      start: 5,
+      end: 7,
+      expectedLength: 5,
+      actualLength: 7,
+    });
+    assert.deepStrictEqual(analysis.issues[4], {
+      code: "INVALID_TYPE",
+      line: 6,
+      start: 1,
+      end: 3,
+      fieldName: "金額",
+      fieldNumber: 2,
+    });
+    assert.deepStrictEqual(
+      decoration.decorate("test@custom", lines),
+      analysis.fields,
+    );
+    assert.deepStrictEqual(
+      decoration.analyze("test@custom", lines, false).issues,
+      [],
+    );
+  });
+
+  test("短い行でも完全なN項目を検証し、不足したN項目は型検証しない", () => {
+    const decoration = createFixedWidthDecoration([
+      {
+        fileType: "test@short-fields",
+        name: "試験/短い項目",
+        fileNamePattern: /.*/u,
+        rows: [
+          {
+            name: "データ",
+            condition: /^/u,
+            fields: [
+              { name: "先行項目", length: 1, type: "N" },
+              { name: "不足項目", length: 2, type: "N" },
+            ],
+          },
+        ],
+      },
+    ]);
+    const lines = ["x!"].map((text, line) => ({
+      line,
+      text,
+      isEmptyOrWhitespace: false,
+    }));
+
+    const analysis = decoration.analyze("test@short-fields", lines, true);
+
+    assert.deepStrictEqual(
+      analysis.issues.map((issue) => ({
+        code: issue.code,
+        fieldName: issue.code === "INVALID_TYPE" ? issue.fieldName : undefined,
+      })),
+      [
+        { code: "INVALID_LENGTH", fieldName: undefined },
+        { code: "INVALID_TYPE", fieldName: "先行項目" },
+      ],
+    );
+  });
+
+  test("診断を1000件で打ち切っても、後続のモード依存装飾を解析する", () => {
+    const decoration = createFixedWidthDecoration([
+      {
+        fileType: "test@mode",
+        name: "試験/モード",
+        fileNamePattern: /.*/u,
+        rows: [
+          {
+            name: "ヘッダー",
+            condition: /^H/u,
+            modeRule: /^H(.)/u,
+            modeRulePosition: 1,
+            fields: [{ name: "モード", length: 2 }],
+          },
+          {
+            name: "データ",
+            condition: /^D/u,
+            mode: /^1/u,
+            fields: [{ name: "値", length: 2 }],
+          },
+        ],
+      },
+    ]);
+    const validLines = ["H1", "D2"].map((text, line) => ({
+      line,
+      text,
+      isEmptyOrWhitespace: false,
+    }));
+    assert.deepStrictEqual(
+      decoration.analyze("test@mode", validLines, true).issues,
+      [],
+    );
+
+    const unknownLines = (count: number) =>
+      Array.from({ length: count }, (_, line) => ({
+        line,
+        text: "X",
+        isEmptyOrWhitespace: false,
+      }));
+    const exactlyAtLimit = decoration.analyze(
+      "test@mode",
+      unknownLines(1000),
+      true,
+    );
+    assert.strictEqual(exactlyAtLimit.issues.length, 1000);
+    assert.strictEqual(
+      exactlyAtLimit.issues.some((issue) => issue.code === "VALIDATION_LIMIT"),
+      false,
+    );
+
+    const lines = [
+      ...unknownLines(1001),
+      ...["H1", "D2"].map((text, index) => ({
+        line: index + 1001,
+        text,
+        isEmptyOrWhitespace: false,
+      })),
+    ];
+
+    const analysis = decoration.analyze("test@mode", lines, true);
+    assert.strictEqual(analysis.issues.length, 1001);
+    assert.strictEqual(
+      analysis.issues.filter((issue) => issue.code === "UNKNOWN_RECORD").length,
+      1000,
+    );
+    assert.deepStrictEqual(analysis.issues.at(-1), {
+      code: "VALIDATION_LIMIT",
+      line: 0,
+      start: 0,
+      end: 0,
+    });
+    assert.deepStrictEqual(
+      analysis.fields.map(({ line, name }) => ({ line, name })),
+      [
+        { line: 1001, name: "ヘッダー" },
+        { line: 1002, name: "データ" },
+      ],
+    );
+  });
+
+  test("検証を無効化すると診断が消え、再有効化・編集・解除で更新する", async () => {
+    host.dispose();
+    host = new CharacterizationHost({
+      zengin: {
+        type: "zengin",
+        name: "試験",
+        files: [
+          {
+            file_type: "test",
+            name: "検証",
+            finame_pattern: ".*",
+            rows: [
+              {
+                name: "データ",
+                condition: "^(?=[0-9 A０-９])",
+                fields: [
+                  { name: "区分", length: 1, type: "C" },
+                  { name: "金額", length: 2, type: "N" },
+                  { name: "自由項目", length: 2, type: "C" },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    host.start();
+    const editor = host.createEditor("validation.txt", ["A1 ab"]);
+    host.setActiveEditor(editor);
+    await host.chooseFileType("試験/検証");
+
+    const collection = host.diagnosticCollections[0];
+    assert.strictEqual(collection.name, "jfixedviewer");
+    assert.deepStrictEqual(
+      host.diagnosticsFor(editor)?.map(({ code }) => code),
+      ["INVALID_TYPE"],
+    );
+
+    host.setConfiguration("validation.txt", { validationEnabled: false });
+    assert.deepStrictEqual(host.diagnosticsFor(editor), []);
+    host.setConfiguration("validation.txt", { validationEnabled: true });
+    assert.deepStrictEqual(
+      host.diagnosticsFor(editor)?.map(({ code }) => code),
+      ["INVALID_TYPE"],
+    );
+    host.setConfiguration("validation.txt", { validationEnabled: "invalid" });
+    assert.deepStrictEqual(
+      host.diagnosticsFor(editor)?.map(({ code }) => code),
+      ["INVALID_TYPE"],
+    );
+
+    const resourceScoped = host.createEditor("validation-disabled.txt", [
+      "A1 ab",
+    ]);
+    host.setConfiguration("validation-disabled.txt", {
+      validationEnabled: false,
+    });
+    host.setActiveEditor(resourceScoped);
+    await host.chooseFileType("試験/検証");
+    assert.deepStrictEqual(host.diagnosticsFor(resourceScoped), []);
+    host.setActiveEditor(editor);
+    assert.deepStrictEqual(
+      host.diagnosticsFor(editor)?.map(({ code }) => code),
+      ["INVALID_TYPE"],
+    );
+
+    const split = host.createEditor("validation.txt", ["A1 ab"]);
+    const setCountBeforeSplit = collection.setCount;
+    host.setVisibleEditors([editor, split]);
+    assert.strictEqual(collection.setCount, setCountBeforeSplit + 1);
+    assert.deepStrictEqual(
+      collection.get(editor.document.uri)?.map(({ code }) => code),
+      ["INVALID_TYPE"],
+    );
+    host.setVisibleEditors([split]);
+    assert.deepStrictEqual(
+      collection.get(editor.document.uri)?.map(({ code }) => code),
+      ["INVALID_TYPE"],
+    );
+
+    host.changeDocument(editor, ["A12ab"]);
+    await host.waitForPendingRender();
+    assert.deepStrictEqual(host.diagnosticsFor(editor), []);
+    host.changeDocument(editor, ["A1 ab"]);
+    await host.waitForPendingRender();
+    assert.deepStrictEqual(
+      host.diagnosticsFor(editor)?.map(({ code }) => code),
+      ["INVALID_TYPE"],
+    );
+
+    host.setVisibleEditors([]);
+    assert.strictEqual(collection.get(editor.document.uri), undefined);
+    host.closeDocument(split);
+    const reopened = host.createEditor("validation.txt", ["A1 ab"]);
+    host.setVisibleEditors([reopened]);
+    assert.deepStrictEqual(
+      host.diagnosticsFor(reopened)?.map(({ code }) => code),
+      ["INVALID_TYPE"],
+    );
+    host.closeDocument(reopened);
+    assert.strictEqual(collection.get(reopened.document.uri), undefined);
+
+    await host.chooseFileType(clearType);
+    assert.strictEqual(collection.get(editor.document.uri), undefined);
+    assert.strictEqual(collection.disposeCount, 0);
+    host.dispose();
+    assert.strictEqual(collection.disposeCount, 1);
+    assert.strictEqual(collection.get(editor.document.uri), undefined);
+  });
+
   test("組み込みの全銀と JPX の定義、空白行、不一致行、ホバー、UTF-16 範囲を保つ", async () => {
     const zengin = host.createEditor("50200001-a.txt", [
       "1😀",
@@ -545,6 +917,11 @@ suite("固定長表示の現行挙動", () => {
       host.setActiveEditor(editor);
       await host.chooseFileType(`全銀協規定形式/${formatName}`);
       await host.waitForPendingRender();
+      assert.deepStrictEqual(
+        host.diagnosticsFor(editor),
+        [],
+        `${fileName} unexpectedly has diagnostics`,
+      );
       for (const [line, expectedRow] of expectedRows.entries()) {
         const fieldRows = rowNames(editor, line);
         assert.ok(
@@ -898,6 +1275,8 @@ suite("固定長表示の現行挙動", () => {
     const primary = host.createEditor("SH_DER.csv", [record]);
     host.setActiveEditor(primary);
     await host.chooseFileType(jpxFourPrices);
+    await host.waitForPendingRender();
+    assert.deepStrictEqual(host.diagnosticsFor(primary), []);
     const eventsBeforeCursorMoves = host.reporters[0].events.length;
     assert.strictEqual(primary.document.getText(), record);
 
