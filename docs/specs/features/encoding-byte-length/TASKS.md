@@ -4,10 +4,10 @@
 
 - [仕様](SPECS.md)の R1〜R10 を2スライスで実現する。S1 は最低版と API の利用条件、
   S2 は形式別読込、バイト表示・検証、組み込み移行を一体で扱う。
-- ライフサイクル状態は `PLAN_APPROVED`、計画の版は `plan-v1`。
+- ライフサイクル状態は `PLAN_COMMITTED`、計画の版は `plan-v1`。
   独立レビュー `plan-review-v1` は指摘なしの `Ready for approval`。
-- Main が今回限定の承認省略条件を適用した。次は計画だけのコミット。
-  計画コミット後に S1 の実装を開始する。
+- Main は今回限定の承認省略条件を適用し、計画のみを
+  `f5f54ce7d36ad349d9dfe4802229c04c8a5c6068` でコミットした。S1 実装完了。
 - [SDD 方針](../../README.md)、[検証方針](../../validation.md)、
   [証跡方針](../../evidence.md)、[アーキテクチャ](../../architecture.md)を使う。
 
@@ -19,7 +19,7 @@
 - 受付の証跡 `/tmp/jfixedviewer-encoding-byte-length-intake-v1/` の
   `validation.log` と `inputs.sha256`。調査内容は本計画の根拠として引き継ぐ。
 - 他の機能は引き継がない。未追跡 `.serena/` は全ての編集・検査・ステージ対象外。
-- S1、S2 とも計画範囲は `PLAN_APPROVED`。計画コミット、実装、PR は未実施。
+- S1 は `SLICE_APPROVED`、S2 は `PLAN_APPROVED`。S1 の完了コミットと PR は未作成。
 
 [ライフサイクル状態](../../README.md#ライフサイクル状態)に従う。
 
@@ -52,6 +52,7 @@
   指摘は作成者へ戻して修正し、全差分の再レビューを受ける。検査不足や必須チェックを省略しない。
 - この計画の実装候補パスは以下に限定する。実装で新規パスや契約変更が必要なら Main に戻し、
   計画の該当箇所を更新して独立レビューを受ける。
+- S1 の完了承認段階は `Pending`。独立した実装レビューは未実施。
 
 [人による承認](../../README.md#人による承認)と、今回の利用者の指示を合わせて適用する。
 
@@ -82,7 +83,7 @@
 
 ## スライス S1. VS Code 1.100 と文字コード API の利用条件
 
-- 状態 `PLAN_APPROVED`。価値は最低対応の明示と、以後の文字コード機能を両ホストで使える基盤。
+- 状態 `SLICE_APPROVED`。価値は最低対応の明示と、以後の文字コード機能を両ホストで使える基盤。
   S2 の機能がなくても既存の表示・診断をそのまま提供できる。
 - `engines.vscode` を `^1.100.0`、`@types/vscode` を厳密な `1.100.0` にする。
   最新型への暗黙更新で最低版にない API を使わない。既存 npm lock を更新する。
@@ -98,8 +99,66 @@
 - 受け入れ: 正確な1.100.0の型でビルドでき、Desktop安定版・1.100.0・Web安定版で
   既存スモークと追加 API 確認が通る。変更文書・lock・CIの検査と Qlty 条件を満たす。
 - 必須検証は次の「各実装スライスの最終検証」を全て適用する。CI は変更前後の実行範囲を照合する。
-- 開始条件: 計画の指摘なしレビュー、Main の承認省略記録、計画だけのコミット。
-  完了・レビュー・コミット・PR・最新チェックの証跡は未作成。
+- 実装差分は独立レビュー済み。完了コミット、PR、最新ヘッドの検査は未実施。
+
+### S1 の実装結果
+
+- 変更した製品・設定パス: `package.json`、`package-lock.json`、
+  `.github/workflows/verify.yml`、`README.md`、`CHANGELOG.md`。
+- 変更した検証パス: `src/test/smoke.ts`、`src/test/support/encodingSmoke.ts`。
+  共通ホスト smoke は `TextDocument.encoding`、Shift_JIS `Aあ` の3バイト、UTF-8 の日本語と
+  サロゲートペアの全量 encode/decode を確かめる。検証コードは内容をログに出さない。
+- 変更した計画メタデータ: `TASKS.md`、`TRACEABILITY.md`。TRACEABILITY の表だけ
+  `MD013` を無効化し、SDD README の幅広い表と同じ Prettier/Markdownlint の扱いにした。
+  要件、範囲、検証条件は変更していない。
+- 受入条件 R1: `npm ci`（一時コピー）、`npm run test:prepare`、
+  `npm exec -- tsc -p . --noEmit`、production Desktop/Web webpack、
+  `npm run test:architecture` は
+  `Pass`。アーキテクチャテスト7件。最低版 VS Code 1.100.0 smoke と Web 安定版 smoke は
+  `Pass`。Desktop 1.146.0 の全テストと共有 smoke は23件 `Pass`。
+- `test:desktop` の Desktop 安定版実行は、配布物の `Code` 実行ファイルを指定し、
+  一時コピーのテスト設定に専用 `--user-data-dir` のみを追加した。テストファイルと範囲は
+  `.vscode-test.mjs` と一致する。元設定、final snapshot 設定、差分、`files` 配列の一致記録は
+  `/tmp/jfixedviewer-encoding-byte-length-s1/stable-host/test-config-plan.mjs`、
+  `test-config-final-snapshot.mjs`、`test-config.diff`、
+  `test-config-verification.log` に保存した。実行ログは `desktop-suite.log`、終了コードは
+  `desktop-suite.exit-code`。
+- Markdown lint、リンク・節、`git diff --check`、package/lock の1.100.0整合性は `Pass`。
+  Qlty 0.645.0 の全体SARIF 2.1.0 は baseline check の既存 Prettier note が1件、smells 0件。
+  最終は check / smells とも指摘0件、`npm run qlty` も `Pass`。Qlty の SARIF と実行ログ、
+  対象パス一覧、ハッシュは `/tmp/jfixedviewer-encoding-byte-length-s1/` に保存した。
+  既存の `qlty.toml` 未対応項目の警告は両スナップショットで同じ。
+- 製品検証証跡とコマンド別ログ: `/tmp/jfixedviewer-encoding-byte-length-s1/validation/validation.log`
+  と `validation/steps/`。S1 製品・検証パスの基準と最終の SHA-256 は
+  `/tmp/jfixedviewer-encoding-byte-length-s1/baseline/product-inputs.sha256` と
+  `final/product-inputs.sha256`、作業ツリーは `validation/inputs.sha256`。
+  Qlty 全体 check の対象は `baseline/analysis-paths.txt` (103) と
+  `final/analysis-paths.txt` (104)、対応する全ファイルの SHA-256 一覧は各
+  `inputs.sha256`。smells の全ソース対象は各
+  `smells-analysis-paths.txt` (21/22) と `smells-inputs.sha256`。元の公式 SARIF は維持し、
+  デバッグ補完 SARIF、invoke YAML、対象数の根拠は各 snapshot の `check-debug.sarif`、
+  `smells-debug.sarif`、`qlty-invocations/`、`analysis-paths-summary.json`、
+  `qlty-debug-full.log` に保存した。Qlty の canonical SARIF は Desktop の使い捨て
+  user-data-dir 調整より前の設定に対応する。機能メタデータの別検査対象は
+  `validation/current-metadata.sha256` に記録し、Qlty 入力ハッシュと区別した。
+- 各PRの最新ヘッドに対する Verify、CodeQL、Cloudチェックは PR 未作成のため `Not Applicable`。
+  PR公開後、Main が S1 の最新ヘッドで確認する。終了条件と S2 の検証は未実施。
+
+### S1 の次の状態遷移
+
+- 独立レビューと今回限定の条件適用を完了した。Main が完了差分をコミットし S1 PR を公開する。
+- S1 最新PRヘッドの必須チェック完了後に初めて S2 ブランチへ進む。
+
+### S1 の独立レビューと条件適用
+
+- `s1-review-v1` は対応表の整形に P3 が1件。作成者が Prettier 3.6.2 で修正した。
+- `s1-review-v2` は全9パスを対象に `Ready`、指摘0件。入力は
+  `/tmp/jfixedviewer-encoding-byte-length-main/s1-review-v2-inputs.json`。
+  製品の入力は変わらず、文書整形に対応する検査とメタデータのハッシュを更新した。
+- Main はこの指摘なし判定を確認し、今回の利用者指示による完了承認の省略条件を適用した。
+  完了段階は `Approved`。人が個別の実装差分を承認したものではない。
+  対象は上記入力の9パスと、この状態・承認の追記。実装範囲と検証条件は変更していない。
+- 本追記は別のメタデータ検査を行い、承認済みパスだけを完了コミットに含める。
 
 ## スライス S2. 形式別読込とバイト単位の表示・検証
 

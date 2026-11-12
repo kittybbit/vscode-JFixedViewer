@@ -60,7 +60,7 @@ jobs:
       - name: デスクトップ安定版のテスト
         run: xvfb-run -a npm run test:desktop
 
-      - name: デスクトップ 1.75.0 のスモークテスト
+      - name: デスクトップ 1.100.0 のスモークテスト
         run: xvfb-run -a npm run test:desktop:min
 
       - name: Web 安定版のスモークテスト
