@@ -4,8 +4,8 @@
 
 - [仕様](SPECS.md)の R1〜R10 を2スライスで実現する。S1 は最低版と API の利用条件、
   S2 は形式別読込、バイト表示・検証、組み込み移行を一体で扱う。
-- ライフサイクル状態は `PLAN_COMMITTED`、計画の版は `plan-v1`。
-  独立レビュー `plan-review-v1` は指摘なしの `Ready for approval`。
+- S2 再計画の状態は `PLAN_APPROVED`、計画の版は `plan-v2`（2026年11月13日）。
+  `plan-v1` の独立レビュー `plan-review-v1` と計画コミットは履歴として維持する。
 - Main は今回限定の承認省略条件を適用し、計画のみを
   `f5f54ce7d36ad349d9dfe4802229c04c8a5c6068` でコミットした。S1 実装完了。
 - [SDD 方針](../../README.md)、[検証方針](../../validation.md)、
@@ -19,7 +19,9 @@
 - 受付の証跡 `/tmp/jfixedviewer-encoding-byte-length-intake-v1/` の
   `validation.log` と `inputs.sha256`。調査内容は本計画の根拠として引き継ぐ。
 - 他の機能は引き継がない。未追跡 `.serena/` は全ての編集・検査・ステージ対象外。
-- S1 は `SLICE_APPROVED`、S2 は `PLAN_APPROVED`。S1 の完了コミットと PR は未作成。
+- S1 は `SLICE_COMMITTED`、S2 の改訂計画は `PLAN_APPROVED`。
+  S1 最新ヘッドの検査は全て通過した。
+  現在の作業ブランチは `codex/encoding-byte-length-byte`。
 
 [ライフサイクル状態](../../README.md#ライフサイクル状態)に従う。
 
@@ -38,9 +40,50 @@
 - 統合は S1、S2 の順。GitHub が許可する squash または rebase の標準操作を使い、
   実際の取り込み先と識別情報を Main が確認する。独自統合ブランチは作らない。
 
+### S2 PR の CodeQL と一時保護（Main のみ）
+
+1. 改訂計画の独立レビュー・今回限定の条件適用と計画コミット後、S2 PR 公開前に Main が実行する。
+   対象リポジトリは `kittybbit/vscode-JFixedViewer`、対象は先行ブランチ
+   `codex/encoding-byte-length` だけ。`main` の ruleset、CodeQL default setup、閾値、
+   必須検査、他ブランチは変更しない。
+2. GitHub REST API で branch / protection / applicable rules と
+   CodeQL default setup を GET し、
+   実行直前の先行 head、未保護・ルールなし、protection の404を HTTP status と本文で保存する。
+   `/repos/kittybbit/vscode-JFixedViewer/branches/codex%2Fencoding-byte-length/protection`
+   が protection の対象。権限不足の404と区別し、branch GET の成功と `protected: false` を確認する。
+   同じリポジトリ prefix の `branches/codex%2Fencoding-byte-length`、
+   `rules/branches/codex%2Fencoding-byte-length`、`code-scanning/default-setup`、
+   `rulesets/4182060` が残りの GET 対象。前提が変わった場合は上書きせず Main が再判断する。
+3. 同 endpoint を PUT し、必要な4属性を
+   `required_status_checks: null`、`enforce_admins: false`、
+   `required_pull_request_reviews: null`、`restrictions: null` とする最小保護を追加する。
+   force push / deletion / lock / linear history 等の追加許可は設定しない。
+   要求本文、応答、時刻・実行者を保存し、再 GET の保護状態と意味のある全属性を記録する。
+   先行 head と適用ルールも確認する。成功を未確認のまま PR 公開へ進まない。
+4. S2 完了の独立レビュー・条件適用・コミット後に通常の stack PR を S1 向けへ公開する。
+   正確な S2 head に対する Verify、CodeQL、対象言語の解析 revision と PR head の対応、
+   適用される Cloud を確認する。保護追加だけでは発火成功の証拠にしない。
+   CodeQL が未取得・実行中・失敗・別 head の場合は停止し、条件を緩めず Main へ戻す。
+5. 終了差分後も最新 S2 head の検査を確認し、承認条件に従って S1、S2 を標準操作で統合する。
+   S1 統合後の S2 の base は GitHub の再指定と実際の head を記録し、必要な最新チェックと
+   識別が変わったマージ段階の条件適用を確認する。S1 の一時保護は両層の統合確認まで保つ。
+6. 全層の実マージ後、ブランチ削除前に再 GET し、タスクが追加した保護と意味のある全属性が
+   同じ場合だけ同 endpoint を DELETE して元の未保護へ戻す。応答・再 GET の404、
+   branch の未保護・ルールを確認して復旧を記録する。他者が保護を変更した場合は削除せず、
+   残存設定・理由・担当 Main を終了証跡へ残して判断を求める。未統合の中断でも勝手に削除しない。
+   復旧確認後に通常の不要ブランチ削除へ進む。
+
+- 操作前/追加後/復旧前/復旧後の raw JSON、HTTP status、payload と head の索引は
+  `/tmp/jfixedviewer-encoding-byte-length-main/stack-protection/` に保存し、終了証跡へ参照を移す。
+  この計画担当と implementer は外部設定を操作しない。
+- 根拠は GitHub の[default setup の発火条件](https://docs.github.com/en/code-security/concepts/code-scanning/setup-types)と
+  [branch protection REST API](https://docs.github.com/en/rest/branches/branch-protection)。
+  一時保護は検査の発火に必要な運用であり、実際の検査成功やマージ承認に置き換えない。
+
 ## 人による承認
 
-- 計画段階は `Approved`（今回限定の承認省略条件による）。人の個別承認は受けていない。
+- 旧 `plan-v1` の計画段階は `Approved`（今回限定の承認省略条件による）。
+  人の個別承認は受けていない。
   Main は2026年11月12日、`plan-review-v1` の指摘0件を根拠として条件を適用した。
   対象は `plan-v1` の S1・S2、列挙した編集候補パス、検証、終了範囲。
   レビュー入力は `/tmp/jfixedviewer-encoding-byte-length-plan-v1/inputs.sha256`。
@@ -52,7 +95,14 @@
   指摘は作成者へ戻して修正し、全差分の再レビューを受ける。検査不足や必須チェックを省略しない。
 - この計画の実装候補パスは以下に限定する。実装で新規パスや契約変更が必要なら Main に戻し、
   計画の該当箇所を更新して独立レビューを受ける。
-- S1 の完了承認段階は `Pending`。独立した実装レビューは未実施。
+- S1 の完了承認段階は `Approved`。既存の `s1-review-v2`、今回限定の条件適用、完了コミット、
+  PR #21 の最新チェックは維持する。詳細は S1 の記録を参照する。
+- S2 の改訂計画承認は `Approved`（今回限定の承認省略条件による）。
+  Main は2026年11月13日、`plan-review-v2` の `Ready for approval`、指摘0件を確認した。
+  対象は `plan-v2` の全変更、列挙したパス、責務抽出、Web 準備、Main 限定の外部操作と復旧。
+  正確なレビュー入力は `/tmp/jfixedviewer-encoding-byte-length-plan-v2/inputs.sha256`。
+  人の個別承認を受けたとは記録しない。本追記は状態・承認のメタデータだけで、計画範囲は不変。
+  計画だけのコミット後に実装を再開する。外部操作と実装完了の結果は別に記録する。
 
 [人による承認](../../README.md#人による承認)と、今回の利用者の指示を合わせて適用する。
 
@@ -73,7 +123,8 @@
   全 prefix の再変換、各文字ごとのホスト API、分割表示ごとの重複解析は行わない。
   使い終えたスナップショットと境界表を永続キャッシュに保持しない。
 - Presentation は開始元 URI、再読込、選択と描画の世代、表示中のエディター、通知を担当する。
-  再読込の小さいアダプターを `documentEncoding.ts` に置ける。
+  再読込のアダプターを `documentEncoding.ts` に置く。S2 では選択、描画セッション、
+  エディターの装飾ハンドルを下記の責務ごとに分ける。
   文字コードを勝手に戻す常駐処理や、ファイルへの書込・自動保存は追加しない。
 - Bootstrap だけが具体的な codec アダプターを生成し、Application のファクトリーへ注入する。
   Application の内部 `analyze/decorate` は Promise を返す形へ変え、Presentation とテストを
@@ -83,7 +134,7 @@
 
 ## スライス S1. VS Code 1.100 と文字コード API の利用条件
 
-- 状態 `SLICE_APPROVED`。価値は最低対応の明示と、以後の文字コード機能を両ホストで使える基盤。
+- 状態 `SLICE_COMMITTED`。価値は最低対応の明示と、以後の文字コード機能を両ホストで使える基盤。
   S2 の機能がなくても既存の表示・診断をそのまま提供できる。
 - `engines.vscode` を `^1.100.0`、`@types/vscode` を厳密な `1.100.0` にする。
   最新型への暗黙更新で最低版にない API を使わない。既存 npm lock を更新する。
@@ -99,7 +150,7 @@
 - 受け入れ: 正確な1.100.0の型でビルドでき、Desktop安定版・1.100.0・Web安定版で
   既存スモークと追加 API 確認が通る。変更文書・lock・CIの検査と Qlty 条件を満たす。
 - 必須検証は次の「各実装スライスの最終検証」を全て適用する。CI は変更前後の実行範囲を照合する。
-- 実装差分は独立レビュー済み。完了コミット、PR、最新ヘッドの検査は未実施。
+- 実装差分は独立レビュー済み。完了コミット、PR、最新ヘッドの検査を完了した。
 
 ### S1 の実装結果
 
@@ -160,9 +211,24 @@
   対象は上記入力の9パスと、この状態・承認の追記。実装範囲と検証条件は変更していない。
 - 本追記は別のメタデータ検査を行い、承認済みパスだけを完了コミットに含める。
 
+### S1 の公開と最新チェック
+
+- Main が完了コミット `0e43098bb523ea0eee5fbffeddd08c7bbb8b7ab1` を作成し、
+  [PR #21](https://github.com/kittybbit/vscode-JFixedViewer/pull/21) を `main` に向けて公開した。
+- 2026年11月13日、同じヘッドで `verify`、`CodeQL`、
+  `Analyze (actions)`、`Analyze (javascript-typescript)` の全てが `success`。
+  CodeQL の実際の解析も `refs/pull/21/head` と同じコミットに対応する。
+- 必須の Cloud チェックは適用ルールと公開されたチェックに存在しない。
+  独立した status context も0件。空の combined status の `pending` は実行中の検査ではない。
+- 生出力は `/tmp/jfixedviewer-encoding-byte-length-main/` の
+  `s1-head-check-runs.json`、`s1-head-statuses.json`、`s1-codeql-analyses.json`。
+- このヘッドを S2 の正確な先行ベースとし、S2 の実装開始条件を満たした。
+  S1 は機能全体の終了判定まで開いたままとする。
+
 ## スライス S2. 形式別読込とバイト単位の表示・検証
 
-- 状態 `PLAN_APPROVED`。依存は S1 完了コミットと、その最新 PR ヘッドのチェック通過。
+- 状態 `PLAN_APPROVED`。実装途中で停止し、未コミット差分を保全した。依存は S1 完了コミットと、
+  その最新 PR ヘッドのチェック通過、改訂計画のレビュー・条件適用・計画だけのコミット。
 - 価値は JIS 系の全銀33形式と JPX を正しい文字コードで読み、バイト幅で表示・診断すること。
   表示だけをバイト化して診断を UTF-16 のままにする中間段階は公開しない。
 - 受け入れ条件は仕様の R2〜R10 と「文字コードとバイト位置」「読込と非同期処理」
@@ -179,13 +245,23 @@
   `src/infrastructure/encoding/encodedBoundaries.ts`（新規）。
 - Presentation: `src/presentation/vscode/FixedWidthPresentation.ts`、
   `src/presentation/vscode/documentEncoding.ts`（新規）、
+  `src/presentation/vscode/FileTypeSelection.ts`（新規）、
+  `src/presentation/vscode/DocumentRenderSession.ts`（新規）、
+  `src/presentation/vscode/EditorDecorations.ts`（新規）、
   `src/presentation/vscode/decorationStyle.ts`、`src/presentation/vscode/diagnostics.ts`。
 - 組み立て・定義: `src/bootstrap/activateExtension.ts`、
   `src/resource/definitions/zengin.json`、`src/resource/definitions/jpx.json`。
 - 検証支援: `src/test/extension.test.ts`、`src/test/support/characterizationHost.ts`、
   `src/test/smoke.ts`、`src/test/support/encodingSmoke.ts`、
-  `src/test/encoding.test.ts`（新規）、`.vscode-test.mjs`。
+  `src/test/encoding.test.ts`（新規）、
+  `src/test/support/fakeTextEncoding.ts`（新規）、
+  `src/test/support/fakeVscodeTypes.ts`（新規）、`.vscode-test.mjs`。
   `.vscode-test.mjs` は新しい Desktop テスト入口を追加するためだけに変更する。
+- Web 検証準備: `scripts/run-web-tests.mjs`（新規）、
+  `scripts/prepare-web-runtime.mjs`（新規）、`scripts/prepare-web-runtime.test.mjs`（新規）、
+  `package.json`（`scripts.test:web` の起動先だけ）、`.github/workflows/verify.yml`
+  （Web 準備の単体検証と証跡保存だけ）。既存の Chromium 準備、全ホストの実行、タイムアウトを維持する。
+  lock と依存宣言は変更しない。
 - 恒久文書: `README.md`、`CHANGELOG.md`、`sample/README.md`、`docs/specs/architecture.md`、
   `docs/requirements/use-cases/uc-display-fixed-width.md`、
   `docs/requirements/use-cases/uc-validate-fixed-width.md`、
@@ -194,6 +270,132 @@
   新規候補は責務を分けるために列挙しており、不要なら作成しなくてよい。
 - 対象外: 解除 JSON、サンプルデータの書換、テレメトリ実装、独自コーデック、追加 npm 依存、
   新しい利用者設定、CI の検証範囲縮小、業務文字種の追加検証、改行なしデータの自動分割。
+
+### S2 再計画の理由と比較する入力
+
+- 再計画モード。旧計画は `plan-v1` / `f5f54ce7d36ad349d9dfe4802229c04c8a5c6068`。
+  S2 の比較ベース・現在の HEAD は S1 の `0e43098bb523ea0eee5fbffeddd08c7bbb8b7ab1`。
+  S2 は未コミットで、再計画開始時の製品・テスト・設定・定義の一覧と SHA-256 を
+  `/tmp/jfixedviewer-encoding-byte-length-plan-v2/preserved-inputs.sha256` に保全した。
+  Main の既存 TASKS 追記は `inherited-tasks.diff` に保持し、製品差分と `.serena/` は編集しない。
+- Qlty 0.645.0 の全体 baseline は check / smells とも0件。停止時の final-01 は check が
+  Prettier 8件、smells が53件。`FixedWidthPresentation.ts` の file complexity は123、
+  `characterizationHost.ts` は79（閾値55）。関数の分岐、引数、return も新規指摘がある。
+  smells の終了コード0は指摘なしを意味しない。閾値・設定・解析対象を維持して全件解消する。
+  公式 SARIF は `/tmp/jfixedviewer-encoding-byte-length-s2/qlty/` 配下の
+  `{baseline,final-01}/repo/check-01.sarif` と
+  `{baseline,final-01}/qlty-results/smells-01.sarif`、終了コードと対象一覧は同スナップショットにある。
+  両者の設定 SHA-256 は `ef66ff4bc2fc0987ea6ce019c5370b11aed4a3ebbb448ad64473d913bec0af6e`。
+- Web 1.146.0 / `69047191fc427f2f92828279aae1d90d8eeda7ab` の standalone host には
+  宣言依存 `@vscode/iconv-lite-umd` 0.7.1 の JS が欠け、S2 の追加 smoke で404となった。
+  同 commit の公式 CDN の未改変資材を使い捨てキャッシュに補完すると通過した。
+  元の失敗 `stable-host/web-suite-01.log` と成功 `web-suite-02.log` / `web-suite-03.log`、
+  Main の `web-runtime/asset-record.json` / `official-headers.txt` を保持する。
+  S1 の Web 成功を否定せず、この追加シナリオと当該配布物で確認した条件として扱う。
+- CodeQL default setup は default / protected branch 向け PR を対象とする。
+  S1 ブランチは未保護・適用ルールなしで、main ruleset `4182060` は default branch のみ。
+  Main は先行ブランチだけの一時保護を選んだ。調査は
+  `/tmp/jfixedviewer-encoding-byte-length-main/stack-codeql-research.json`。
+  外部操作は未実施で、改訂計画レビューと今回限定の条件適用を実行前に行う。
+
+### 責務抽出と維持する契約
+
+- `FixedWidthPresentation.ts` はコマンド登録・ホストイベントの購読と各担当への配送、
+  全体 dispose の組み立てを担う。新たなインフラストラクチャ実装の生成は bootstrap に限る。
+- `FileTypeSelection.ts` は quick pick の開始元 URI、選択要求の世代、同一 URI の再読込直列化、
+  選択の確定・解除、失敗通知と選択結果を担当する。`documentEncoding.ts` を呼び、
+  render session の失効・適用を依頼する。再読込結果の成功・失敗・古い要求を区別し、
+  古い結果で最新状態を消さない。既存のテレメトリ送信は選択結果を受ける入口で1回に保つ。
+- `DocumentRenderSession.ts` は URI ごとの形式・文書・版・encoding・描画世代の状態、
+  debounce、一度だけの解析と in-flight 共有、完了時の照合、表示結果の短命キャッシュと
+  診断を担当する。Application ポートを呼び、最新 snapshot の表示 DTO を editor 担当へ渡す。
+  編集・保存・設定・encoding・非表示・close・dispose による失効をここに集める。
+  非表示で選択を失う契約には変えず、最後の表示が隠れたときの診断消去と再表示を維持する。
+- `EditorDecorations.ts` は editor ごとの装飾ハンドルの生成・再利用・適用・破棄、
+  カーソル項目、交互色、解除時の描画消去を担当する。選択や codec の判断を持たせない。
+  URI の一度の解析を分割表示へ配り、同じ形式の再選択で許可されたハンドル再利用を維持する。
+- 同じ状態を複数担当で別々に保持しない。選択要求と描画要求は別の世代として session の
+  不変な要求レコードで照合する。URI、文書、版、encoding、形式、世代は意味を持つレコードへ
+  まとめ、位置引数の増加を避ける。依存は入口 → 選択/session/editor、選択 → session と
+  documentEncoding、session → Application/editor/diagnostics、editor → style とする。
+  逆向き import や相互参照、共有 singleton を追加しない。
+- `documentEncoding.ts` は再読込前の安全条件と API 呼出し後の検証を内部関数へ分け、
+  dirty / untitled / close / URI不一致 / encoding不一致を同じ失敗コードで返す。
+  Adapter の全量往復、`encodedBoundaries.ts` の BOM 除去・ストリーム走査・行内射影も
+  各既存ファイルの内部関数に分ける。標準デコーダーの各出力の JS `.length` を累積し、
+  全量一致と境界だけを記録する。全 prefix の再変換や独自 codec は導入しない。
+- Domain の `projectFields.ts` / `validateRecord.ts` は論理幅、行長、途中境界、N型の
+  目的別の内部関数と入力レコードへ整理する。Application の `FixedWidthDecoration.ts` は
+  codec 結果判定、行投影、検証蓄積を内部関数へ分ける。新規の Domain/Application モジュールは
+  追加せず、ホストを知らない契約、診断上限後も続くモード追跡、表示と診断の同じ境界表を保つ。
+  内部ポートの引数は同ファイルの要求型にまとめてよい。入口と Domain の公開挙動は変えない。
+- `fakeTextEncoding.ts` にテスト専用の既知 Unicode / Shift_JIS fixture 変換を移し、
+  `fakeVscodeTypes.ts` に fake の document/URI/range/event/diagnostic/decoration の値と
+  ライフサイクルを移す。`characterizationHost.ts` は呼出数・遅延 hook・イベント配送と
+  拡張の起動/破棄を担う。fake は実ホストの codec の代わりとして扱わない。
+  `encoding.test.ts` / `encodingSmoke.ts` / `diagnostics.ts` の局所指摘は既存パス内で整理する。
+- ファイル分割の理由は選択・snapshot・描画ハンドル・テスト環境の寿命と責務の違い。
+  閾値回避だけの転送関数や多重の抽象化を追加せず、全体 SARIF と独立レビューで
+  新規指摘0件と責務の妥当性を確認する。本番依存、層の依存方向、SDK 境界、R1〜R10 は維持する。
+
+### Web の公式ランタイム準備
+
+- 既存の `@vscode/test-web` 0.0.81 の公開 `open(options)` / `runTests(options)` を使う。
+  非公開の `out/server/download` import、独自のホスト展開、製品への codec 同梱は行わない。
+  現行の公開 API に不足依存を指定するオプションはなく、補完だけを小さい準備 helper とする。
+- `run-web-tests.mjs` が公式 update API
+  `https://update.code.visualstudio.com/api/update/web-standalone/stable/latest`
+  の commit を一度取得して40桁の SHA として検証し、prepare と runTests に同じ値を渡す。
+  latest で1.146.0を固定する意味にはせず、その実行で固定した安定版を記録する。
+- `prepare-web-runtime.mjs` は公開 `open` に `browserType: 'none'`、
+  `quality: 'stable'`、固定 commit、testRunnerDataDir、`port: 0` を渡して取得を任せる。
+  返された disposable を finally で破棄する。
+  framework 0.0.81 のキャッシュ命名 `vscode-web-stable-<commit>` と `version` マーカーを
+  確認する。既存の完成キャッシュがあればそれを使い、それ以外の取得先は commit 専用の
+  testRunnerDataDir（`.vscode-test-web/prepared-<commit>/`）にして framework の再取得が
+  他 commit のキャッシュを削除しないようにする。既存の標準キャッシュは
+  `.vscode-test-web/vscode-web-stable-<commit>/` を確認する。
+  パス構造が異なる、宣言依存の版や host の識別が確認できない場合は検査を失敗させる。
+- host の `package.json` に `@vscode/iconv-lite-umd` が宣言され、
+  `node_modules/@vscode/iconv-lite-umd/lib/iconv-lite-umd.js` が欠けた場合だけ、
+  `https://main.vscode-cdn.net/stable/<commit>/node_modules/@vscode/iconv-lite-umd/lib/iconv-lite-umd.js`
+  を取得し、成功応答・空でない JS を確認して未改変で保存する。既存資材は上書きしない。
+  一時ファイルで取得を完了してから配置し、失敗時に不完全ファイルを残さない。
+  別 commit、npm mirror、独自変換、mock への fallback は設けない。
+- 取得元、HTTP status、commit、host version、宣言版、既存/補完の別、サイズと SHA-256、
+  cache path を testRunnerDataDir の `runtime-assets.json` に記録し、標準出力にも保存先を出す。
+  公式更新情報・資材の取得失敗、識別不一致は非0終了とし、smoke 成功で隠さない。
+- 同じ commit / testRunnerDataDir を使う `runTests` は Chromium、`esm: true`、
+  `extensionDevelopmentPath: out/smoke-extension`、
+  `extensionTestsPath: out/smoke-extension/dist/smoke.js` を維持する。
+  `package.json` の `test:web` をこの runner へ変更する。Web 本体と全 smoke の意味は変えない。
+- 単体検証のコマンドは `node --test scripts/prepare-web-runtime.test.mjs`。
+  公開 open/runTests と fetch をテストで注入し、同 commit の引渡し、dispose、
+  既存 cache と資材の非上書き、不足1資材だけの取得、失敗時の非0伝播・不完全配置なし、
+  commit/宣言/host 不一致の拒否、既存他 cache の保持を一時ディレクトリで検証する。
+  ネットワーク stub は準備 helper の検査に限り、実ホスト smoke では公式資材を使う。
+- CI に上記単体コマンドを加え、`actions/upload-artifact@v4` の `if: always()` で
+  `.vscode-test-web/**/runtime-assets.json` を保存する。既存の全製品チェックは維持する。
+  cold cache と warm cache の各 `npm run test:web`、原本失敗と補完前後の資材一覧を記録し、
+  既存 Chromium/ESM/追加 smoke をそのまま通す。新しい依存や lock 変更は不要。
+
+### 検証の有効性と残るリスク
+
+- 停止前の Desktop 安定版37件は `stable-host/desktop-suite-06.log`、最低版 smoke は
+  `desktop-min-suite-02.log`、補完条件付き Web は `web-suite-03.log` に成功を保持している。
+  索引は `/tmp/jfixedviewer-encoding-byte-length-s2/validation/validation.log` と
+  各 exit-code。
+  これらは停止前入力の事実として再利用し、責務抽出後の入力の通過とは扱わない。
+- 本番/テスト構造を変更するため型・bundle・prepare・architecture・Desktop 全テストと
+  最低版/Web smoke、Qlty 最終全体は更新する。baseline は同一の S1 ベース・設定・対象選択なら
+  再利用する。新 helper の検査と cold/warm Web は追加し、既存の検証範囲を減らさない。
+  本再計画では製品テストを再実行せず、計画3文書の lint/リンク/構造/整形/空白だけを検証する。
+- 未コミット S2 差分の承認は旧 plan-v1 の範囲に限られていた。追加パス、内部要求レコード、
+  責務分割、Web helper、CI、外部保護の運用は新たなレビュー・条件適用の対象とする。
+  旧 S2 の開始許可だけで再開しない。S1 の結果、承認、PR の識別は失効させない。
+- Main は外部設定競合と CodeQL の発火、implementer は世代/直列化の退行と codec/host の
+  整合、reviewer は責務分割と証跡の入力一致を確認する。公式配布変更に helper が追従できない
+  場合は失敗として Main へ戻す。検査を skip して準備完了にしない。
 
 ### 検証シナリオ
 
@@ -267,6 +469,22 @@
   ネットワーク照会を避け、既存キャッシュの CLI 0.22.0 を直接実行した。
 - 製品・テスト・設定・恒久文書は計画では編集しない。製品の検証と全体 Qlty はこの段階で
   `Not Applicable`、実装の必須条件として上記に定めた。
+
+### plan-v2 の調査・文書検証
+
+- 記録者 planner、再計画範囲 S2 のみ。調査と原状保全は
+  `/tmp/jfixedviewer-encoding-byte-length-plan-v2/research.md`、
+  `preserved-inputs.sha256`、`starting-status.txt`、`starting-head.txt`。
+  Main の再計画前入力 `s2-replan-entry-inputs.json`（Main 証跡ディレクトリ、21パス）とも
+  計画外の20パスのハッシュが一致する。
+- 計画3文書の正確な SHA-256 は同ディレクトリの `inputs.sha256`、その一覧自体の SHA-256 を
+  引き継ぎで計画識別に使う。調査対象と文書検証のコマンド・終了コードは `validation.log`。
+  別途 Main が追記するレビュー・承認メタデータはその入力と区別して検証する。
+- 文書の Markdown lint 0.22.0、相対リンク/節/構造、Prettier 3.6.2、
+  `git diff --check` と製品・テスト・設定・定義の保全は全て `Pass`。
+  整形は使い捨てコピーで行い、最終作業ツリーは読み取りの `--check` で確認した。
+  計画段階の製品検査は `Not Applicable`。
+  変更は本機能の SPECS/TASKS/TRACEABILITY のみ。コミットと外部設定変更は行わない。
 
 ## 機能の終了判定
 
