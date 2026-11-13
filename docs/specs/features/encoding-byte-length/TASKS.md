@@ -4,7 +4,8 @@
 
 - [仕様](SPECS.md)の R1〜R10 を2スライスで実現する。S1 は最低版と API の利用条件、
   S2 は形式別読込、バイト表示・検証、組み込み移行を一体で扱う。
-- S2 の Web 検証支援だけを再計画した `plan-v3` は `PLAN_APPROVED`。
+- S2 の契約別テスト分割と fixture 抽出を扱う `plan-v4` revision 2 は `PLAN_APPROVED`。
+  旧 `plan-v3` の承認・計画コミットと S1 の完了は維持する。
   旧 `plan-v2` は `fb9daff695847bb729dc28a92eceb5c499df782d` で計画のみをコミット済み。
   `plan-v1` の独立レビュー `plan-review-v1` と計画コミットは履歴として維持する。
 - Main は今回限定の承認省略条件を `plan-review-v2` の Ready・指摘0件に適用した。
@@ -21,8 +22,9 @@
   `validation.log` と `inputs.sha256`。調査内容は本計画の根拠として引き継ぐ。
 - 他の機能は引き継がない。未追跡 `.serena/` は全ての編集・検査・ステージ対象外。
 - S1 は `SLICE_COMMITTED`（ヘッド `0e43098bb523ea0eee5fbffeddd08c7bbb8b7ab1`）、
-  S2 の Web 支援改訂は `PLAN_APPROVED`。正確な比較ベースは同じ S1 ヘッド。
-  S1 最新ヘッドの検査は全て通過し、S2 の改訂計画は `fb9daff695847bb729dc28a92eceb5c499df782d`。
+  S2 の契約別テスト分割は `PLAN_APPROVED`。正確な比較ベースは同じ S1 ヘッド。
+  S1 最新ヘッドの検査は全て通過し、先行計画 plan-v3 は
+  `75682a646af64f02ab435caa3a65b75ed22a8422`。
   現在の作業ブランチは `codex/encoding-byte-length-byte`。
 
 [ライフサイクル状態](../../README.md#ライフサイクル状態)に従う。
@@ -117,6 +119,11 @@
   人の個別承認を受けたとは記録しない。本追記は状態・条件適用だけで、計画範囲は不変。
   計画だけをコミットしてから実装を再開する。
   S1 と影響のない `plan-v2` の承認・結果、一時保護と復旧条件は維持する。
+
+- `plan-v4` revision 2 の計画承認は `Approved`。Main は2026年11月14日、
+  `plan-review-v4-r2` の Ready・指摘0件に今回限定の承認省略条件を適用した。
+  人の個別承認を受けたとは記録しない。計画だけをコミット後、追加範囲を実装する。
+  正確な入力と条件適用は Main 証跡の `plan-v4-approval.json`。既存の承認・結果は維持する。
 
 [人による承認](../../README.md#人による承認)と、今回の利用者の指示を合わせて適用する。
 
@@ -241,7 +248,7 @@
 
 ## スライス S2. 形式別読込とバイト単位の表示・検証
 
-- 状態 `PLAN_APPROVED`。Web 支援の再計画で停止し、未コミット差分を保全した。
+- 状態 `PLAN_APPROVED`。契約別テスト分割と fixture の追加パスを計画し、未コミット差分を保全した。
   依存は S1 完了コミットと、
   その最新 PR ヘッドのチェック通過、改訂計画のレビュー・条件適用・計画だけのコミット。
 - 価値は JIS 系の全銀33形式と JPX を正しい文字コードで読み、バイト幅で表示・診断すること。
@@ -270,8 +277,11 @@
   `src/test/smoke.ts`、`src/test/support/encodingSmoke.ts`、
   `src/test/encoding.test.ts`（新規）、
   `src/test/support/fakeTextEncoding.ts`（新規）、
-  `src/test/support/fakeVscodeTypes.ts`（新規）、`.vscode-test.mjs`。
-  `.vscode-test.mjs` は新しい Desktop テスト入口を追加するためだけに変更する。
+  `src/test/support/fakeVscodeTypes.ts`（新規）、
+  `src/test/support/encodingFixtures.ts`（新規）、
+  `src/test/encodingSelection.test.ts`（新規）、`src/test/encodingLifecycle.test.ts`（新規）、
+  `src/test/encodingReloadRace.test.ts`（新規）、`.vscode-test.mjs`。
+  `.vscode-test.mjs` は既存 encoding と新規3ファイルの Desktop 入口を登録するために変更する。
 - Web 支援の撤去: 未コミットの `scripts/run-web-tests.mjs`、
   `scripts/prepare-web-runtime.mjs`、`scripts/prepare-web-runtime.test.mjs` は作成不要とし削除する。
   `package.json` の `scripts.test:web` を S1 の標準 `vscode-test-web` CLI に戻す。
@@ -409,6 +419,59 @@
   本番の責務抽出とその他の `plan-v2` 承認は維持する。実装完了・終了のレビューは未実施。
   Main は外部保護の競合/復旧と最新 CodeQL、implementer は cache/生成物の完全性と
   入力一致、reviewer は標準実行経路と証跡の妥当性を確認する。初回欠落の原因は未確定のまま保持する。
+
+### plan-v4 revision 2: 契約ごとのテスト分割と形式定義 fixture
+
+- 再計画は S2 のテスト支援だけ。比較計画は plan-v3、現在 HEAD は
+  `75682a646af64f02ab435caa3a65b75ed22a8422`、S2 比較ベースは
+  `0e43098bb523ea0eee5fbffeddd08c7bbb8b7ab1`。SPECS は要件・挙動を変えないため編集しない。
+- 独立計画レビュー `plan-review-v4` は P2 が1件で `Needs revision`。
+  初案の fixture 3関数は分岐が少なく、file complexity 79 を閾値55未満へ減らす根拠がなかった。
+  初案と指摘の履歴を保持し、本 revision 2 はテスト本文を実際の契約で分割する。
+  Main の品質根拠は `recovery/quality-02/summary.json`、`smells.stdout`、`inputs.json`。
+  check 0件 / smells 4件で、`byteDefinition` の引数4件とテスト全体の complexity 79 が対象。
+  `reloadIfNeeded` の2指摘は既存クラス内の整理で対応し、本計画の追加製品範囲には含めない。
+- `src/test/encoding.test.ts` は codec 境界・Domain/Application 投影の5件を保持する。
+  BOM/U+FEFF、複数行と復号不一致、Shift_JIS/補助文字の途中境界、論理/表示位置と描画抑止、
+  N型診断が対象。`byteMaps`、UTF-16 バイト構築、`encodingResultPort` もこのファイルに残す。
+- 新規 `src/test/encodingSelection.test.ts` はホスト選択・再読込と安全停止の12件。
+  UTF-16 互換、URI とホバー、dirty/読込失敗、untitled/closed/encoding不一致、
+  未知encoding/API例外、省略時の未対応encoding、decode不一致、同encodingと変更、
+  明示形式の再open、省略形式の再open、置換による失敗、Quick Pick 中の切替を担当する。
+- 新規 `src/test/encodingLifecycle.test.ts` は解析結果の失効の2件。
+  編集/設定/保存後の古い codec 失敗と、encoding変更/非表示/close/dispose後の古い解析を扱う。
+  この2件だけが使う `deferFirstEncoding` は同ファイル内に置き、共有 fixture へ移さない。
+- 新規 `src/test/encodingReloadRace.test.ts` は再読込の競合の4件。
+  後続選択の直列化、古い失敗通知の抑止、close/dispose後の通知抑止、
+  待機中の新選択による古い完了の失効を担当する。
+- 新規 `src/test/support/encodingFixtures.ts` は `byteDefinition`、
+  `concurrentByteDefinition`、`utf16CompatibilityDefinition` に相当する形式定義構築と型だけ。
+  `byteDefinition` の選択肢は options レコードへまとめ、値・既定値・形式 ID・順序を維持する。
+  テスト本文、assertion、codec、ホスト操作、待機処理は fixture に移さない。
+  codec 用 `fakeTextEncoding.ts` と fake 値/寿命用 `fakeVscodeTypes.ts` も責務を維持する。
+- `.vscode-test.mjs` の既存 `files` に、新規3ファイルに対応する
+  `out/test/encodingSelection.test.js`、`out/test/encodingLifecycle.test.js`、
+  `out/test/encodingReloadRace.test.js` を追加する。既存 encoding/extension/smoke の入口、
+  ホスト、launchArgs は維持する。tsconfig、package、Web/最低版 smoke の入口は変更しない。
+- 元の23件を5/12/2/4件へ一対一に対応付け、テスト名・本文の分岐/反復・期待値・失敗条件・
+  cleanup を維持する。移動に必要な import、fixture 呼出し、suite の所属だけを変える。
+  テスト数の減少・重複実行・順序依存を防ぎ、fixture 専用の重複テストや不自然な変形は加えない。
+- 読み取り AST による関数数と分岐数の合計は、分割前125に対し、既存 encoding は23、
+  selection は44、lifecycle は21、reload race は35、fixture は5の見込み。
+  追加 suite 3個の分を含み、各ファイルを55未満に収める構成上の根拠とする。
+  この概算は Qlty の file complexity 測定値とは異なり、通過の証拠には使わない。
+  最終の公式全体 Qlty で各 file complexity と新規/悪化0件・総合通過を実測して確定する。
+- 型、test:prepare、Desktop 全テストで4入口の登録、元23件の一対一対応と期待値、
+  他の全テストと共通 smoke の実行を確認する。全体 Qlty と文書検査を更新する。
+  その他の証跡は関連入力・設定・範囲が一致するものだけ再利用し、先行の3件の P2 修正で
+  影響した検証も更新する。独立実装レビューは最終 S2 全差分を対象とする。
+- 製品設計、層責務、依存、挙動、互換性、標準 Web、最低版、スタック、外部保護、
+  品質閾値と製品検証範囲は変えない。実装は改訂計画の指摘0レビュー・Main の今回限定の
+  条件適用・計画だけのコミット後に進める。現在の計画承認は `Approved`。
+- revision 1 の成果物を残し、revision 2 の文書検査と入力識別は
+  `/tmp/jfixedviewer-encoding-byte-length-plan-v4/revision-2/` に置く。
+  `inputs.sha256` は作業ツリー、`staging-inputs.sha256` は計画だけの候補を識別する。
+  Main の開始入力の計画外32パスを保全する。計画担当は実装・製品検査・コミットを行わない。
 
 ### 検証シナリオ
 

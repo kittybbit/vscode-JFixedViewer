@@ -1,8 +1,8 @@
 # 要件と検証の対応
 
-計画の版 `plan-v3`（S2 の Web 支援だけを改訂、S1 の結果を維持）。具体的な契約は [SPECS](SPECS.md)、実装パスと結果は
-[TASKS](TASKS.md)に置く。S1 は検証・完了済み。S2 の途中検証を保持し、
-責務抽出後の成功証跡を保持し、標準 Web CLI 復帰後の検証と最終メタデータは未完了。
+計画の版 `plan-v4` revision 2（S2 の契約別テスト分割と fixture 抽出、既存承認を維持）。
+具体的な契約は [SPECS](SPECS.md)、実装パスと結果は [TASKS](TASKS.md) に置く。
+先行入力の結果を保持し、レビュー修正と fixture 抽出後の最終確認・独立再レビューは未完了。
 
 <!-- markdownlint-disable MD013 -->
 
@@ -37,3 +37,9 @@
 - 品質改善は閾値・全体対象を変えず Qlty の新規/悪化0件と総合通過で確認する。
   一時保護による CodeQL は S2 の最新 PR head と解析 revision を Main が照合し、
   全層統合後の復旧まで記録する。S1 の完了・承認・最新チェックを置き換えない。
+
+- plan-v4 revision 2 は codec/投影、ホスト選択、解析結果の失効、再読込競合の契約で
+  既存23件を5/12/2/4件へ分ける。共有の `encodingFixtures.ts` は形式定義と型だけを扱う。
+  R2/R3/R5〜R9 の既存シナリオと期待値を維持し、Desktop の新規3入口と元23件の対応、
+  型・test:prepare・全 Desktop テスト・全体 Qlty で確認する。
+  fixture 専用の重複テストは加えず、製品の契約と共通 smoke、標準 Web、最低版の範囲を維持する。
