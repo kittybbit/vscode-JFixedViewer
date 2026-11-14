@@ -19,6 +19,29 @@
 
 `src/extension.ts` は両ホスト共通の入口。拡張の既存 API を維持し、有効化と破棄を bootstrap に委ねる。
 
+## 文字コードとバイト位置
+
+形式の `length_unit` は `utf16` または `byte` です。省略した場合は従来どおり `utf16` を使い、
+`encoding` を省略した形式では現在の文書の文字コードを使います。バイト単位で境界を作る
+文字コードは `utf8`、`utf8bom`、`utf16le`、`utf16be`、`shiftjis` に限定します。
+バイト長は指定文字コードで現在の文書を再エンコードしたデータ部を基準にし、元ファイルの
+バイト列を保持する契約にはしません。
+
+Domain はホスト API を知らず、論理単位の項目範囲と、渡されたバイト境界表から得る
+UTF-16 表示位置を扱います。Application の `TextEncodingPort` が行スナップショットの
+非同期解析を受け持ちます。Infrastructure の `VscodeTextEncodingAdapter` だけが
+`workspace.encode` / `workspace.decode` を呼び、全量往復を照合します。
+`encodedBoundaries.ts` は生成 BOM と補助 sentinel をデータ幅から除き、標準 `TextDecoder` の
+fatal streaming decode から実在する文字境界を作ります。途中の byte と UTF-16 surrogate
+境界は表示可能な範囲へ誤って対応させません。
+
+Presentation では `FileTypeSelection` が quick pick と同じ URI の再読込を管理し、
+`DocumentRenderSession` が URI ごとの形式・文書版・encoding・世代・解析状態を所有します。
+`EditorDecorations` は editor ごとの装飾ハンドルを保持し、分割表示へ一度の URI 解析結果を
+配ります。`diagnostics.ts` は診断 DTO の VS Code 表示と collection の寿命を扱います。
+文書の encoding が形式と異なる場合の再読込は VS Code の標準 API を使い、未保存の変更を
+上書きしません。古い非同期結果は世代・版・encoding の照合を通過しない限り表示へ適用しません。
+
 ## 依存ルール
 
 各層から依存できる先を以下に示す。
@@ -59,7 +82,8 @@ import する。組み込み定義の読み込みはインフラストラクチ�
 
 デスクトップ版と Web 版のバンドルの入口と、`engines.vscode` の最小対応版を維持する。
 固定長のルールはホストから分離し、アーキテクチャ変更では組み込み定義の内容を保つ。
-プレゼンテーション層で項目の範囲を VS Code の範囲、スタイル、ホバー表示に変換する。
+最低対応版は VS Code 1.100.0。プレゼンテーション層で項目の論理範囲を VS Code の UTF-16 範囲、
+スタイル、ホバー表示に変換する。
 各文書の解析では先頭行からモードを求める。選択した形式は URI ごとに保持し、表示中の各エディターに
 独立した装飾ハンドルを割り当てる。同一 URI の分割表示では一度解析した結果を各表示に適用する。
 検証結果はアプリケーション層の DTO から VS Code の `DiagnosticCollection` に変換する。

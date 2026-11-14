@@ -1,10 +1,8 @@
 import * as assert from "assert";
 import { readFileSync, readdirSync } from "node:fs";
 import path = require("node:path");
-import {
-  CharacterizationHost,
-  FakeEditor,
-} from "./support/characterizationHost";
+import { CharacterizationHost } from "./support/characterizationHost";
+import type { FakeEditor } from "./support/fakeVscodeTypes";
 import { createFixedWidthDecoration } from "../application/fixedWidth/FixedWidthDecoration";
 import { projectFields } from "../domain/fixedWidth/projectFields";
 import { validateRecord } from "../domain/fixedWidth/validateRecord";
@@ -430,7 +428,7 @@ suite("固定長表示の現行挙動", () => {
     host.dispose();
   });
 
-  test("ドメインの範囲は実在する文字を示し、未知行全体と空入力を扱う", () => {
+  test("ドメインの範囲は実在する文字を示し、未知行全体と空入力を扱う", async () => {
     const rows = [
       {
         name: "データ",
@@ -438,7 +436,11 @@ suite("固定長表示の現行挙動", () => {
         fields: [{ name: "値", length: 5 }],
       },
     ];
-    const shortProjection = projectFields("AB", rows, undefined);
+    const shortProjection = projectFields({
+      lineText: "AB",
+      rowRules: rows,
+      currentMode: undefined,
+    });
     assert.deepStrictEqual(validateRecord("AB", shortProjection), [
       {
         code: "INVALID_LENGTH",
@@ -449,7 +451,11 @@ suite("固定長表示の現行挙動", () => {
       },
     ]);
 
-    const emptyProjection = projectFields("", rows, undefined);
+    const emptyProjection = projectFields({
+      lineText: "",
+      rowRules: rows,
+      currentMode: undefined,
+    });
     assert.deepStrictEqual(validateRecord("", emptyProjection), [
       {
         code: "INVALID_LENGTH",
@@ -466,20 +472,28 @@ suite("固定長表示の現行挙動", () => {
         fileNamePattern: /.*/u,
         rows,
       },
-    ]).analyze(
-      "test@empty",
-      [{ line: 0, text: "", isEmptyOrWhitespace: true }],
-      true,
-    );
-    assert.deepStrictEqual(emptyAnalysis.issues, []);
+    ]).analyze({
+      fileType: "test@empty",
+      lines: [{ line: 0, text: "", isEmptyOrWhitespace: true }],
+      validationEnabled: true,
+    });
+    const resolvedEmptyAnalysis = await emptyAnalysis;
+    assert.deepStrictEqual(resolvedEmptyAnalysis.issues, []);
 
     assert.deepStrictEqual(
-      validateRecord("XYZ", projectFields("XYZ", [], undefined)),
+      validateRecord(
+        "XYZ",
+        projectFields({
+          lineText: "XYZ",
+          rowRules: [],
+          currentMode: undefined,
+        }),
+      ),
       [{ code: "UNKNOWN_RECORD", start: 0, end: 3 }],
     );
   });
 
-  test("検証は文字位置で長さとN型を診断し、空白項目と文字型を誤検知しない", () => {
+  test("検証は文字位置で長さとN型を診断し、空白項目と文字型を誤検知しない", async () => {
     const decoration = createFixedWidthDecoration([
       {
         fileType: "test@custom",
@@ -512,7 +526,11 @@ suite("固定長表示の現行挙動", () => {
       isEmptyOrWhitespace: /^\s*$/u.test(text),
     }));
 
-    const analysis = decoration.analyze("test@custom", lines, true);
+    const analysis = await decoration.analyze({
+      fileType: "test@custom",
+      lines,
+      validationEnabled: true,
+    });
     assert.deepStrictEqual(
       analysis.issues.map((issue) => ({ code: issue.code, line: issue.line })),
       [
@@ -562,16 +580,22 @@ suite("固定長表示の現行挙動", () => {
       fieldNumber: 2,
     });
     assert.deepStrictEqual(
-      decoration.decorate("test@custom", lines),
+      await decoration.decorate({ fileType: "test@custom", lines }),
       analysis.fields,
     );
     assert.deepStrictEqual(
-      decoration.analyze("test@custom", lines, false).issues,
+      (
+        await decoration.analyze({
+          fileType: "test@custom",
+          lines,
+          validationEnabled: false,
+        })
+      ).issues,
       [],
     );
   });
 
-  test("短い行でも完全なN項目を検証し、不足したN項目は型検証しない", () => {
+  test("短い行でも完全なN項目を検証し、不足したN項目は型検証しない", async () => {
     const decoration = createFixedWidthDecoration([
       {
         fileType: "test@short-fields",
@@ -595,7 +619,11 @@ suite("固定長表示の現行挙動", () => {
       isEmptyOrWhitespace: false,
     }));
 
-    const analysis = decoration.analyze("test@short-fields", lines, true);
+    const analysis = await decoration.analyze({
+      fileType: "test@short-fields",
+      lines,
+      validationEnabled: true,
+    });
 
     assert.deepStrictEqual(
       analysis.issues.map((issue) => ({
@@ -609,7 +637,7 @@ suite("固定長表示の現行挙動", () => {
     );
   });
 
-  test("診断を1000件で打ち切っても、後続のモード依存装飾を解析する", () => {
+  test("診断を1000件で打ち切っても、後続のモード依存装飾を解析する", async () => {
     const decoration = createFixedWidthDecoration([
       {
         fileType: "test@mode",
@@ -638,7 +666,13 @@ suite("固定長表示の現行挙動", () => {
       isEmptyOrWhitespace: false,
     }));
     assert.deepStrictEqual(
-      decoration.analyze("test@mode", validLines, true).issues,
+      (
+        await decoration.analyze({
+          fileType: "test@mode",
+          lines: validLines,
+          validationEnabled: true,
+        })
+      ).issues,
       [],
     );
 
@@ -648,11 +682,11 @@ suite("固定長表示の現行挙動", () => {
         text: "X",
         isEmptyOrWhitespace: false,
       }));
-    const exactlyAtLimit = decoration.analyze(
-      "test@mode",
-      unknownLines(1000),
-      true,
-    );
+    const exactlyAtLimit = await decoration.analyze({
+      fileType: "test@mode",
+      lines: unknownLines(1000),
+      validationEnabled: true,
+    });
     assert.strictEqual(exactlyAtLimit.issues.length, 1000);
     assert.strictEqual(
       exactlyAtLimit.issues.some((issue) => issue.code === "VALIDATION_LIMIT"),
@@ -668,7 +702,11 @@ suite("固定長表示の現行挙動", () => {
       })),
     ];
 
-    const analysis = decoration.analyze("test@mode", lines, true);
+    const analysis = await decoration.analyze({
+      fileType: "test@mode",
+      lines,
+      validationEnabled: true,
+    });
     assert.strictEqual(analysis.issues.length, 1001);
     assert.strictEqual(
       analysis.issues.filter((issue) => issue.code === "UNKNOWN_RECORD").length,
@@ -728,13 +766,16 @@ suite("固定長表示の現行挙動", () => {
     );
 
     host.setConfiguration("validation.txt", { validationEnabled: false });
+    await host.waitForAnalysis();
     assert.deepStrictEqual(host.diagnosticsFor(editor), []);
     host.setConfiguration("validation.txt", { validationEnabled: true });
+    await host.waitForAnalysis();
     assert.deepStrictEqual(
       host.diagnosticsFor(editor)?.map(({ code }) => code),
       ["INVALID_TYPE"],
     );
     host.setConfiguration("validation.txt", { validationEnabled: "invalid" });
+    await host.waitForAnalysis();
     assert.deepStrictEqual(
       host.diagnosticsFor(editor)?.map(({ code }) => code),
       ["INVALID_TYPE"],
@@ -750,6 +791,7 @@ suite("固定長表示の現行挙動", () => {
     await host.chooseFileType("試験/検証");
     assert.deepStrictEqual(host.diagnosticsFor(resourceScoped), []);
     host.setActiveEditor(editor);
+    await host.waitForAnalysis();
     assert.deepStrictEqual(
       host.diagnosticsFor(editor)?.map(({ code }) => code),
       ["INVALID_TYPE"],
@@ -758,7 +800,8 @@ suite("固定長表示の現行挙動", () => {
     const split = host.createEditor("validation.txt", ["A1 ab"]);
     const setCountBeforeSplit = collection.setCount;
     host.setVisibleEditors([editor, split]);
-    assert.strictEqual(collection.setCount, setCountBeforeSplit + 1);
+    assert.strictEqual(collection.setCount, setCountBeforeSplit);
+    assert.strictEqual(hasRow(split, 0, "データ"), true);
     assert.deepStrictEqual(
       collection.get(editor.document.uri)?.map(({ code }) => code),
       ["INVALID_TYPE"],
@@ -784,6 +827,7 @@ suite("固定長表示の現行挙動", () => {
     host.closeDocument(split);
     const reopened = host.createEditor("validation.txt", ["A1 ab"]);
     host.setVisibleEditors([reopened]);
+    await host.waitForAnalysis();
     assert.deepStrictEqual(
       host.diagnosticsFor(reopened)?.map(({ code }) => code),
       ["INVALID_TYPE"],
@@ -799,12 +843,12 @@ suite("固定長表示の現行挙動", () => {
     assert.strictEqual(collection.get(editor.document.uri), undefined);
   });
 
-  test("組み込みの全銀と JPX の定義、空白行、不一致行、ホバー、UTF-16 範囲を保つ", async () => {
+  test("組み込みの全銀と JPX の定義、空白行、不一致行、ホバー、UTF-16表示範囲を保つ", async () => {
     const zengin = host.createEditor("50200001-a.txt", [
-      "1😀",
+      "1あ",
       "   ",
-      "不一致の行",
-      "2😀",
+      "X",
+      "2あ",
       "8",
       "9",
     ]);
@@ -817,7 +861,7 @@ suite("固定長表示の現行挙動", () => {
     assert.strictEqual(decorationStyle.isWholeLine, false);
 
     const shortHeader = optionsForLine(zengin, 0);
-    assert.strictEqual(shortHeader[1].range.end.character, 3);
+    assert.strictEqual(shortHeader[1].range.end.character, 2);
     const defaultBoundary = renderOptionsForLine(zengin, 0)[1]?.after as {
       contentText: string;
       backgroundColor: { id: string };
@@ -837,7 +881,7 @@ suite("固定長表示の現行挙動", () => {
       },
     );
     const partialDataField = optionsForLine(zengin, 3)[1];
-    assert.strictEqual(partialDataField.range.end.character, 3);
+    assert.strictEqual(partialDataField.range.end.character, 2);
     assert.strictEqual(partialDataField.renderOptions, undefined);
 
     assert.strictEqual(host.registeredCommands.has(commandId), true);
@@ -854,26 +898,29 @@ suite("固定長表示の現行挙動", () => {
         start: dataFields[1].range.start.character,
         end: dataFields[1].range.end.character,
       },
-      { start: 1, end: 3 },
+      { start: 1, end: 2 },
     );
-    assert.strictEqual(zengin.document.lineAt(3).text.length, 3);
-    assert.strictEqual(dataFields.at(-1)?.range.end.character, 3);
+    assert.strictEqual(zengin.document.lineAt(3).text.length, 2);
+    assert.strictEqual(dataFields.at(-1)?.range.end.character, 2);
 
-    const jpx = host.createEditor("jpx.txt", ["2Ａ😀"]);
+    const jpx = host.createEditor("jpx.txt", ["2あ"]);
     host.setActiveEditor(jpx);
     await host.chooseFileType(jpxFourPrices);
     assert.strictEqual(hasRow(jpx, 0, "レコード"), true);
-    assert.strictEqual(jpx.document.lineAt(0).text.length, 4);
-    assert.strictEqual(optionsForLine(jpx, 0)[1].range.end.character, 4);
+    assert.strictEqual(jpx.document.lineAt(0).text.length, 2);
+    assert.strictEqual(optionsForLine(jpx, 0)[1].range.end.character, 2);
     assert.strictEqual(
       optionsForLine(jpx, 0)[1].hoverMessage?.value,
-      "**レコード / ファイル識別 (項目 2)**  \n位置: 2 - 4 (3桁)\nデータ型: C",
+      "**レコード / ファイル識別 (項目 2)**  \n位置: 2 - 4 (3バイト)\nデータ型: C",
     );
     assert.strictEqual(
       optionsForLine(jpx, 0)[1].hoverMessage?.isTrusted,
       false,
     );
-    assert.ok(optionsForLine(jpx, 0)[1].renderOptions?.after);
+    assert.strictEqual(
+      optionsForLine(jpx, 0)[1].renderOptions?.after,
+      undefined,
+    );
 
     const loan = host.createEditor("50200231-loan.txt", ["230"]);
     host.setActiveEditor(loan);
@@ -1321,11 +1368,11 @@ suite("固定長表示の現行挙動", () => {
     }
     assert.strictEqual(
       initialFields[0].hoverMessage?.value,
-      "**レコード / レコード区分 (項目 1)**  \n位置: 1 - 1 (1桁)\nデータ型: C",
+      "**レコード / レコード区分 (項目 1)**  \n位置: 1 - 1 (1バイト)\nデータ型: C",
     );
     assert.strictEqual(
       initialFields.at(-1)?.hoverMessage?.value,
-      "**レコード / 予備 (項目 83)**  \n位置: 610 - 657 (48桁)\nデータ型: C",
+      "**レコード / 予備 (項目 83)**  \n位置: 610 - 657 (48バイト)\nデータ型: C",
     );
 
     const split = host.createEditor(
@@ -1443,6 +1490,7 @@ suite("固定長表示の現行挙動", () => {
       boundaryColor: "invalid",
       boundaryWidth: 7,
     });
+    await host.waitForAnalysis();
     const marked = optionsForLine(editor, 1);
     const marker = marked[0].renderOptions?.after as {
       contentText: string;
@@ -1459,6 +1507,7 @@ suite("固定長表示の現行挙動", () => {
       boundaryColor: "#1a2b3c",
       boundaryWidth: 4,
     });
+    await host.waitForAnalysis();
     const customLine = optionsForLine(editor, 1)[0].renderOptions?.after as {
       width: string;
       backgroundColor: string;
@@ -1475,6 +1524,7 @@ suite("固定長表示の現行挙動", () => {
       boundaryColor: "#1a2b3c",
       boundaryWidth: 4,
     });
+    await host.waitForAnalysis();
     const backgroundType = host.decorationTypes.find((type) => {
       const options = type.options as { backgroundColor?: string };
       return options.backgroundColor === "#1a2b3c40";
@@ -1567,6 +1617,7 @@ suite("固定長表示の現行挙動", () => {
     const firstLineCallsBeforeVisible = first.document.lineAtCallCount;
     const secondLineCallsBeforeVisible = second.document.lineAtCallCount;
     host.setVisibleEditors([first, firstSplit, second]);
+    await host.waitForAnalysis();
     const firstType = fieldDecorationCalls(first).at(-1)?.type;
     const secondType = fieldDecorationCalls(second).at(-1)?.type;
     const firstSplitType = fieldDecorationCalls(firstSplit).at(-1)?.type;
@@ -1629,6 +1680,7 @@ suite("固定長表示の現行挙動", () => {
       boundaryColor: "#abcdef",
       boundaryWidth: 2,
     });
+    await host.waitForAnalysis();
     assert.strictEqual(
       fieldDecorationCalls(first).length,
       firstCallsBeforeVisibleConfiguration + 2,
@@ -1723,12 +1775,14 @@ suite("固定長表示の現行挙動", () => {
     );
     const beforeSwitch = host.reporters[0].events.length;
     host.setActiveEditor(sameType);
+    await host.waitForAnalysis();
     assert.deepStrictEqual(optionsForLine(sameType, 0), []);
     const sameTypeHeadHandle = fieldDecorationCalls(sameType).at(-1)?.type;
     assert.strictEqual(sameTypeHandleBeforeForeign?.disposeCount, 1);
     assert.strictEqual(host.reporters[0].events.length, beforeSwitch);
 
     host.setActiveEditor(first);
+    await host.waitForAnalysis();
     assert.strictEqual(sameTypeHeadHandle?.disposeCount, 1);
     assert.strictEqual(firstType?.disposeCount, 1);
     assert.strictEqual(fieldDecorationCalls(first).length, 3);
@@ -1852,10 +1906,16 @@ suite("固定長表示の現行挙動", () => {
   test("1000行を10回編集しても、最後の通知から一度だけ描画する", async () => {
     const uri = "file:///large/50200003.txt";
     const primary = host.createEditor("50200003.txt", [header("1"), "2"], uri);
+    const encodeBeforeSelection = host.encodeCallCount;
+    const decodeBeforeSelection = host.decodeCallCount;
     host.setActiveEditor(primary);
     await host.chooseFileType(zenginTransfer);
+    assert.strictEqual(host.encodeCallCount, encodeBeforeSelection + 1);
+    assert.strictEqual(host.decodeCallCount, decodeBeforeSelection + 1);
     const split = host.createEditor("50200003.txt", [], uri);
     host.setVisibleEditors([primary, split]);
+    assert.strictEqual(host.encodeCallCount, encodeBeforeSelection + 1);
+    assert.strictEqual(host.decodeCallCount, decodeBeforeSelection + 1);
 
     const primaryCallsBefore = fieldDecorationCalls(primary).length;
     const splitCallsBefore = fieldDecorationCalls(split).length;
@@ -1877,6 +1937,7 @@ suite("固定長表示の現行挙動", () => {
       );
       assert.strictEqual(fieldDecorationCalls(split).length, splitCallsBefore);
       timers.advanceBy(1);
+      await host.waitForAnalysis();
       assert.strictEqual(
         fieldDecorationCalls(primary).length,
         primaryCallsBefore + 1,
@@ -1885,6 +1946,8 @@ suite("固定長表示の現行挙動", () => {
         fieldDecorationCalls(split).length,
         splitCallsBefore + 1,
       );
+      assert.strictEqual(host.encodeCallCount, encodeBeforeSelection + 2);
+      assert.strictEqual(host.decodeCallCount, decodeBeforeSelection + 2);
       assert.strictEqual(primary.document.lineCount, 1000);
       assert.strictEqual(hasRow(primary, 999, "エンド"), true);
       assert.strictEqual(hasRow(split, 999, "エンド"), true);
@@ -1967,7 +2030,9 @@ suite("固定長表示の現行挙動", () => {
     assert.deepStrictEqual(fieldDecorationCalls(editor).at(-1)?.options, []);
 
     const reopened = host.createEditor("50200003.txt", [header("1"), "2"], uri);
+    reopened.document.encoding = "shiftjis";
     host.setVisibleEditors([reopened]);
+    await host.waitForAnalysis();
     assert.strictEqual(
       hasRow(reopened, 1, "データ(普通預金・当座預金・貯蓄預金)"),
       true,
@@ -2008,8 +2073,9 @@ suite("固定長表示の現行挙動", () => {
       assert.strictEqual(originalType?.disposeCount, 0);
       assert.strictEqual(
         fieldDecorationCalls(editor).length,
-        callsBeforeEdit + 1,
+        callsBeforeEdit + 2,
       );
+      assert.deepStrictEqual(fieldDecorationCalls(editor).at(-2)?.options, []);
       assert.strictEqual(
         fieldDecorationCalls(editor).at(-1)?.type,
         originalType,

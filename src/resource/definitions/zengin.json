@@ -6,6 +6,8 @@
       "file_type": "furikomi_nyuukin_tuuchi_a",
       "name": "振込入金通知(A)",
       "finame_pattern": "50200001.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -212,6 +214,8 @@
       "file_type": "furikomi_nyuukin_tuuchi_b",
       "name": "振込入金通知(B)",
       "finame_pattern": "50200001.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -428,6 +432,8 @@
       "file_type": "nyuusyukkin_torihiki_meisai",
       "name": "入出金取引明細",
       "finame_pattern": "50200003.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -884,6 +890,8 @@
       "file_type": "zanndaka_tuuchi_yokin",
       "name": "残高通知(預金)",
       "finame_pattern": "50200004.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -1100,6 +1108,8 @@
       "file_type": "kyuuyo_furikomi_minkan",
       "name": "給与振込(民間)",
       "finame_pattern": "50200111.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -1296,6 +1306,8 @@
       "file_type": "syouyo_furikomi_minkan",
       "name": "賞与振込(民間)",
       "finame_pattern": "50200112.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -1492,6 +1504,8 @@
       "file_type": "kyuuyo_furikomi_chihoukoumuin",
       "name": "給与振込(地方公務員)",
       "finame_pattern": "50200171.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -1688,6 +1702,8 @@
       "file_type": "syouyo_furikomi_chihoukoumuin",
       "name": "賞与振込(地方公務員)",
       "finame_pattern": "50200172.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -1884,6 +1900,8 @@
       "file_type": "sougou_furikomi",
       "name": "総合振込",
       "finame_pattern": "50200121.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -2171,6 +2189,8 @@
       "file_type": "kabushiki_haitoukin_furikomi",
       "name": "株式配当金振込",
       "finame_pattern": "50200141.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -2362,6 +2382,8 @@
       "file_type": "nenkin_shintaku_keiyaku",
       "name": "年金信託契約に係る年金・一時金給付金振込",
       "finame_pattern": "50200143.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -2553,6 +2575,8 @@
       "file_type": "kouteki_nenkin_hoken",
       "name": "公的年金保険の年金・一時金給付金振込",
       "finame_pattern": "50200144.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -2744,6 +2768,8 @@
       "file_type": "iryou_hoken_kyufukin_furikomi",
       "name": "医療保険の給付金振込",
       "finame_pattern": "50200145.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -2935,6 +2961,8 @@
       "file_type": "furikomi_kouza_shokai_irai_meisai",
       "name": "振込口座照会(依頼明細)",
       "finame_pattern": "50200198.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -3141,6 +3169,8 @@
       "file_type": "furikomi_kouza_shokai_shori_kekka_meisai",
       "name": "振込口座照会(処理結果明細)",
       "finame_pattern": "50200199.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -3347,6 +3377,8 @@
       "file_type": "yokin_kouza_furikae_irai_meisai",
       "name": "預金口座振替(依頼明細)",
       "finame_pattern": "50200191.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -3563,6 +3595,8 @@
       "file_type": "yokin_kouza_furikae_shori_kekka_meisai",
       "name": "預金口座振替(処理結果明細)",
       "finame_pattern": "50200191.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -3779,6 +3813,8 @@
       "file_type": "yokin_kouza_furikae_henkou_tuuchi",
       "name": "預金口座振替変更通知",
       "finame_pattern": "50200193.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -3960,6 +3996,8 @@
       "file_type": "jyuutaku_loan_kankei_zaikei_loan",
       "name": "住宅ローン関係(財形ローン)",
       "finame_pattern": "50200211.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -4396,6 +4434,8 @@
       "file_type": "jyuutaku_loan_kankei_sonota",
       "name": "住宅ローン関係(その他)",
       "finame_pattern": "50200212.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -4832,6 +4872,8 @@
       "file_type": "zaikei_chochiku_kankei_irai_meisai",
       "name": "財形貯蓄関係(依頼明細)",
       "finame_pattern": "50200300.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -5238,6 +5280,8 @@
       "file_type": "zaikei_chochiku_kankei_shori_kekka_meisai_tumitate_naiyou",
       "name": "財形貯蓄関係(処理結果明細:積立内容)",
       "finame_pattern": "50200301.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -5659,6 +5703,8 @@
       "file_type": "zaikei_chochiku_kankei_shori_kekka_meisai_rishi_hokyuu",
       "name": "財形貯蓄関係(処理結果明細:利子補給)",
       "finame_pattern": "50200302.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -6080,6 +6126,8 @@
       "file_type": "zaikei_chochiku_kankei_shori_kekka_meisai_sonota",
       "name": "財形貯蓄関係(処理結果明細:その他) ",
       "finame_pattern": "50200309.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -6501,6 +6549,8 @@
       "file_type": "kariirekin_keisansho",
       "name": "借入金計算書",
       "finame_pattern": "50200231.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -7009,6 +7059,8 @@
       "file_type": "kariirekin_zaikoumeisai",
       "name": "借入金残高明細 ",
       "finame_pattern": "50200232.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -7371,6 +7423,8 @@
       "file_type": "kariirekin_zandaka_goukei",
       "name": "借入金残高合計",
       "finame_pattern": "50200233.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -7572,6 +7626,8 @@
       "file_type": "fx_torihiki_meisai_kaikeisei",
       "name": "外国為替取引明細(会計性)",
       "finame_pattern": "50200425.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -11060,6 +11116,8 @@
       "file_type": "fx_torihiki_meisai_hikaikeisei",
       "name": "外国為替取引明細(非会計性)",
       "finame_pattern": "50200426.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -12195,6 +12253,8 @@
       "file_type": "fx_kanren_jouhou",
       "name": "外国為替関連情報",
       "finame_pattern": "50200427.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -12546,6 +12606,8 @@
       "file_type": "gaikoku_soukin_irai",
       "name": "外国送金依頼",
       "finame_pattern": "50200435.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -12898,6 +12960,8 @@
       "file_type": "nigawase_yunyuu_lc_hakkou_irai",
       "name": "荷為替輸入信用状発行依頼",
       "finame_pattern": "50200428.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",
@@ -14121,6 +14185,8 @@
       "file_type": "gaika_yokin_nyuushukkin_torihiki_meisai",
       "name": "外貨預金入出金取引明細",
       "finame_pattern": "50200009.+",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "ヘッダー",

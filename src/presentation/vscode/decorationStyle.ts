@@ -29,6 +29,10 @@ type FieldDecorationInput = Pick<
   | "fieldName"
   | "fieldNumber"
   | "type"
+  | "displayStart"
+  | "displayEnd"
+  | "hasVisibleEnd"
+  | "lengthUnit"
 >;
 
 type FieldDecorationContext = {
@@ -138,8 +142,8 @@ export function findCursorField(
     ?.find(
       (candidate) =>
         candidate.fieldName !== undefined &&
-        candidate.start <= position.character &&
-        position.character < candidate.end,
+        candidate.displayStart <= position.character &&
+        position.character < candidate.displayEnd,
     );
 }
 
@@ -172,13 +176,13 @@ function createVisibleRange(
   field: FieldDecorationInput,
   lineLength: number,
 ): vscode.Range | undefined {
-  const end = Math.min(field.end, lineLength);
-  if (end <= field.start) {
+  const end = Math.min(field.displayEnd, lineLength);
+  if (end <= field.displayStart) {
     return undefined;
   }
 
   return new vscode.Range(
-    new vscode.Position(field.line, field.start),
+    new vscode.Position(field.line, field.displayStart),
     new vscode.Position(field.line, end),
   );
 }
@@ -193,7 +197,7 @@ function createFieldDecoration(
   };
   const renderOptions = createBoundaryRenderOptions(
     settings,
-    range.end.character === field.end,
+    field.hasVisibleEnd,
   );
   return renderOptions ? { ...decoration, renderOptions } : decoration;
 }
@@ -231,17 +235,22 @@ function createHoverMessage(
       `${field.name} / ${field.fieldName} (項目 ${field.fieldNumber})`,
     );
     hover.appendMarkdown("**  \n位置: ");
-    hover.appendText(`${field.start + 1} - ${field.end} (${field.width}桁)`);
+    hover.appendText(fieldPosition(field));
     hover.appendMarkdown("\nデータ型: ");
     hover.appendText(field.type ?? "不明");
   } else {
     hover.appendMarkdown("**");
     hover.appendText(field.name);
     hover.appendMarkdown("**  \n位置: ");
-    hover.appendText(`${field.start + 1} - ${field.end} (${field.width}桁)`);
+    hover.appendText(fieldPosition(field));
     hover.isTrusted = true;
   }
   return hover;
+}
+
+function fieldPosition(field: FieldDecorationInput): string {
+  const unit = field.lengthUnit === "byte" ? "バイト" : "桁";
+  return `${field.start + 1} - ${field.end} (${field.width}${unit})`;
 }
 
 function isBoundaryStyle(value: unknown): value is BoundaryStyle {

@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { createFixedWidthDecoration } from "../application/fixedWidth/FixedWidthDecoration";
 import { loadBuiltInDefinitions } from "../infrastructure/definitions/loadBuiltInDefinitions";
+import { VscodeTextEncodingAdapter } from "../infrastructure/encoding/VscodeTextEncodingAdapter";
 import { VscodeTelemetryAdapter } from "../infrastructure/telemetry/VscodeTelemetryAdapter";
 import { FixedWidthPresentation } from "../presentation/vscode/FixedWidthPresentation";
 
@@ -33,7 +34,10 @@ function initializeExtension(
   telemetry: VscodeTelemetryAdapter,
 ): void {
   telemetry.extensionActivated();
-  const decoration = createFixedWidthDecoration(loadBuiltInDefinitions());
+  const decoration = createFixedWidthDecoration(
+    loadBuiltInDefinitions(),
+    new VscodeTextEncodingAdapter(),
+  );
   runtime.presentation = new FixedWidthPresentation(decoration, telemetry);
   runtime.presentation.start();
 }

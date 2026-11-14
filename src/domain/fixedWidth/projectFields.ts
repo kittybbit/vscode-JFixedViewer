@@ -17,8 +17,12 @@ export type FixedWidthDefinition = {
   fileType: string;
   name: string;
   fileNamePattern: RegExp;
+  encoding?: string;
+  lengthUnit?: FixedWidthLengthUnit;
   rows: FixedWidthRowRule[];
 };
+
+export type FixedWidthLengthUnit = "utf16" | "byte";
 
 export type FixedWidthField = {
   name: string;
@@ -28,12 +32,21 @@ export type FixedWidthField = {
   start: number;
   end: number;
   width: number;
+  lengthUnit: FixedWidthLengthUnit;
 };
 
 export type FixedWidthProjection = {
   rowName?: string;
   fields: FixedWidthField[];
   mode: string | undefined;
+  lengthUnit: FixedWidthLengthUnit;
+};
+
+export type ProjectFieldsRequest = {
+  lineText: string;
+  rowRules: readonly FixedWidthRowRule[];
+  currentMode: string | undefined;
+  lengthUnit?: FixedWidthLengthUnit;
 };
 
 function matchesMode(
@@ -68,7 +81,10 @@ function updateMode(
   return match ? match[row.modeRulePosition] : undefined;
 }
 
-function fieldsForRow(row: FixedWidthRowRule): FixedWidthField[] {
+function fieldsForRow(
+  row: FixedWidthRowRule,
+  lengthUnit: FixedWidthLengthUnit,
+): FixedWidthField[] {
   let start = 0;
   return (row.fields ?? []).map((definition, index) => {
     const width = definition.length;
@@ -80,24 +96,27 @@ function fieldsForRow(row: FixedWidthRowRule): FixedWidthField[] {
       start,
       end: start + width,
       width,
+      lengthUnit,
     };
     start += width;
     return field;
   });
 }
 
-export function projectFields(
-  lineText: string,
-  rowRules: readonly FixedWidthRowRule[],
-  currentMode: string | undefined,
-): FixedWidthProjection {
+export function projectFields({
+  lineText,
+  rowRules,
+  currentMode,
+  lengthUnit = "utf16",
+}: ProjectFieldsRequest): FixedWidthProjection {
   const row = findApplicableRow(lineText, rowRules, currentMode);
   if (!row) {
-    return { fields: [], mode: currentMode };
+    return { fields: [], mode: currentMode, lengthUnit };
   }
   return {
     rowName: row.name,
-    fields: fieldsForRow(row),
+    fields: fieldsForRow(row, lengthUnit),
     mode: updateMode(row, lineText, currentMode),
+    lengthUnit,
   };
 }
