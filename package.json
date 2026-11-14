@@ -15,7 +15,7 @@
     "url": "https://github.com/kittybbit/vscode-JFixedViewer/issues"
   },
   "engines": {
-    "vscode": "^1.75.0"
+    "vscode": "^1.100.0"
   },
   "keywords": [
     "全銀協規定形式(FBデータ)"
@@ -92,7 +92,7 @@
     "prepare:smoke": "node scripts/prepare-smoke.mjs",
     "compile:smoke": "webpack --env smoke",
     "test:desktop": "vscode-test",
-    "test:desktop:min": "node -e \"const path=require('node:path');require('@vscode/test-electron').runTests({version:'1.75.0',extensionDevelopmentPath:path.resolve('out/smoke-extension'),extensionTestsPath:path.resolve('out/test/smoke.js'),launchArgs:['--disable-telemetry']}).catch((error)=>{console.error(error);process.exitCode=1;})\"",
+    "test:desktop:min": "node -e \"const path=require('node:path');require('@vscode/test-electron').runTests({version:'1.100.0',extensionDevelopmentPath:path.resolve('out/smoke-extension'),extensionTestsPath:path.resolve('out/test/smoke.js'),launchArgs:['--disable-telemetry']}).catch((error)=>{console.error(error);process.exitCode=1;})\"",
     "test:web": "vscode-test-web --browserType=chromium --quality=stable --extensionDevelopmentPath=out/smoke-extension --extensionTestsPath=out/smoke-extension/dist/smoke.js --esm",
     "test:architecture": "node --test out/test/architecture.test.js",
     "open-in-browser": "vscode-test-web --extensionDevelopmentPath=. ."
@@ -100,7 +100,7 @@
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
-    "@types/vscode": "^1.75.0",
+    "@types/vscode": "1.100.0",
     "@typescript-eslint/eslint-plugin": "^8.47.0",
     "@typescript-eslint/parser": "^8.47.0",
     "@vscode/test-cli": "^0.0.15",

@@ -3,6 +3,7 @@ import {
   readValidationEnabled,
   toDiagnostics,
 } from "../presentation/vscode/diagnostics";
+import { verifyTextEncodingApi } from "./support/encodingSmoke";
 
 const extensionId = "kittybbit.vscode-JFixedViewer";
 const commandId = "vscode-JFixedViewer.FiletypePicker";
@@ -10,6 +11,7 @@ const commandId = "vscode-JFixedViewer.FiletypePicker";
 /** デスクトップ版と Web 版で共有する実ホストのスモークテスト入口。 */
 export async function run(): Promise<void> {
   await verifyExtensionCommand();
+  await verifyTextEncodingApi();
   verifyDefaultSettings();
   const diagnostics = verifyDiagnosticConversion();
   await verifyDiagnosticCollection(diagnostics);
