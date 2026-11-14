@@ -1,209 +1,28 @@
 import path = require("node:path");
+import {
+  CharacterizedDocument,
+  FakeDecorationType,
+  FakeDiagnostic,
+  FakeDiagnosticCollection,
+  FakeEventEmitter,
+  FakeMarkdownString,
+  FakePosition,
+  FakeRange,
+  FakeThemeColor,
+  FakeUri,
+  type Configuration,
+  type DecorationOption,
+  type Disposable,
+  type EditorEvents,
+  type FakeDocument,
+} from "./fakeVscodeTypes";
+import { decodeFakeText, encodeFakeText } from "./fakeTextEncoding";
+import type { FakeEditor } from "./fakeVscodeTypes";
 
-type Disposable = { dispose(): void };
-type Listener<T> = (value: T) => void;
-type Position = { line: number; character: number };
-type EditorEvents = {
-  active: FakeEventEmitter<FakeEditor | undefined>;
-  visible: FakeEventEmitter<readonly FakeEditor[]>;
-  selection: FakeEventEmitter<{ textEditor: FakeEditor }>;
-};
-type FakeDocument = {
-  uri: FakeUri;
-  fileName: string;
-  lines: string[];
-  readonly lineCount: number;
-  readonly lineAtCallCount: number;
-  lineAt(index: number): { text: string; isEmptyOrWhitespace: boolean };
-  getText(): string;
-};
-
-class CharacterizedDocument implements FakeDocument {
-  public readonly uri: FakeDocument["uri"];
-  public readonly fileName: string;
-  public lines: string[];
-  private lineAtCalls = 0;
-
-  public constructor(fileName: string, lines: string[], uri: string) {
-    this.uri = new FakeUri(uri);
-    this.fileName = fileName;
-    this.lines = [...lines];
-  }
-
-  public get lineCount(): number {
-    return this.lines.length;
-  }
-
-  public get lineAtCallCount(): number {
-    return this.lineAtCalls;
-  }
-
-  public lineAt(index: number): {
-    text: string;
-    isEmptyOrWhitespace: boolean;
-  } {
-    this.lineAtCalls += 1;
-    const text = this.lines[index];
-    return { text, isEmptyOrWhitespace: /^\s*$/u.test(text) };
-  }
-
-  public getText(): string {
-    return this.lines.join("\n");
-  }
-}
-type DecorationOption = {
-  range: { start: Position; end: Position };
-  hoverMessage?: { value: string; isTrusted: boolean };
-  renderOptions?: Record<string, unknown>;
-};
-type Configuration = {
-  boundaryStyle?: unknown;
-  boundaryColor?: unknown;
-  boundaryWidth?: unknown;
-  validationEnabled?: unknown;
-};
 type LoadedExtension = {
   activate(context: { subscriptions: Disposable[] }): unknown;
   deactivate(): void;
 };
-
-class FakeEventEmitter<T> {
-  private listeners = new Set<Listener<T>>();
-  private subscriptionCount = 0;
-  private disposalCount = 0;
-
-  public get subscriptionStats() {
-    return {
-      registered: this.subscriptionCount,
-      disposed: this.disposalCount,
-      active: this.listeners.size,
-    };
-  }
-
-  public event = (
-    listener: Listener<T>,
-    _thisArgs?: unknown,
-    disposables?: Disposable[],
-  ): Disposable => {
-    this.subscriptionCount += 1;
-    this.listeners.add(listener);
-    const disposable = {
-      dispose: () => {
-        this.disposalCount += 1;
-        this.listeners.delete(listener);
-      },
-    };
-    disposables?.push(disposable);
-    return disposable;
-  };
-
-  public fire(value: T): void {
-    for (const listener of this.listeners) {
-      listener(value);
-    }
-  }
-}
-
-class FakePosition {
-  public constructor(
-    public readonly line: number,
-    public readonly character: number,
-  ) {}
-}
-
-class FakeRange {
-  public constructor(
-    public readonly start: FakePosition,
-    public readonly end: FakePosition,
-  ) {}
-}
-
-class FakeUri {
-  public constructor(private readonly value: string) {}
-
-  public static parse(value: string): FakeUri {
-    return new FakeUri(value);
-  }
-
-  public toString(): string {
-    return this.value;
-  }
-}
-
-class FakeDiagnostic {
-  public source: string | undefined;
-  public code: string | number | undefined;
-
-  public constructor(
-    public readonly range: FakeRange,
-    public readonly message: string,
-    public readonly severity: number,
-  ) {}
-}
-
-class FakeDiagnosticCollection implements Disposable {
-  private readonly diagnostics = new Map<string, FakeDiagnostic[]>();
-  public disposeCount = 0;
-  public setCount = 0;
-
-  public constructor(public readonly name: string) {}
-
-  public set(uri: FakeUri, diagnostics: readonly FakeDiagnostic[]): void {
-    this.setCount += 1;
-    this.diagnostics.set(uri.toString(), [...diagnostics]);
-  }
-
-  public delete(uri: FakeUri): void {
-    this.diagnostics.delete(uri.toString());
-  }
-
-  public clear(): void {
-    this.diagnostics.clear();
-  }
-
-  public get(uri: FakeUri): readonly FakeDiagnostic[] | undefined {
-    return this.diagnostics.get(uri.toString());
-  }
-
-  public dispose(): void {
-    this.disposeCount += 1;
-    this.clear();
-  }
-}
-
-class FakeMarkdownString {
-  public isTrusted = false;
-
-  public value: string;
-
-  public constructor(value = "") {
-    this.value = value;
-  }
-
-  public appendText(value: string): FakeMarkdownString {
-    this.value += value;
-    return this;
-  }
-
-  public appendMarkdown(value: string): FakeMarkdownString {
-    this.value += value;
-    return this;
-  }
-}
-
-class FakeThemeColor {
-  public constructor(public readonly id: string) {}
-}
-
-class FakeDecorationType implements Disposable {
-  public disposeCount = 0;
-
-  public constructor(public readonly options: unknown) {}
-
-  public dispose(): void {
-    this.disposeCount += 1;
-  }
-}
 
 class FakeReporter {
   public readonly events: Array<{
@@ -246,16 +65,6 @@ function addDefinitionOverrides(
   }
 }
 
-export type FakeEditor = {
-  document: FakeDocument;
-  selection: { active: Position };
-  decorationCalls: Array<{
-    type: FakeDecorationType;
-    options: DecorationOption[];
-  }>;
-  setDecorations(type: FakeDecorationType, options: DecorationOption[]): void;
-};
-
 function createFakeWindow(
   host: CharacterizationHost,
   editorEvents: EditorEvents,
@@ -268,7 +77,15 @@ function createFakeWindow(
       return host.visibleTextEditors;
     },
     showQuickPick: async () => {
-      return host.nextQuickPick;
+      return host.quickPickHandler
+        ? host.quickPickHandler()
+        : host.nextQuickPick;
+    },
+    showWarningMessage: async (message: string) => {
+      host.windowMessages.push(message);
+    },
+    showInformationMessage: async (message: string) => {
+      host.windowMessages.push(message);
     },
     createTextEditorDecorationType: (options: unknown) => {
       const decoration = new FakeDecorationType(options);
@@ -286,7 +103,14 @@ function createFakeWorkspace(host: CharacterizationHost) {
     get textDocuments() {
       return host.textDocuments;
     },
+    openTextDocument: (uri: FakeUri, options: { encoding: string }) =>
+      host.openTextDocument(uri, options.encoding),
+    encode: (text: string, options: { encoding: string }) =>
+      host.encodeText(text, options.encoding),
+    decode: (bytes: Uint8Array, options: { encoding: string }) =>
+      host.decodeText(bytes, options.encoding),
     onDidChangeTextDocument: host.documentChangeEmitter.event,
+    onDidSaveTextDocument: host.documentSaveEmitter.event,
     onDidCloseTextDocument: host.documentCloseEmitter.event,
     onDidChangeConfiguration: host.configurationChangeEmitter.event,
     getConfiguration: (_section: string, resource: FakeDocument["uri"]) => ({
@@ -430,11 +254,30 @@ export class CharacterizationHost {
   public readonly decorationTypes: FakeDecorationType[] = [];
   public readonly diagnosticCollections: FakeDiagnosticCollection[] = [];
   public readonly reporters: FakeReporter[] = [];
+  public readonly windowMessages: string[] = [];
+  public readonly openTextDocumentRequests: Array<{
+    uri: string;
+    encoding: string;
+  }> = [];
+  public encodeCallCount = 0;
+  public decodeCallCount = 0;
+  public replaceUnsupportedShiftJis = false;
+  public encodeTextFailure = false;
+  public decodeTextFailure = false;
+  public encodeTextHook?: (
+    text: string,
+    encoding: string,
+  ) => Promise<Uint8Array | undefined>;
+  public decodeTextHook?: (
+    bytes: Uint8Array,
+    encoding: string,
+  ) => Promise<string | undefined>;
   public readonly documentChangeEmitter = new FakeEventEmitter<{
     document: FakeDocument;
     contentChanges: unknown[];
   }>();
   public readonly documentCloseEmitter = new FakeEventEmitter<FakeDocument>();
+  public readonly documentSaveEmitter = new FakeEventEmitter<FakeDocument>();
   public readonly configurationChangeEmitter = new FakeEventEmitter<{
     affectsConfiguration: (
       section: string,
@@ -443,6 +286,15 @@ export class CharacterizationHost {
   }>();
   public commandDisposalCount = 0;
   public nextQuickPick: string | undefined;
+  public quickPickHandler: (() => Promise<string | undefined>) | undefined;
+  public openTextDocumentFailure = false;
+  public openTextDocumentHook:
+    | ((
+        uri: string,
+        encoding: string,
+        previous: FakeDocument,
+      ) => Promise<FakeDocument>)
+    | undefined;
   public activeTextEditor: FakeEditor | undefined;
   public visibleTextEditors: readonly FakeEditor[] = [];
 
@@ -456,6 +308,7 @@ export class CharacterizationHost {
     textEditor: FakeEditor;
   }>();
   private readonly documentsByUri = new Map<string, FakeDocument>();
+  private readonly editors = new Set<FakeEditor>();
   private readonly configurationByUri = new Map<string, Configuration>();
   private readonly vscode: Record<string, unknown>;
   private loadedExtension: LoadedExtension | undefined;
@@ -519,6 +372,7 @@ export class CharacterizationHost {
         this.decorationCalls.push({ type, options });
       },
     };
+    this.editors.add(editor);
     return editor;
   }
 
@@ -548,6 +402,8 @@ export class CharacterizationHost {
     contentChangeCount = 1,
   ): void {
     editor.document.lines = [...lines];
+    editor.document.version += 1;
+    editor.document.isDirty = true;
     this.documentChangeEmitter.fire({
       document: editor.document,
       contentChanges: Array.from({ length: contentChangeCount }, () => ({})),
@@ -559,6 +415,103 @@ export class CharacterizationHost {
       document: editor.document,
       contentChanges: [],
     });
+  }
+
+  public setDocumentEncoding(editor: FakeEditor, encoding: string): void {
+    editor.document.encoding = encoding;
+    this.documentChangeEmitter.fire({
+      document: editor.document,
+      contentChanges: [],
+    });
+  }
+
+  public saveDocument(editor: FakeEditor): void {
+    editor.document.isDirty = false;
+    this.documentSaveEmitter.fire(editor.document);
+  }
+
+  public async openTextDocument(
+    uri: FakeUri,
+    encoding: string,
+  ): Promise<FakeDocument> {
+    const uriString = uri.toString();
+    this.openTextDocumentRequests.push({ uri: uriString, encoding });
+    if (this.openTextDocumentFailure) {
+      throw new Error("simulated read failure");
+    }
+    return this.reloadDocument(uriString, encoding);
+  }
+
+  private async reloadDocument(
+    uri: string,
+    encoding: string,
+  ): Promise<FakeDocument> {
+    const previous = this.openDocumentForReload(uri);
+    const reloaded = await this.createReloadedDocument(uri, encoding, previous);
+    this.documentsByUri.set(uri, reloaded);
+    this.updateEditorDocuments(previous, reloaded);
+    return reloaded;
+  }
+
+  private openDocumentForReload(uri: string): FakeDocument {
+    const previous = this.documentsByUri.get(uri);
+    if (!previous) {
+      throw new Error("document is closed");
+    }
+    return previous;
+  }
+
+  private async createReloadedDocument(
+    uri: string,
+    encoding: string,
+    previous: FakeDocument,
+  ): Promise<FakeDocument> {
+    return this.openTextDocumentHook
+      ? this.openTextDocumentHook(uri, encoding, previous)
+      : new CharacterizedDocument({
+          fileName: previous.fileName,
+          lines: previous.lines,
+          uri,
+          encoding,
+        });
+  }
+
+  private updateEditorDocuments(
+    previous: FakeDocument,
+    reloaded: FakeDocument,
+  ): void {
+    for (const editor of this.editors) {
+      if (editor.document === previous) {
+        editor.document = reloaded;
+      }
+    }
+  }
+
+  public async encodeText(text: string, encoding: string): Promise<Uint8Array> {
+    this.encodeCallCount += 1;
+    if (this.encodeTextFailure) {
+      throw new Error("simulated encode failure");
+    }
+    const hookedBytes = await this.encodeTextHook?.(text, encoding);
+    if (hookedBytes) {
+      return hookedBytes;
+    }
+    return encodeFakeText(text, encoding, this.replaceUnsupportedShiftJis);
+  }
+
+  public async decodeText(
+    bytes: Uint8Array,
+    encoding: string,
+  ): Promise<string> {
+    this.decodeCallCount += 1;
+    if (this.decodeTextFailure) {
+      throw new Error("simulated decode failure");
+    }
+    const hookedText = await this.decodeTextHook?.(bytes, encoding);
+    if (hookedText !== undefined) {
+      return hookedText;
+    }
+    return decodeFakeText(bytes, encoding);
   }
 
   public setConfiguration(uri: string, configuration: Configuration): void {
@@ -582,6 +535,7 @@ export class CharacterizationHost {
     );
     this.documentCloseEmitter.fire(editor.document);
     this.documentsByUri.delete(uri);
+    this.editors.delete(editor);
   }
 
   public useFakeTimers(): FakeTimerClock {
@@ -600,13 +554,20 @@ export class CharacterizationHost {
       return existingDocument;
     }
 
-    const document = new CharacterizedDocument(fileName, lines, uri);
+    const document = new CharacterizedDocument({ fileName, lines, uri });
     this.documentsByUri.set(uri, document);
     return document;
   }
 
   public async waitForPendingRender(): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 125));
+    await this.waitForAnalysis();
+  }
+
+  public async waitForAnalysis(): Promise<void> {
+    for (let turn = 0; turn < 10; turn += 1) {
+      await Promise.resolve();
+    }
   }
 
   public async chooseFileType(label: string | undefined): Promise<void> {
@@ -617,8 +578,7 @@ export class CharacterizationHost {
     if (!command) {
       throw new Error("FiletypePicker コマンドが登録されていません。");
     }
-    command();
-    await Promise.resolve();
+    await command();
   }
 
   public dispose(): void {

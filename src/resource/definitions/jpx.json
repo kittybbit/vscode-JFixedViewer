@@ -6,6 +6,8 @@
       "file_type": "yonhonne_derivertive",
       "name": "四本値(デリバティブ)",
       "finame_pattern": "SH_DER\\.csv",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
       "rows": [
         {
           "name": "レコード",

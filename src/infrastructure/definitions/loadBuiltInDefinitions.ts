@@ -24,6 +24,8 @@ type RawFile = {
   file_type: string;
   name: string;
   finame_pattern: string;
+  encoding?: string;
+  length_unit?: "utf16" | "byte";
   rows: RawRow[];
 };
 
@@ -51,6 +53,8 @@ export function loadBuiltInDefinitions(): FixedWidthDefinition[] {
       fileType: `${file.file_type}@${definition.type}`,
       name: `${definition.name}/${file.name}`,
       fileNamePattern: new RegExp(file.finame_pattern),
+      encoding: file.encoding,
+      lengthUnit: file.length_unit ?? "utf16",
       rows: compileRows(file.rows),
     })),
   );

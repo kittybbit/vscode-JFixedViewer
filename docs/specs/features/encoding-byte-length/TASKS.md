@@ -22,10 +22,15 @@
   `validation.log` と `inputs.sha256`。調査内容は本計画の根拠として引き継ぐ。
 - 他の機能は引き継がない。未追跡 `.serena/` は全ての編集・検査・ステージ対象外。
 - S1 は `SLICE_COMMITTED`（ヘッド `0e43098bb523ea0eee5fbffeddd08c7bbb8b7ab1`）、
-  S2 の契約別テスト分割は `PLAN_APPROVED`。正確な比較ベースは同じ S1 ヘッド。
-  S1 最新ヘッドの検査は全て通過し、先行計画 plan-v3 は
-  `75682a646af64f02ab435caa3a65b75ed22a8422`。
-  現在の作業ブランチは `codex/encoding-byte-length-byte`。
+  S2 は `SLICE_APPROVED`。比較ベースは同じ S1 ヘッド。計画コミットは `plan-v2`
+  `fb9daff695847bb729dc28a92eceb5c499df782d`、`plan-v3`
+  `75682a646af64f02ab435caa3a65b75ed22a8422`、`plan-v4r2`
+  `ac7e51af5df80fc6cd11f72cd8c569f9f25f1492`。現在の HEAD は計画コミットで、
+  実装差分は完了し、`s2-review-v2` は Ready・指摘0件。Main が今回限定条件を適用した。
+  完了コミットと S2 PR の公開・最新チェックは後続で確認する。
+  `plan-review-v4-r2/resume` は Ready・指摘0件。Main が今回限定の承認省略条件を
+  `encoding-byte-length-evidence/plan-v4-approval.json` に記録した。
+  人の個別承認を得たとは記録しない。作業ブランチは `codex/encoding-byte-length-byte`。
 
 [ライフサイクル状態](../../README.md#ライフサイクル状態)に従う。
 
@@ -248,9 +253,10 @@
 
 ## スライス S2. 形式別読込とバイト単位の表示・検証
 
-- 状態 `PLAN_APPROVED`。契約別テスト分割と fixture の追加パスを計画し、未コミット差分を保全した。
-  依存は S1 完了コミットと、
-  その最新 PR ヘッドのチェック通過、改訂計画のレビュー・条件適用・計画だけのコミット。
+- 状態 `PLAN_APPROVED`。テスト fixture の追加パスを計画し、実装途中の差分を保全した。
+  旧範囲は S1 完了コミットとその最新 PR ヘッドの必須チェック通過、
+  `plan-v3` の独立レビュー・今回限定の承認条件適用・計画コミットを確認して実装した。
+  人の個別承認を得たとは記録しない。
 - 価値は JIS 系の全銀33形式と JPX を正しい文字コードで読み、バイト幅で表示・診断すること。
   表示だけをバイト化して診断を UTF-16 のままにする中間段階は公開しない。
 - 受け入れ条件は仕様の R2〜R10 と「文字コードとバイト位置」「読込と非同期処理」
@@ -369,16 +375,17 @@
 
 ### plan-v3: 標準 Web CLI への復帰
 
-- 対象は S2 の Web 検証支援だけ。比較する計画は `plan-v2`、現在 HEAD は
-  `fb9daff695847bb729dc28a92eceb5c499df782d`、S2 の先行ベースは S1 の
+- 対象は S2 の Web 検証支援だけ。比較する計画は `plan-v2` の
+  `fb9daff695847bb729dc28a92eceb5c499df782d`。`plan-v3` の計画コミットと現在 HEAD は
+  `75682a646af64f02ab435caa3a65b75ed22a8422`。S2 の先行ベースは S1 の
   `0e43098bb523ea0eee5fbffeddd08c7bbb8b7ab1`。製品コード、DTO、責務抽出、全銀/JPX、
   最低1.100、テレメトリ、品質閾値、CodeQL の一時保護と復旧条件は変更しない。
 - fresh cold 取得では同じ1.146.0 / `69047191fc427f2f92828279aae1d90d8eeda7ab` に
   対象資材が同梱され、補完を行わず smoke が成功した。資材の SHA-256 は公式 CDN と一致する。
-  Main の `web-runtime/fresh-host-asset-record.json` は `status: existing`、
-  sourceUrl / httpStatus は null。同じ完全なキャッシュで標準 CLI を直接実行しても exit 0。
-  ログとコマンドは `/tmp/jfixedviewer-encoding-byte-length-s2/validation/final-01/` の
-  `web-cold.log`、`web-warm.log`、`web-original-cli.log` と各 command / exit-code。
+  cold cache の記録は `validation/v3-web-01/runtime-host-record.json` で、
+  sourceUrl / httpStatus は null。同じ cache で標準 CLI を実行しても exit 0。
+  cold / warm のログ、実コマンド、終了コードは `validation/v3-web-01/` の
+  `web-cold-standard.*` と `web-warm-standard.*`。
   これにより不足資材を補う独自 helper の必要性がなくなった。
 - 上記3 scripts の削除と package/CI の復帰を一体の修正とする。標準コマンドは S1 と同じ
   Chromium / stable / ESM、開発入口 `out/smoke-extension`、
@@ -400,25 +407,55 @@
   説明がある箇所だけに限る。新しい文書・要件は追加せず、必要な削除・訂正は実装担当が行う。
   本計画時点のこれらの差分には該当説明がなく、製品の説明は維持できる。
 
-### plan-v3 の検証再利用と残るリスク
+### plan-v3 の実装適用と検証結果
 
-- 製品検証の索引は `/tmp/jfixedviewer-encoding-byte-length-s2/validation/` の
-  `final-validation-status.txt`、`validation.log`、`evidence-final-hashes.sha256`。
-  `final-01/` の型、両 bundle、npm ci、
-  test:prepare、architecture 7件、Desktop 41件、最低1.100 smoke と cold/warm Web の成功を
-  保持する。品質指摘の解消後の全体 check / smells と総合通過は
-  `/tmp/jfixedviewer-encoding-byte-length-s2/qlty/final-06/qlty-results/` にある。
-  これらは対応する `inputs.sha256` と検査設定に結び付け、未完成の最終メタデータを完成扱いしない。
-  helper ありの cold/warm は履歴として残し、最終 Web は復帰した標準 CLI の条件で更新する。
-- 本番 TS / テスト TS / 依存 / ビルドと各検査の関連入力が一致する場合、型・bundle・prepare・
-  architecture・Desktop / 最低版の結果を再利用する。package の test:web 以外に差分がなく、
-  lock が不変であることを確認する。標準 CLI cold/warm Web、package/CI の整合・構文と
-  実行範囲、変更 Markdown の lint/リンク/Prettier/diff、最後の全体 Qlty は更新する。
-  baseline は同じ S1 ベース・設定・対象選択なら再利用し、品質条件は維持する。
-- plan-v3 は Web 支援の改訂範囲だけレビュー・条件適用・計画コミットを必要とする。
-  本番の責務抽出とその他の `plan-v2` 承認は維持する。実装完了・終了のレビューは未実施。
-  Main は外部保護の競合/復旧と最新 CodeQL、implementer は cache/生成物の完全性と
-  入力一致、reviewer は標準実行経路と証跡の妥当性を確認する。初回欠落の原因は未確定のまま保持する。
+- 製品検証の過去記録は `/tmp/jfixedviewer-encoding-byte-length-s2/validation/final-01/` に保持し、
+  型、production webpack、test:prepare、architecture 7件、Desktop 41件、最低版1.100.0
+  smoke の
+  成功を再利用した。Main の `/tmp/jfixedviewer-encoding-byte-length-main/s2-final-input-comparison.json`
+  は現行入力との一致、欠落0、`.serena/` 混入0を確認している。
+- helper ありの cold/warm と helper unit は履歴として保持する。plan-v3 後の最終 Web は
+  `validation/v3-web-01/` の標準 CLI cold/warm で更新し、両方 exit 0。package/lock/CI の構文と
+  S1 標準設定との一致は `validation/plan-v3-static-04.log` にある。最終 check/smells と
+  `npm run qlty` は `/tmp/jfixedviewer-encoding-byte-length-s2/qlty/final-07/` に保存した。
+- 本番の責務抽出と `plan-v2` 承認は維持する。S2 の実装レビュー、完了承認、コミット、PR は未実施。
+  最新 S2 PR の Verify / CodeQL / Cloud は未確認で、Main が公開後に確認する。
+  初回 Web cache 404 の原因は未確定のまま保持する。
+
+#### S2 の実装結果・受入確認
+
+- 比較ベース `0e43098bb523ea0eee5fbffeddd08c7bbb8b7ab1` からの実装差分は、
+  追跡済み変更24パスと新規11パス。正確な変更・追加パスと、以前の未追跡提案から
+  削除した3 helper は同じ path list に記録した。
+  `.serena/` は編集・検査入力から除外した。`package.json`、`package-lock.json`、
+  `.github/workflows/verify.yml` は S1 と同じ標準経路に戻り、ベース比で差分なし。
+- `plan-v1` `f5f54ce7d36ad349d9dfe4802229c04c8a5c6068`、
+  `plan-v2` `fb9daff695847bb729dc28a92eceb5c499df782d`、
+  `plan-v3` `75682a646af64f02ab435caa3a65b75ed22a8422` の順で計画記録を維持する。
+  `plan-review-v3` は Ready・指摘0件。Main は今回限定の承認省略条件を
+  `/tmp/jfixedviewer-encoding-byte-length-main/plan-v3-approval.json` と本 TASKS に記録した。
+  S2 の実装独立レビュー、完了承認段階、コミット、PR はこれからであり、実施済みとは記録しない。
+- R2〜R10 の製品挙動、テスト、定義移行と責務抽出を実装した。S1 の R1 条件も維持する。
+  Desktop 1.146.0 全41テスト、VS Code 1.100.0 smoke、production webpack、型、
+  `test:prepare`、architecture 7件の結果は `validation/final-01/` にある。
+  入力一致を上記 Main の比較結果で確認したため、これらの結果は再実行せず有効なものを再利用した。
+- Web 標準 `vscode-test-web` CLI cold / warm は両方 exit 0。
+  cold は VS Code Web 1.146.0 commit `69047191fc427f2f92828279aae1d90d8eeda7ab` を取得し、
+  warm は同一 cache / commit で実行した。各生ログ・コマンド・終了コード、asset record、
+  2,357件の host cache と smoke bundle の一覧/hash は `validation/v3-web-01/` にある。
+  `iconv-lite-umd` は公式 runtime に含まれ、cold で補完していない。過去の404は保持し、
+  原因は未確定とする。標準 CLI 成功により helper 専用 unit 6件は計画どおり `Not Applicable`。
+- Qlty 0.645.0 の final-07 は check / smells の公式 SARIF 2.1.0 が各0件、
+  `npm run qlty` とそれぞれの実終了値は0。入力120パス、固有解析対象116パス、
+  invocation 70件、全解析パス・ツール版・設定/lock hash は
+  `/tmp/jfixedviewer-encoding-byte-length-s2/qlty/final-07/` に保存した。
+  `inputs.sha256` は最終メタデータより前の実装入力を識別し、
+  `validation/current-metadata.sha256` は後述の最終メタデータを別に識別する。
+- 恒久文書を確認し、標準 Web helper 専用記述と配布物全体の欠落と断定する記述はなかった。
+  plan-v3 による追加の恒久文書変更は不要。初回 cache の404原因も断定しない。
+  最新 S2 PR の Verify / CodeQL / Cloud は PR 未公開のため未確認で、Main が公開後に確認する。
+- 結果、準備状況、リスクは `validation/final-validation-status-v3.txt` と
+  `validation/validation.log` に索引化した。失敗した旧試行も履歴に残す。
 
 ### plan-v4 revision 2: 契約ごとのテスト分割と形式定義 fixture
 
@@ -501,6 +538,49 @@
   fake の再現テストに加え Desktop安定版・最低版・Web で同じ smoke を実行する。
 - 既存テレメトリの正常・editorなし・キャンセル、追加失敗時の空ID、古い完了・編集時の追加0件を
   検証する。イベントのプロパティとオプトアウト実装を維持し、テキストやパスを含めない。
+
+### plan-v4 revision 2 の実装結果・最終確認
+
+- 状態は `IMPLEMENTED`。比較ベース `0e43098bb523ea0eee5fbffeddd08c7bbb8b7ab1`、
+  HEAD `ac7e51af5df80fc6cd11f72cd8c569f9f25f1492`。変更・新規パスの完全な一覧と
+  作業ツリーの SHA-256 は `encoding-byte-length-evidence/s2-final/changed-paths.txt`
+  と `inputs.sha256`。`.serena/` は編集・検査・入力一覧から除外する。
+- 先行する3件の P2 を修正した。`DocumentRenderSession.planVisibleEditor` は
+  再表示・再open前にも明示 encoding を照合し、不一致では既存の解除と通知を行う。
+  `FileTypeSelection` は同一 URI の reload tail を後続選択にも待たせ、要求世代・open document・
+  encoding を再確認してから確定する。古い reload の結果と通知で最新表示や診断を壊さない。
+  `encodingSmoke.ts` は実ホストのメモリ URI で dirty 拒否と read failure を確認し、内容保持・write 0回を確認する。
+- 既存23シナリオの名前・本文・期待値・待機・cleanupを維持し、
+  `encoding.test.ts` 5件、`encodingSelection.test.ts` 12件、
+  `encodingLifecycle.test.ts` 2件、`encodingReloadRace.test.ts` 4件へ分割した。
+  `encodingFixtures.ts` は形式定義と型のみを持ち、`byteDefinition` は options record を使う。
+  `.vscode-test.mjs` に新規3入口を加え、既存入口・files 配列・host を保持した。
+- 型、production webpack、`test:prepare`、architecture 7件は全て exit 0。
+  Desktop 安定版1.146.0は全46件、最低版1.100.0 smoke は exit 0。
+  Web 標準 `vscode-test-web` cold / warm は同じ commit
+  `69047191fc427f2f92828279aae1d90d8eeda7ab` で exit 0。
+  冷起動取得の runtime inventory は2,357件、SHA-256
+  `b22a2712437a1a88fa5ad883cb0eb963e7f037277cd1295b42496d107bd3ab12`。
+- Desktop host は使い捨て snapshot だけに短い user-data-dir を一時指定した。
+  その前の EINVAL は長い IPC socket path が原因。元設定との diff と files 配列不変は
+  `final-snapshot-01/test-config-verification.json` に保存し、canonical 設定へ戻した。
+  Web helper 専用 unit は撤去により `Not Applicable`。以前の Web 404 の原因は未確定のまま保持する。
+- Qlty 0.645.0。設定 SHA-256 は
+  `ef66ff4bc2fc0987ea6ce019c5370b11aed4a3ebbb448ad64473d913bec0af6e`、lock は
+  `94c21516c9deed4ace354be1d0840ce0bcf001b99349b38ee07f70de6faedb18`。
+  S1 base と最終の公式 SARIF 2.1.0 check / smells は各0件。最終 check / smells と
+  `npm run qlty` は全て exit 0。対象は check 119ファイルと `.`、smells 37ファイル。
+  完全な対象一覧・invocation・入力 hash・生ログは証跡 index から参照する。
+- `dist` は snapshot production build の4成果物を root に反映した。
+  snapshot `.env` に `connection_string` があること、値を出力せず bundle へ含まれること、
+  root と snapshot の成果物 hash 一致を確認した。Main の実ホスト起動・command 登録 smoke も exit 0。
+- 文書検査と最終メタデータ hash は `s2-final/final-validation-status-v4.txt` と
+  `s2-final/current-metadata.sha256` を参照する。最終の製品入力 hash は
+  `s2-final/inputs.sha256`。Main が完了差分を独立レビューし、PR 公開後の最新 Verify / CodeQL と
+  解析 revision を確認するまで、実装レビュー・承認・公開・commit を完了扱いにしない。
+- 最終証跡の正本は
+  `/Users/jconee/.codex/visualizations/2026/11/12/01a1cffe-d3f0-7b02-aaab-b3ffff043fee/encoding-byte-length-evidence/s2-final/`。
+  以前の `/tmp/jfixedviewer-encoding-byte-length-s2/` 参照は現在利用できず、履歴記録として扱う。
 
 ## 各実装スライスの最終検証
 
@@ -588,3 +668,13 @@
   全層の実際のマージを確認するまで `CLOSED` と記録しない。
 
 [機能の終了判定](../../README.md#機能の終了判定)に従う。
+
+## S2 の独立レビューと完了承認
+
+- `s2-review-v2` は S1 比較ベースからの全39パスを再レビューし、Ready・指摘0件とした。
+  レビュー入力一覧 `s2-final/inputs.sha256` の SHA-256 は
+  `5e8cb82f60f38b59460fbd4dfa7527c7d5bf3220b924e3229123fd7834ac5550`。
+- Main は2026年11月14日、利用者の今回限定の承認省略条件をこの完了段階へ適用した。
+  正確な入力、条件適用、完了コミットとの対応は永続証跡の `s2-approval.json` に保持する。
+  本追記は承認・状態のメタデータのみ。製品・テスト・設定はレビュー入力と同じ。
+- 最新 PR ヘッドのチェック、全体の終了判定とマージは後続の Main の作業とする。
