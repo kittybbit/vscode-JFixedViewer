@@ -4,16 +4,17 @@
 
 - [SPECS.md](SPECS.md) の R1〜R6 を、1スライスで実装・検証する。
 - 全文の解析・診断を維持し、各エディターの表示範囲と前後20行だけの装飾を生成・送信する。
-- 現在は `PLAN_APPROVED`。独立レビューと計画承認は完了し、計画コミットを待つ。製品変更は未着手。
+- 現在は `SLICE_APPROVED`。実装・検証・独立レビュー後の完了承認を受け、コミットとPR公開へ進む。
 - [SDD 方針](../../README.md)、[検証方針](../../validation.md)、
   [証跡方針](../../evidence.md)、[アーキテクチャ](../../architecture.md)に従う。
 
 ## 現在の状態
 
 - `feature-author` の受付 `INTAKE` を受け、`planner` が計画を作成した。
-- ベースと現時点のヘッド: `main` の `ee56899fc87d89afdf3e225487ee66111ba37aa5`。
+- 先行製品ベース: `ee56899fc87d89afdf3e225487ee66111ba37aa5`。
+- 計画コミット/実装ベース: `d2af2d513d0cef2bbb2286ac562d8028b7816a92`。
 - 作業ブランチ: `codex/visible-range-decorations`。
-- 独立レビューは `Ready for approval`。計画承認は `Approved`。計画コミット前に実装を始めない。
+- 計画の独立レビューは `Ready for approval`、計画承認は `Approved`。スライス1は `SLICE_APPROVED`、完了コミットとPR公開待ち。
 - 既存の未追跡 `.serena/` は対象外で、変更していない。
 
 [ライフサイクル状態](../../README.md#ライフサイクル状態)に従う。
@@ -36,7 +37,7 @@ Main の[性能確認報告][performance-report]と同じフォルダーの `res
 
 ### 価値と境界
 
-- スライス状態 `PLAN_APPROVED`。R1〜R6をすべて扱う。先行実装スライスなし。
+- スライス状態 `SLICE_APPROVED`。R1〜R6をすべて扱った。先行実装スライスなし。
 - 全行装飾送信による例外と遅延を解消し、スクロールと分割表示を維持する。
 - キャッシュ変更だけ、またはイベント追加だけでは利用価値と互換性を満たさないため、
   描画範囲・イベント・失効処理・回帰検証を一つのスライスで扱う。
@@ -174,8 +175,8 @@ Mainへ戻し、最終差分と有効なチェックをそろえてから独立�
 ## GitHub スタック
 
 - 実装は1層。PRの取り込み先は `main`。スライスと最上位のヘッドは同一となる。
-- 現在の比較ベースとヘッドは `ee56899fc87d89afdf3e225487ee66111ba37aa5`。
-  計画承認後に2件の計画文書だけをコミットし、そのSHAを実装ベースとして記録する。
+- 実装差分の比較ベースは計画コミット `d2af2d513d0cef2bbb2286ac562d8028b7816a92`。
+  先行製品ベースは `ee56899fc87d89afdf3e225487ee66111ba37aa5`。最終実装差分は未コミット。
 - スライス完了承認後、`codex/visible-range-decorations` で完了コミットを作成してPRを公開する。
   PR URL、実際の `main` ベースとヘッド、差分、Verify・CodeQLと必須のCloud等のチェック、
   CodeQL解析リビジョンとの対応はMainが最新ヘッドで記録する。PR未作成・チェック未取得。
@@ -186,11 +187,12 @@ Mainへ戻し、最終差分と有効なチェックをそろえてから独立�
 
 ## 人による承認
 
-- 計画承認 `Approved`。2026-11-15 JST、独立レビュー後に利用者が計画と実装開始を承認した。
+- 計画承認 `Approved`。2026-11-15 JST、独立レビュー後に利用者が計画と実装開始を承認。計画コミット `d2af2d513d0cef2bbb2286ac562d8028b7816a92`。
   対象は R1〜R6、本スライスの設計・上記13件の実装パス・2件の機能文書・
   検証条件・終了予定のパス。独立レビュー済みの計画に対する承認をMainが記録した。
-- 完了承認、終了承認、マージ承認は `Pending`。計画承認は完了差分やマージの承認を含まない。
-- Mainが承認結果を記録し計画をコミットしてから、`implementer` へ本スライス1件を委任する。
+- 完了承認 `Approved`。2026-11-15 JST、利用者がレビュー済み差分のコミットとPR公開を承認。
+  終了承認とマージ承認は `Pending`。
+- Mainは承認と計画コミットを記録後、本スライス1件を `implementer` へ委任した。
 
 [人による承認](../../README.md#人による承認)に従う。
 
@@ -227,8 +229,83 @@ Mainへ戻し、最終差分と有効なチェックをそろえてから独立�
 終了差分があれば独立レビューと終了承認後にMainがコミットし、別途マージ承認を得る。
 統合結果を確認するまで `CLOSED` にしない。
 
+## 実装結果と引き継ぎ
+
+- 状態 `IMPLEMENTED`。2026-11-15 JST、R1〜R6の実装・必須検証・性能再確認・
+  Desktop/Web目視を完了し、独立実装レビューへ進める。
+- 計画承認 `Approved` と計画コミットは上記の人による承認・
+  planning-evidenceを参照。完了承認・終了承認・マージ承認は `Pending`。
+  実装者は独立レビュー判定を付けていない。
+- 最終差分は `d2af2d513d0cef2bbb2286ac562d8028b7816a92` からの
+  ワークツリー差分。製品4、検証・テスト5、恒久文書4の承認済み13パスと、
+  本書の実装状態・結果メタデータが対象。新規ファイルは
+  `src/test/support/visibleRangeSmoke.ts`。
+  正確なハッシュは [実装パスSHA-256一覧][implementation-source-sha] と
+  [TASKSメタデータSHA-256][implementation-tasks-sha] を参照。
+  `.serena/` は既存の未追跡状態で本差分に含めず、変更していない。
+- 初回R1〜R5検証は境界・ライフサイクル・診断・editor分割・古い結果の無効化を
+  含むDesktop 47/47、architecture 7/7、最小版Desktop 1.100.0、
+  Web実ホストスモークでPass。R6は性能再確認9/9完了。
+  詳細ログと条件は [実装証跡][implementation-evidence]。
+- 10,000行ASCIIの初回presentationは全銀51.0ms（基準2,808msの20%上限
+  562ms）、JPX115.6ms（基準12,928msの上限2,586ms）でPass。
+  全銀100,000行ASCIIは初回・編集・先頭/中央/末尾移動を例外なく完了。
+  全9測定のscrollイベントとapplyは500ms以内。
+  表示範囲の件数はapply経路で返却されたDecorationOptions数であり、
+  VS Code `setDecorations` 呼出回数の直接計測ではない。
+- Desktop 1.100.0とWeb 1.146.0で全銀1,000行の先頭・中央・末尾における
+  境界・hover・cursorの目視Pass。画像とsource hashを証跡へ保存した。
+- リスク: 全文map、項目解析、行別索引とメモリは文書量に比例して残る。
+  全銀100,000行の編集後heapUsedは約1.04GiB、初回/編集timer lagは
+  約3.12/2.84秒。JPX10,000行の初回/編集timer lagは約1.57/1.51秒。
+  未測定ケースを含む大規模全般の性能保証はしない。
+  Webpack推奨サイズ警告3件はベースと比較できず新旧未確認。
+- `TRACEABILITY.md`は計画どおり不要。R1〜R6の対応先は変わらず、
+  本書と実装証跡に検証結果を記録した。
+- 最初のQA後にレビュー指摘対応として `extension.test.ts` を変更し、
+  `test:prepare` とDesktop 1.146.0 suiteを再実行した。製品ソース、smoke入力、
+  恒久文書は変更していない。後追いTASKS更新は状態・検証・証跡メタデータである。
+  実装コミットとPR公開は未実施で、Mainによる独立レビュー後の承認段階に残る。
+- 独立実装レビューのP2指摘後、承認済み `extension.test.ts` に解析中の
+  viewport変更、デバウンス中のscroll、再選択、解除、encoding不一致、closeの
+  6経路を追加・拡張した。4件の新規テストを含むDesktop全51/51でPass。
+  `test:prepare` も再実行してPass。製品コードと実ホストsmokeの入力は不変のため、
+  性能・目視、最小版Desktop/Web、production bundleは有効な既存結果を再利用した。
+- Qltyの基準・最終checkとsmellsについて、公式invocationとsmells対象一覧を
+  コマンド・snapshot別のパスmanifestへ記録し直した。対象の選択根拠と件数は
+  [実装証跡][implementation-evidence]を参照。最終SARIF/総合checkも修正後に更新。
+- 実装レビューの最初の所見と、本修正ループによる解消証跡は
+  [実装証跡][implementation-evidence]に維持した。実装者は再レビューの判定を
+  付けていない。独立レビューへ再度引き継ぐ。
+
 [機能の終了判定](../../README.md#機能の終了判定)に従う。
 
 [performance-report]: /Users/jconee/.codex/visualizations/2026/11/14/01a1dab3-181e-7120-91cf-b6e90dbfb298/fixedwidth-performance/report.md
-
 [planning-evidence]: /Users/jconee/.codex/visualizations/2026/11/14/01a1dab3-181e-7120-91cf-b6e90dbfb298/fixedwidth-performance/planning-evidence.md
+[implementation-evidence]: /Users/jconee/.codex/visualizations/2026/11/14/01a1dab3-181e-7120-91cf-b6e90dbfb298/fixedwidth-performance/implementation-evidence.md
+[implementation-source-sha]: /Users/jconee/.codex/visualizations/2026/11/14/01a1dab3-181e-7120-91cf-b6e90dbfb298/fixedwidth-performance/final-source-sha256.txt
+[implementation-tasks-sha]: /Users/jconee/.codex/visualizations/2026/11/14/01a1dab3-181e-7120-91cf-b6e90dbfb298/fixedwidth-performance/final-task-metadata-sha256.txt
+
+## 実装の独立レビュー
+
+- 2026-11-15 JST、`implementation-reviewer` の再レビュー判定は `Ready`。指摘なし。
+- 最初のP2指摘2件は、R5競合テストの補強とQlty解析対象一覧の保存で解消した。
+- レビュー対象の実装manifest SHA-256:
+  `504aae6823600f3fb769dfdde580202ae7a00e26d097c0ce214431ab86fbadf8`。
+- レビュー対象のTASKS内容 SHA-256:
+  `4d695902e98fc495b0d972e7ffb6ca994f88a88595162cfcf56714c34ba3b57e`。
+- 判定と対象の詳細は[独立再レビューの証跡][implementation-review]を参照する。
+- この節と現在状態の変更はMainによる後追いメタデータ。実装13パスは変更していない。
+- 完了承認は `Approved`。終了承認とマージ承認は `Pending`。製品差分のコミットとPR公開へ進む。
+
+[implementation-review]: /Users/jconee/.codex/visualizations/2026/11/14/01a1dab3-181e-7120-91cf-b6e90dbfb298/fixedwidth-performance/implementation-review-2.md
+
+## 完了承認の記録
+
+- 2026-11-15 JST、利用者が独立再レビュー後のスライス1差分を承認した。Mainが記録。
+- 対象は上記13実装パスと本書の状態・検証・承認メタデータ。
+- 実装manifest SHA-256:
+  `504aae6823600f3fb769dfdde580202ae7a00e26d097c0ce214431ab86fbadf8`。
+- 判定は `Ready`。対応が必要な指摘はなく、最終検証と実装内容の一致を確認した。
+- 本承認に基づきMainがコミットし、単層PRをmainへ公開する。
+  終了差分とマージには、それぞれの判定・承認を得る。

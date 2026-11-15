@@ -47,6 +47,11 @@ export class FixedWidthPresentation implements vscode.Disposable {
       ),
     );
     this.renderSession.updateVisibleEditors(vscode.window.visibleTextEditors);
+    this.subscriptions.push(
+      vscode.window.onDidChangeTextEditorVisibleRanges(({ textEditor }) =>
+        this.renderSession.updateVisibleEditor(textEditor),
+      ),
+    );
   }
 
   private listenToEditorSelections(): void {

@@ -1,8 +1,5 @@
 import * as vscode from "vscode";
-import type {
-  FixedWidthDecorationField,
-  FixedWidthLine,
-} from "../../application/fixedWidth/FixedWidthDecoration";
+import type { FixedWidthDecorationField } from "../../application/fixedWidth/FixedWidthDecoration";
 
 export type BoundaryStyle = "line" | "alternating" | "marker";
 
@@ -18,6 +15,13 @@ export type FieldDecorations = {
   alternatingBackground: string | vscode.ThemeColor;
   alternatingBackgroundKey: string;
 };
+
+export type VisibleLineRange = {
+  start: number;
+  end: number;
+};
+
+const visibleRangeContext = 20;
 
 type FieldDecorationInput = Pick<
   FixedWidthDecorationField,
@@ -76,12 +80,9 @@ export function readBoundarySettings(resource: vscode.Uri): BoundarySettings {
 
 export function createFieldDecorations(
   fields: readonly FieldDecorationInput[],
-  lines: readonly FixedWidthLine[],
   settings: BoundarySettings,
+  lineLengths: ReadonlyMap<number, number>,
 ): FieldDecorations {
-  const lineLengths = new Map(
-    lines.map((line) => [line.line, line.text.length]),
-  );
   const columnByLine = new Map<number, number>();
   const options: vscode.DecorationOptions[] = [];
   const alternatingOptions: vscode.DecorationOptions[] = [];
@@ -106,6 +107,55 @@ export function createFieldDecorations(
     alternatingBackgroundKey:
       settings.color || "theme:editor.rangeHighlightBackground",
   };
+}
+
+export function normalizeVisibleRanges(
+  ranges: readonly {
+    start: { line: number };
+    end: { line: number };
+  }[],
+  lineCount: number,
+): VisibleLineRange[] {
+  if (lineCount <= 0 || ranges.length === 0) {
+    return [];
+  }
+
+  return mergeVisibleRanges(
+    ranges
+      .map(({ start, end }) => ({
+        start: Math.max(
+          0,
+          Math.min(start.line, end.line) - visibleRangeContext,
+        ),
+        end: Math.min(
+          lineCount - 1,
+          Math.max(start.line, end.line) + visibleRangeContext,
+        ),
+      }))
+      .sort((left, right) => left.start - right.start || left.end - right.end),
+  );
+}
+
+function mergeVisibleRanges(
+  expanded: readonly VisibleLineRange[],
+): VisibleLineRange[] {
+  const merged: VisibleLineRange[] = [];
+  for (const range of expanded) {
+    const previous = merged.at(-1);
+    if (shouldMergeVisibleRange(previous, range)) {
+      previous.end = Math.max(previous.end, range.end);
+    } else {
+      merged.push({ ...range });
+    }
+  }
+  return merged;
+}
+
+function shouldMergeVisibleRange(
+  previous: VisibleLineRange | undefined,
+  next: VisibleLineRange,
+): previous is VisibleLineRange {
+  return previous !== undefined && next.start <= previous.end + 1;
 }
 
 export function createCursorFieldDecoration(
