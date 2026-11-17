@@ -2,7 +2,11 @@ import * as assert from "assert";
 import { readFileSync, readdirSync } from "node:fs";
 import path = require("node:path");
 import { CharacterizationHost } from "./support/characterizationHost";
-import type { FakeEditor } from "./support/fakeVscodeTypes";
+import {
+  FakePosition,
+  FakeRange,
+  type FakeEditor,
+} from "./support/fakeVscodeTypes";
 import { createFixedWidthDecoration } from "../application/fixedWidth/FixedWidthDecoration";
 import { projectFields } from "../domain/fixedWidth/projectFields";
 import { validateRecord } from "../domain/fixedWidth/validateRecord";
@@ -169,6 +173,33 @@ function fieldDecorationCalls(editor: FakeEditor) {
       options.backgroundColor?.id !== "editor.wordHighlightStrongBackground"
     );
   });
+}
+
+function visibleFieldLineBounds(editor: FakeEditor) {
+  const options = fieldDecorationCalls(editor).at(-1)?.options ?? [];
+  return options.length
+    ? {
+        min: Math.min(...options.map(({ range }) => range.start.line)),
+        max: Math.max(...options.map(({ range }) => range.start.line)),
+      }
+    : undefined;
+}
+
+function pauseNextDecode(host: CharacterizationHost) {
+  let signalStarted!: () => void;
+  let release!: () => void;
+  const started = new Promise<void>((resolve) => {
+    signalStarted = resolve;
+  });
+  const pending = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  host.decodeTextHook = async () => {
+    signalStarted();
+    await pending;
+    return undefined;
+  };
+  return { started, release };
 }
 
 function cursorRange(editor: FakeEditor) {
@@ -1949,11 +1980,201 @@ suite("固定長表示の現行挙動", () => {
       assert.strictEqual(host.encodeCallCount, encodeBeforeSelection + 2);
       assert.strictEqual(host.decodeCallCount, decodeBeforeSelection + 2);
       assert.strictEqual(primary.document.lineCount, 1000);
+      const endRange = [
+        new FakeRange(new FakePosition(999, 0), new FakePosition(999, 0)),
+      ];
+      host.setVisibleRanges(primary, endRange);
+      host.setVisibleRanges(split, endRange);
       assert.strictEqual(hasRow(primary, 999, "エンド"), true);
       assert.strictEqual(hasRow(split, 999, "エンド"), true);
     } finally {
       timers.restore();
     }
+  });
+
+  test("解析中の範囲変更では再解析せず、完了後に最新範囲を装飾する", async () => {
+    const lines = [header("1"), ...Array<string>(100).fill("2"), "9"];
+    const editor = host.createEditor("pending-visible-range.txt", lines);
+    host.setVisibleRanges(editor, [
+      new FakeRange(new FakePosition(1, 0), new FakePosition(1, 0)),
+    ]);
+    host.setActiveEditor(editor);
+    const paused = pauseNextDecode(host);
+    const encodeBefore = host.encodeCallCount;
+    const decodeBefore = host.decodeCallCount;
+    const selection = host.chooseFileType(zenginTransfer);
+    await paused.started;
+
+    const callsBeforeScroll = fieldDecorationCalls(editor).length;
+    host.setVisibleRanges(editor, [
+      new FakeRange(new FakePosition(80, 0), new FakePosition(80, 0)),
+    ]);
+    assert.strictEqual(fieldDecorationCalls(editor).length, callsBeforeScroll);
+    assert.strictEqual(host.encodeCallCount, encodeBefore + 1);
+    assert.strictEqual(host.decodeCallCount, decodeBefore + 1);
+
+    paused.release();
+    await selection;
+    await host.waitForAnalysis();
+    assert.deepStrictEqual(visibleFieldLineBounds(editor), {
+      min: 60,
+      max: 100,
+    });
+    assert.strictEqual(host.encodeCallCount, encodeBefore + 1);
+    assert.strictEqual(host.decodeCallCount, decodeBefore + 1);
+  });
+
+  test("編集後のデバウンス中に範囲が変わっても失効結果を再適用しない", async () => {
+    const lines = [header("1"), ...Array<string>(100).fill("2"), "9"];
+    const editor = host.createEditor("debounced-visible-range.txt", lines);
+    host.setVisibleRanges(editor, [
+      new FakeRange(new FakePosition(1, 0), new FakePosition(1, 0)),
+    ]);
+    host.setActiveEditor(editor);
+    await host.chooseFileType(zenginTransfer);
+    await host.waitForAnalysis();
+
+    const encodeBefore = host.encodeCallCount;
+    const decodeBefore = host.decodeCallCount;
+    const callsBeforeEdit = fieldDecorationCalls(editor).length;
+    const timers = host.useFakeTimers();
+    try {
+      const editedLines = [...lines];
+      editedLines[80] = `2${"x".repeat(10)}`;
+      host.changeDocument(editor, editedLines);
+      assert.strictEqual(timers.pendingCount, 1);
+
+      host.setVisibleRanges(editor, [
+        new FakeRange(new FakePosition(80, 0), new FakePosition(80, 0)),
+      ]);
+      assert.strictEqual(fieldDecorationCalls(editor).length, callsBeforeEdit);
+      assert.strictEqual(host.encodeCallCount, encodeBefore);
+      assert.strictEqual(host.decodeCallCount, decodeBefore);
+
+      timers.advanceBy(99);
+      assert.strictEqual(fieldDecorationCalls(editor).length, callsBeforeEdit);
+      timers.advanceBy(1);
+      await host.waitForAnalysis();
+      assert.deepStrictEqual(visibleFieldLineBounds(editor), {
+        min: 60,
+        max: 100,
+      });
+      assert.strictEqual(host.encodeCallCount, encodeBefore + 1);
+      assert.strictEqual(host.decodeCallCount, decodeBefore + 1);
+    } finally {
+      timers.restore();
+    }
+  });
+
+  test("表示範囲だけを装飾し、スクロールと分割表示で全文解析を再利用する", async () => {
+    const data = `2${"0".repeat(111)} ${"0".repeat(7)}`;
+    const lines = [
+      header("1"),
+      ...Array<string>(1000).fill(data),
+      "?",
+      `8${"0".repeat(119)}`,
+      `9${" ".repeat(119)}`,
+    ];
+    const uri = "file:///large/visible-ranges.txt";
+    const primary = host.createEditor("visible-ranges.txt", lines, uri);
+    host.setVisibleRanges(primary, [
+      new FakeRange(new FakePosition(440, 0), new FakePosition(442, 0)),
+    ]);
+    host.setActiveEditor(primary);
+    await host.chooseFileType(zenginGeneralTransfer);
+    await host.waitForPendingRender();
+
+    const options = () => fieldDecorationCalls(primary).at(-1)?.options ?? [];
+    const visibleLineBounds = (editor: FakeEditor) => {
+      const fieldOptions = fieldDecorationCalls(editor).at(-1)?.options ?? [];
+      return fieldOptions.length
+        ? {
+            min: Math.min(...fieldOptions.map(({ range }) => range.start.line)),
+            max: Math.max(...fieldOptions.map(({ range }) => range.start.line)),
+          }
+        : undefined;
+    };
+    assert.deepStrictEqual(visibleLineBounds(primary), { min: 420, max: 462 });
+    assert.ok(options().length <= 43 * 16);
+    assert.ok(
+      host
+        .diagnosticsFor(primary)
+        ?.some(({ range }) => range.start.line === 1001),
+    );
+
+    const encodeCount = host.encodeCallCount;
+    const lineAtCount = primary.document.lineAtCallCount;
+    const fieldCalls = fieldDecorationCalls(primary).length;
+    host.setVisibleRanges(primary, [
+      new FakeRange(new FakePosition(440, 0), new FakePosition(442, 0)),
+    ]);
+    assert.strictEqual(fieldDecorationCalls(primary).length, fieldCalls);
+    assert.strictEqual(primary.document.lineAtCallCount, lineAtCount);
+
+    host.setVisibleRanges(primary, [
+      new FakeRange(new FakePosition(900, 0), new FakePosition(902, 0)),
+    ]);
+    assert.deepStrictEqual(visibleLineBounds(primary), { min: 880, max: 922 });
+    assert.ok(options().length <= 43 * 16);
+    assert.strictEqual(host.encodeCallCount, encodeCount);
+    assert.strictEqual(primary.document.lineAtCallCount, lineAtCount);
+
+    host.setVisibleRanges(primary, [
+      new FakeRange(new FakePosition(100, 0), new FakePosition(102, 0)),
+      new FakeRange(new FakePosition(300, 0), new FakePosition(302, 0)),
+    ]);
+    assert.deepStrictEqual(visibleLineBounds(primary), { min: 80, max: 322 });
+    assert.ok(options().length <= 86 * 16);
+    assert.strictEqual(
+      new Set(
+        options().map(
+          ({ range }) =>
+            `${range.start.line}:${range.start.character}:${range.end.character}`,
+        ),
+      ).size,
+      options().length,
+    );
+
+    host.setVisibleRanges(primary, [
+      new FakeRange(new FakePosition(100, 0), new FakePosition(110, 0)),
+      new FakeRange(new FakePosition(105, 0), new FakePosition(115, 0)),
+    ]);
+    assert.deepStrictEqual(visibleLineBounds(primary), { min: 80, max: 135 });
+    assert.ok(options().length <= 56 * 16);
+
+    host.setVisibleRanges(primary, [
+      new FakeRange(new FakePosition(0, 0), new FakePosition(0, 0)),
+    ]);
+    assert.deepStrictEqual(visibleLineBounds(primary), { min: 0, max: 20 });
+    host.setVisibleRanges(primary, [
+      new FakeRange(new FakePosition(1003, 0), new FakePosition(1003, 0)),
+    ]);
+    assert.deepStrictEqual(visibleLineBounds(primary), { min: 983, max: 1003 });
+
+    host.setVisibleRanges(primary, []);
+    assert.deepStrictEqual(options(), []);
+
+    const split = host.createEditor("visible-ranges.txt", [], uri);
+    host.setVisibleRanges(split, [
+      new FakeRange(new FakePosition(600, 0), new FakePosition(601, 0)),
+    ]);
+    host.setVisibleEditors([primary, split]);
+    const splitOptions = () =>
+      fieldDecorationCalls(split).at(-1)?.options ?? [];
+    assert.ok(splitOptions().length > 0);
+    assert.ok(splitOptions().every(({ range }) => range.start.line >= 580));
+    assert.ok(splitOptions().every(({ range }) => range.start.line <= 621));
+    assert.strictEqual(host.encodeCallCount, encodeCount);
+
+    host.setVisibleRanges(primary, [
+      new FakeRange(new FakePosition(700, 0), new FakePosition(700, 0)),
+    ]);
+    assert.deepStrictEqual(visibleLineBounds(primary), { min: 680, max: 720 });
+    assert.ok(splitOptions().every(({ range }) => range.start.line >= 580));
+
+    assert.strictEqual(host.eventSubscriptionStats.visibleRanges.active, 1);
+    host.dispose();
+    assert.strictEqual(host.eventSubscriptionStats.visibleRanges.active, 0);
   });
 
   test("同じ URI の分割表示に同じ解析結果を配り、別 URI と解除を分ける", async () => {
@@ -2068,14 +2289,41 @@ suite("固定長表示の現行挙動", () => {
       assert.strictEqual(timers.pendingCount, 1);
       assert.strictEqual(reporter.events.length, eventsBeforeEdit);
 
-      await host.chooseFileType(zenginTransfer);
+      const paused = pauseNextDecode(host);
+      const reselection = host.chooseFileType(zenginTransfer);
+      await paused.started;
       assert.strictEqual(timers.pendingCount, 0);
       assert.strictEqual(originalType?.disposeCount, 0);
       assert.strictEqual(
         fieldDecorationCalls(editor).length,
+        callsBeforeEdit + 1,
+      );
+      assert.deepStrictEqual(fieldDecorationCalls(editor).at(-1)?.options, []);
+      assert.strictEqual(
+        fieldDecorationCalls(editor).at(-1)?.type,
+        originalType,
+      );
+
+      const callsWhilePending = fieldDecorationCalls(editor).length;
+      const encodesWhilePending = host.encodeCallCount;
+      const decodesWhilePending = host.decodeCallCount;
+      host.setVisibleRanges(editor, [
+        new FakeRange(new FakePosition(1, 0), new FakePosition(1, 0)),
+      ]);
+      assert.strictEqual(
+        fieldDecorationCalls(editor).length,
+        callsWhilePending,
+      );
+      assert.strictEqual(host.encodeCallCount, encodesWhilePending);
+      assert.strictEqual(host.decodeCallCount, decodesWhilePending);
+
+      paused.release();
+      await reselection;
+      await host.waitForAnalysis();
+      assert.strictEqual(
+        fieldDecorationCalls(editor).length,
         callsBeforeEdit + 2,
       );
-      assert.deepStrictEqual(fieldDecorationCalls(editor).at(-2)?.options, []);
       assert.strictEqual(
         fieldDecorationCalls(editor).at(-1)?.type,
         originalType,
@@ -2128,10 +2376,97 @@ suite("固定長表示の現行挙動", () => {
       });
 
       const callsAfterClear = fieldDecorationCalls(editor).length;
+      host.setVisibleRanges(editor, [
+        new FakeRange(new FakePosition(1, 0), new FakePosition(1, 0)),
+      ]);
+      assert.strictEqual(fieldDecorationCalls(editor).length, callsAfterClear);
+      assert.deepStrictEqual(fieldDecorationCalls(editor).at(-1)?.options, []);
       const eventsAfterClear = reporter.events.length;
       timers.advanceBy(100);
       assert.strictEqual(fieldDecorationCalls(editor).length, callsAfterClear);
       assert.strictEqual(reporter.events.length, eventsAfterClear);
+    } finally {
+      timers.restore();
+    }
+  });
+
+  test("文字コード変更中の範囲イベントで失効した装飾を復元しない", async () => {
+    const lines = [header("1"), ...Array<string>(100).fill("2"), "9"];
+    const editor = host.createEditor("encoding-visible-range.txt", lines);
+    host.setVisibleRanges(editor, [
+      new FakeRange(new FakePosition(1, 0), new FakePosition(1, 0)),
+    ]);
+    host.setActiveEditor(editor);
+    await host.chooseFileType(zenginTransfer);
+    await host.waitForAnalysis();
+
+    const originalType = fieldDecorationCalls(editor).at(-1)?.type;
+    const timers = host.useFakeTimers();
+    try {
+      const paused = pauseNextDecode(host);
+      host.changeDocument(editor, [...lines]);
+      timers.advanceBy(100);
+      await paused.started;
+
+      host.setDocumentEncoding(editor, "utf8");
+      assert.strictEqual(timers.pendingCount, 0);
+      assert.strictEqual(originalType?.disposeCount, 1);
+      assert.deepStrictEqual(fieldDecorationCalls(editor).at(-1)?.options, []);
+      const callsAfterEncodingChange = fieldDecorationCalls(editor).length;
+      host.setVisibleRanges(editor, [
+        new FakeRange(new FakePosition(80, 0), new FakePosition(80, 0)),
+      ]);
+      assert.strictEqual(
+        fieldDecorationCalls(editor).length,
+        callsAfterEncodingChange,
+      );
+      assert.deepStrictEqual(fieldDecorationCalls(editor).at(-1)?.options, []);
+
+      paused.release();
+      await host.waitForAnalysis();
+      timers.advanceBy(100);
+      assert.strictEqual(
+        fieldDecorationCalls(editor).length,
+        callsAfterEncodingChange,
+      );
+      assert.strictEqual(originalType?.disposeCount, 1);
+    } finally {
+      timers.restore();
+    }
+  });
+
+  test("クローズ後の範囲イベントで古い解析と装飾ハンドルを復元しない", async () => {
+    const lines = [header("1"), ...Array<string>(100).fill("2"), "9"];
+    const editor = host.createEditor("closed-visible-range.txt", lines);
+    host.setVisibleRanges(editor, [
+      new FakeRange(new FakePosition(1, 0), new FakePosition(1, 0)),
+    ]);
+    host.setActiveEditor(editor);
+    await host.chooseFileType(zenginTransfer);
+    await host.waitForAnalysis();
+
+    const originalType = fieldDecorationCalls(editor).at(-1)?.type;
+    const timers = host.useFakeTimers();
+    try {
+      const paused = pauseNextDecode(host);
+      host.changeDocument(editor, [...lines]);
+      timers.advanceBy(100);
+      await paused.started;
+
+      host.closeDocument(editor);
+      assert.strictEqual(originalType?.disposeCount, 1);
+      assert.deepStrictEqual(fieldDecorationCalls(editor).at(-1)?.options, []);
+      const callsAfterClose = fieldDecorationCalls(editor).length;
+      host.setVisibleRanges(editor, [
+        new FakeRange(new FakePosition(80, 0), new FakePosition(80, 0)),
+      ]);
+      assert.strictEqual(fieldDecorationCalls(editor).length, callsAfterClose);
+
+      paused.release();
+      await host.waitForAnalysis();
+      timers.advanceBy(100);
+      assert.strictEqual(fieldDecorationCalls(editor).length, callsAfterClose);
+      assert.strictEqual(originalType?.disposeCount, 1);
     } finally {
       timers.restore();
     }
@@ -2195,6 +2530,7 @@ suite("固定長表示の現行挙動", () => {
         activeEditor: { registered: 0, disposed: 0, active: 0 },
         visibleEditors: { registered: 1, disposed: 1, active: 0 },
         editorSelections: { registered: 1, disposed: 1, active: 0 },
+        visibleRanges: { registered: 1, disposed: 1, active: 0 },
         documentChanges: { registered: 1, disposed: 1, active: 0 },
         documentClose: { registered: 1, disposed: 1, active: 0 },
       });

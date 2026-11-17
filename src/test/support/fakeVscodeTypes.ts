@@ -5,6 +5,7 @@ export type EditorEvents = {
   active: FakeEventEmitter<FakeEditor | undefined>;
   visible: FakeEventEmitter<readonly FakeEditor[]>;
   selection: FakeEventEmitter<{ textEditor: FakeEditor }>;
+  visibleRanges: FakeEventEmitter<{ textEditor: FakeEditor }>;
 };
 export type FakeDocument = {
   uri: FakeUri;
@@ -226,6 +227,7 @@ export class FakeDecorationType implements Disposable {
 
 export type FakeEditor = {
   document: FakeDocument;
+  visibleRanges: FakeRange[];
   selection: { active: Position };
   decorationCalls: Array<{
     type: FakeDecorationType;

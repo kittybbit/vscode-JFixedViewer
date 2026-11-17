@@ -95,6 +95,7 @@ function createFakeWindow(
     onDidChangeActiveTextEditor: editorEvents.active.event,
     onDidChangeVisibleTextEditors: editorEvents.visible.event,
     onDidChangeTextEditorSelection: editorEvents.selection.event,
+    onDidChangeTextEditorVisibleRanges: editorEvents.visibleRanges.event,
   };
 }
 
@@ -307,6 +308,9 @@ export class CharacterizationHost {
   private readonly selectionEmitter = new FakeEventEmitter<{
     textEditor: FakeEditor;
   }>();
+  private readonly visibleRangesEmitter = new FakeEventEmitter<{
+    textEditor: FakeEditor;
+  }>();
   private readonly documentsByUri = new Map<string, FakeDocument>();
   private readonly editors = new Set<FakeEditor>();
   private readonly configurationByUri = new Map<string, Configuration>();
@@ -322,6 +326,7 @@ export class CharacterizationHost {
       active: this.activeEditorEmitter,
       visible: this.visibleEditorEmitter,
       selection: this.selectionEmitter,
+      visibleRanges: this.visibleRangesEmitter,
     });
   }
 
@@ -334,6 +339,7 @@ export class CharacterizationHost {
       activeEditor: this.activeEditorEmitter.subscriptionStats,
       visibleEditors: this.visibleEditorEmitter.subscriptionStats,
       editorSelections: this.selectionEmitter.subscriptionStats,
+      visibleRanges: this.visibleRangesEmitter.subscriptionStats,
       documentChanges: this.documentChangeEmitter.subscriptionStats,
       documentClose: this.documentCloseEmitter.subscriptionStats,
     };
@@ -366,6 +372,15 @@ export class CharacterizationHost {
     const document = this.getOrCreateDocument(fileName, lines, uri);
     const editor: FakeEditor = {
       document,
+      visibleRanges:
+        document.lineCount > 0
+          ? [
+              new FakeRange(
+                new FakePosition(0, 0),
+                new FakePosition(document.lineCount - 1, 0),
+              ),
+            ]
+          : [],
       selection: { active: { line: 0, character: 0 } },
       decorationCalls: [],
       setDecorations(type, options) {
@@ -385,6 +400,14 @@ export class CharacterizationHost {
   public setVisibleEditors(editors: readonly FakeEditor[]): void {
     this.visibleTextEditors = editors;
     this.visibleEditorEmitter.fire(editors);
+  }
+
+  public setVisibleRanges(
+    editor: FakeEditor,
+    ranges: readonly FakeRange[],
+  ): void {
+    editor.visibleRanges = [...ranges];
+    this.visibleRangesEmitter.fire({ textEditor: editor });
   }
 
   public setSelection(

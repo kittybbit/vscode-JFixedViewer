@@ -4,11 +4,7 @@ import type {
   FixedWidthDecorationPort,
   FixedWidthLine,
 } from "../../application/fixedWidth/FixedWidthDecoration";
-import {
-  createFieldDecorations,
-  groupFieldsByLine,
-  readBoundarySettings,
-} from "./decorationStyle";
+import { groupFieldsByLine, readBoundarySettings } from "./decorationStyle";
 import {
   EditorDecorations,
   type EditorDecorationUpdate,
@@ -244,6 +240,53 @@ export class DocumentRenderSession implements vscode.Disposable {
     );
   }
 
+  public updateVisibleEditor(editor: vscode.TextEditor): void {
+    const request = this.visibleEditorRequest(editor);
+    if (!request) {
+      return;
+    }
+    const rendered = this.renderedDocumentFor(request);
+    if (!rendered) {
+      return;
+    }
+    this.editorDecorations.apply(editor, rendered.update);
+  }
+
+  private visibleEditorRequest(
+    editor: vscode.TextEditor,
+  ): RenderRequest | undefined {
+    if (this.disposed || !vscode.window.visibleTextEditors.includes(editor)) {
+      return undefined;
+    }
+    const uri = editor.document.uri.toString();
+    const fileType = this.fileTypeByDocument.get(uri);
+    const generation = this.renderGenerationByUri.get(uri);
+    if (
+      fileType === undefined ||
+      generation === undefined ||
+      this.handleEncodingMismatch(editor.document)
+    ) {
+      return undefined;
+    }
+    return this.createRequest({
+      document: editor.document,
+      uri,
+      fileType,
+      generation,
+    });
+  }
+
+  private renderedDocumentFor(
+    request: RenderRequest,
+  ): RenderedDocument | undefined {
+    const rendered = this.renderedByUri.get(request.uri);
+    if (!rendered || !this.renderedRequestMatches(rendered, request)) {
+      return undefined;
+    }
+    this.currentDocumentByUri.set(request.uri, request.document);
+    return rendered;
+  }
+
   private async trackRender(
     request: RenderRequest,
   ): Promise<boolean | undefined> {
@@ -310,11 +353,12 @@ export class DocumentRenderSession implements vscode.Disposable {
   }: ApplyAnalysis): true {
     const update: EditorDecorationUpdate = {
       fileType: request.fileType,
-      decorations: createFieldDecorations(analysis.fields, lines, settings),
       fieldsByLine: groupFieldsByLine(analysis.fields),
+      lineLengths: new Map(lines.map((line) => [line.line, line.text.length])),
       hasFieldMetadata: analysis.fields.some(
         (field) => field.fieldName !== undefined,
       ),
+      settings,
     };
     this.diagnostics.set(request.document, analysis.issues);
     this.renderedByUri.set(request.uri, { request, update });
@@ -386,10 +430,28 @@ export class DocumentRenderSession implements vscode.Disposable {
   ): boolean {
     const cached = rendered.request;
     return (
+      this.renderedRequestIdentityMatches(cached, request) &&
+      this.renderedRequestVersionMatches(cached, request)
+    );
+  }
+
+  private renderedRequestIdentityMatches(
+    cached: RenderRequest,
+    request: RenderRequest,
+  ): boolean {
+    return (
       cached.document === request.document &&
       cached.fileType === request.fileType &&
-      cached.version === request.version &&
-      cached.encoding === request.encoding
+      cached.generation === request.generation
+    );
+  }
+
+  private renderedRequestVersionMatches(
+    cached: RenderRequest,
+    request: RenderRequest,
+  ): boolean {
+    return (
+      cached.version === request.version && cached.encoding === request.encoding
     );
   }
 

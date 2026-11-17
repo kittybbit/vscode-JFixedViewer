@@ -4,6 +4,9 @@ import {
   createCursorFieldDecoration,
   createFieldDecorations,
   findCursorField,
+  normalizeVisibleRanges,
+  type BoundarySettings,
+  type VisibleLineRange,
 } from "./decorationStyle";
 
 type EditorDecoration = {
@@ -13,13 +16,21 @@ type EditorDecoration = {
   fieldsByLine: ReadonlyMap<number, readonly FixedWidthDecorationField[]>;
   alternatingDecorationType?: vscode.TextEditorDecorationType;
   alternatingBackgroundKey?: string;
+  lastUpdate?: EditorDecorationUpdate;
+  lastVisibleRangeKey?: string;
+  lastCursorPosition?: string;
+  lastCursorFieldsByLine?: ReadonlyMap<
+    number,
+    readonly FixedWidthDecorationField[]
+  >;
 };
 
 export type EditorDecorationUpdate = {
   fileType: string;
-  decorations: ReturnType<typeof createFieldDecorations>;
   fieldsByLine: ReadonlyMap<number, readonly FixedWidthDecorationField[]>;
+  lineLengths: ReadonlyMap<number, number>;
   hasFieldMetadata: boolean;
+  settings: BoundarySettings;
 };
 
 export type VisibleEditorDecorationPlan =
@@ -39,11 +50,57 @@ export class EditorDecorations implements vscode.Disposable {
     update: EditorDecorationUpdate,
   ): void {
     const current = this.getOrCreate(editor, update.fileType);
+    this.prepareCursor(editor, current, update);
+    const ranges = this.visibleRanges(editor);
+    const rangeKey = this.visibleRangeKey(ranges);
+    if (this.hasAppliedVisibleRange(current, update, rangeKey)) {
+      return;
+    }
+
+    const decorations = this.createVisibleDecorations(update, ranges);
+    editor.setDecorations(current.decorationType, decorations.options);
+    this.updateAlternating(editor, current, decorations);
+    current.lastUpdate = update;
+    current.lastVisibleRangeKey = rangeKey;
+  }
+
+  private prepareCursor(
+    editor: vscode.TextEditor,
+    current: EditorDecoration,
+    update: EditorDecorationUpdate,
+  ): void {
     current.fieldsByLine = update.fieldsByLine;
     this.ensureCursorDecoration(current, update.hasFieldMetadata);
     this.updateCursorField(editor, current);
-    editor.setDecorations(current.decorationType, update.decorations.options);
-    this.updateAlternating(editor, current, update.decorations);
+  }
+
+  private visibleRanges(editor: vscode.TextEditor): VisibleLineRange[] {
+    return normalizeVisibleRanges(
+      editor.visibleRanges,
+      editor.document.lineCount,
+    );
+  }
+
+  private visibleRangeKey(ranges: readonly VisibleLineRange[]): string {
+    return ranges.map(({ start, end }) => `${start}:${end}`).join(",");
+  }
+
+  private hasAppliedVisibleRange(
+    current: EditorDecoration,
+    update: EditorDecorationUpdate,
+    rangeKey: string,
+  ): boolean {
+    return (
+      current.lastUpdate === update && current.lastVisibleRangeKey === rangeKey
+    );
+  }
+
+  private createVisibleDecorations(
+    update: EditorDecorationUpdate,
+    ranges: readonly VisibleLineRange[],
+  ): ReturnType<typeof createFieldDecorations> {
+    const fields = visibleFieldsForRanges(update.fieldsByLine, ranges);
+    return createFieldDecorations(fields, update.settings, update.lineLengths);
   }
 
   public updateCursor(editor: vscode.TextEditor): void {
@@ -129,6 +186,10 @@ export class EditorDecorations implements vscode.Disposable {
     current: EditorDecoration,
   ): void {
     current.fieldsByLine = new Map();
+    delete current.lastUpdate;
+    delete current.lastVisibleRangeKey;
+    delete current.lastCursorPosition;
+    delete current.lastCursorFieldsByLine;
     editor.setDecorations(current.decorationType, []);
     if (current.cursorDecorationType) {
       editor.setDecorations(current.cursorDecorationType, []);
@@ -186,12 +247,28 @@ export class EditorDecorations implements vscode.Disposable {
       return;
     }
     const position = editor.selection.active;
+    const positionKey = `${position.line}:${position.character}`;
+    if (this.isCurrentCursorField(current, positionKey)) {
+      return;
+    }
+    current.lastCursorPosition = positionKey;
+    current.lastCursorFieldsByLine = current.fieldsByLine;
     const lineLength = editor.document.lineAt(position.line).text.length;
     const field = findCursorField(current.fieldsByLine, position, lineLength);
     const selection = field
       ? createCursorFieldDecoration(field, lineLength)
       : undefined;
     editor.setDecorations(decorationType, selection ? [selection] : []);
+  }
+
+  private isCurrentCursorField(
+    current: EditorDecoration,
+    positionKey: string,
+  ): boolean {
+    return (
+      current.lastCursorPosition === positionKey &&
+      current.lastCursorFieldsByLine === current.fieldsByLine
+    );
   }
 
   private updateAlternating(
@@ -256,4 +333,17 @@ export class EditorDecorations implements vscode.Disposable {
     }
     this.byEditor.clear();
   }
+}
+
+function visibleFieldsForRanges(
+  fieldsByLine: ReadonlyMap<number, readonly FixedWidthDecorationField[]>,
+  ranges: readonly VisibleLineRange[],
+): FixedWidthDecorationField[] {
+  const fields: FixedWidthDecorationField[] = [];
+  for (const range of ranges) {
+    for (let line = range.start; line <= range.end; line += 1) {
+      fields.push(...(fieldsByLine.get(line) ?? []));
+    }
+  }
+  return fields;
 }
