@@ -26,15 +26,23 @@
 
 | 層  | スライス      | ブランチ                        | PR の対象     | ベースとヘッド            |
 | --- | ------------- | ------------------------------- | ------------- | ------------------------- |
-| 1   | S1 ダイヤル   | `codex/ntt-billing`             | `main`        | 計画承認後に確定          |
+| 1   | S1 ダイヤル   | `codex/ntt-billing`             | `main`        | PR #25                    |
 | 2   | S2 固定電話   | `codex/ntt-billing-telephone`   | S1 のブランチ | S1 最新通過ヘッドから作成 |
 | 3   | S3 ひかり電話 | `codex/ntt-billing-hikari`      | S2 のブランチ | S2 最新通過ヘッドから作成 |
 | 4   | S4 専用線     | `codex/ntt-billing-leased-line` | S3 のブランチ | S3 最新通過ヘッドから作成 |
 
 <!-- markdownlint-enable MD013 -->
 
-- PR は未公開。計画の比較ベースは `a5f31fa9a3641ab52373aea958f00ea2ecac096f`。
+- S1 を [PR #25](https://github.com/kittybbit/vscode-JFixedViewer/pull/25) として公開した。
+  PR のベースは `a5f31fa9a3641ab52373aea958f00ea2ecac096f`、
+  ヘッドは `a42a7d9857373d0b346c913daf2603c78d30b7ff`。
   S1 の実装ベースは計画コミット `014e316e17c9a96301994daf5af64b695e507c44`。
+- 上記のヘッドで [Verify](https://github.com/kittybbit/vscode-JFixedViewer/actions/runs/44517465873)
+  と [CodeQL](https://github.com/kittybbit/vscode-JFixedViewer/actions/runs/44517459985)
+  が通過した。
+  CodeQL は `refs/pull/25/head` の同じコミットで JavaScript/TypeScript と Actions を解析し、
+  検出は0件だった。適用ルールと4チェックの結果は `ntt-billing-evidence/s1-approval/` に保持する。
+  GitHub がこのヘッドに記録したチェック以外に必須の Cloud ステータスはなかった。
 - 各スライスの完了コミット直後に、その層だけの差分の PR を公開する。
   後続は先行層の最新ヘッドで Verify、CodeQL、必須の GitHub・Cloud チェックが通過してから委任する。
   CodeQL が解析したリビジョンとヘッドの対応、PR URL、ベースとヘッドを本節へ追記する。
@@ -54,7 +62,7 @@
   S1 は帳票に加えて、下記4ロールのモデル変更と専用検証を含む。
   承認対象の識別情報と `plan-review-v4` の判定は「計画レビューの証跡（plan-v4）」を参照する。
   計画コミットと承認の証跡は Git 外の `ntt-billing-evidence/plan-approval-v4/summary.txt` に保持する。
-- S1 の完了承認は `Approved`。S2〜S4 の完了承認、終了承認、マージ承認は `Pending`。
+- S1 と S2 の完了承認は `Approved`。S3・S4 の完了承認、終了承認、マージ承認は `Pending`。
 - 計画承認は列挙した範囲に適用する。各スライスの完了コミット、PR、マージ結果は未記録。
   後続の各承認段階は Main が利用者の承認とレビューを結び付けて追記する。
 
@@ -112,7 +120,7 @@
 
 ## スライス S1. ダイヤル通話料金明細内訳書
 
-- 状態 `SLICE_APPROVED`。独立再レビューと完了承認を完了した。スタックの第1層。
+- 状態 `SLICE_COMMITTED`。完了承認後にコミットし PR #25 を公開した。スタックの第1層。
 - 価値はダイヤル通話の項目と問題を両請求区分で確認できることと、
   今後のロール実行で指定の GPT-6.2 Sol を使えることである。
   R0 と R1〜R6、共通設計・共通検証、後述のモデル設定検証を適用する。
@@ -168,7 +176,8 @@
   `s1-main/min-script-review-fix.log` にある。
   承認は `plan-approval-v4/`、計画レビューは `plan-review-v4/`、
   ロール再読込は `s1-main/codex-role-refresh.txt` を参照する。
-- S1 は独立再レビューと完了承認を完了した。コミットと PR の証跡は公開後に記録する。
+- S1 の完了コミットは `a42a7d9857373d0b346c913daf2603c78d30b7ff`。担当は Main。
+  承認とステージ済み差分の照合結果は `ntt-billing-evidence/s1-approval/` に保持する。
   webpack の asset-size 警告と Qlty 設定の未対応項目警告はあるが、検査は成功した。
 - この機能に個別の `TRACEABILITY.md` はない。R0〜R6 と検証の対応は
   本書と `SPECS.md` に記録し、別ファイルを新設しない。
@@ -217,7 +226,8 @@
 
 ## スライス S2. 電話番号別明細内訳書
 
-- 状態 `PLAN_APPROVED`。依存は S1 の完了コミット・PR 公開・最新チェック通過。第2層。
+- 状態 `SLICE_APPROVED`。独立レビューで指摘0件、利用者の完了承認済み。第2層。
+  実装ベースは S1 の `a42a7d9857373d0b346c913daf2603c78d30b7ff`。
 - 価値は固定電話の請求内訳と合計を両請求区分で確認できること。
   R1〜R6 と共通設計・共通検証を適用する。
 - 承認パスは `src/resource/definitions/ntt.json` の当該形式、
@@ -231,6 +241,109 @@
 - 日本語の欄境界を UTF-8 のバイト位置で検証する。
   仕様で許す負の内訳額に誤診断がなく、数字専用欄の不正値は診断されることを確認する。
 - 完了承認後のコミットと S2 PR の最新チェックを Main が記録してから S3 を委任する。
+
+### S2 の実装と検証（2026-11-19）
+
+- plan-v4 と承認済み計画コミット `014e316e17c9a96301994daf5af64b695e507c44` の範囲で実装した。
+  計画レビューと人による計画承認の証跡は `plan-review-v4/` と `plan-approval-v4/`、
+  先行 PR #25 の Verify・CodeQL と適用ルールは `s1-approval/` にある。
+- 変更パスは `src/resource/definitions/ntt.json`、`src/test/extension.test.ts`、
+  `src/test/support/nttSmoke.ts`、`sample/ntt/K000000000001_202609`、
+  `sample/.gitattributes`、ルートの `README.md` と `CHANGELOG.md`、
+  `sample/README.md`、`docs/requirements/use-cases/uc-display-fixed-width.md`、
+  本書である。S1 の登録と実ホスト入口を再変更せず、S1 の帳票・試験を保持した。
+- R1 はローダーから `telephone_2026@ntt` を解決し、手動選択、拡張子なし K 名の10桁・12桁、
+  10桁番号の先頭 SP 補充を回帰で確認した。
+- R2 は BOM、CRLF、末尾 CRLF、6行の512バイト幅を確認した。
+  実ホスト smoke は `utf8bom`、CRLF、日本語欄の UTF-8 バイト境界、診断なし、書込み0件を確認した。
+- R3 は管理、電話番号別内訳の初回・継続、お客様番号合計の初回・継続、総合計を区別し、
+  内訳1〜16を展開した全フィールド名と幅を照合した。負の内訳額の診断はなく、型表示は `符号付き数値`。
+- R4 は架空値だけのサンプルと利用案内を追加し、当該ファイルの文字コード・改行・末尾 SP を Git 属性で保持した。
+- R5 は未知種別、幅の前後1バイト、数字専用欄の英字・数字/SP混在、全 SP の許容を通常の選択経路で確認した。
+- R6 は西07・東014の比較資料と両請求区分を照合した。配置は共通定義を使い、
+  東西の該当する比較列は `official-2026-11-19/layout-comparison.txt` で差分0。
+  公式サンプルの個別値は転載せず、取得資料と列対応は Git 外の公式資料証跡に保持した。
+- 恒久文書の変更は README、CHANGELOG、サンプル案内、項目表示ユースケースに限定した。
+  この機能に独立した `TRACEABILITY.md` はなく、R1〜R6 と検証の対応は既存の SPECS.md と本書に維持した。
+- 必須のローカル検証は型検査、`test:prepare`、アーキテクチャ7/7、production webpack、
+  デスクトップ安定版53件、Web 安定版の実ホスト smoke、最小版1.100.0で通過した。
+  Web は S1 で確認済みの安定版コミットを再利用し、追加 download を必要としなかった。
+  ログと Qlty の最終証跡は `s2-implementation-2026-11-19/` と
+  `s2-main/min-script-verified.log` に保持する。
+- Qlty 0.645.0 の基準と最終の `check` / `smells` はすべて0件で、最終 `npm run qlty` も通過した。
+  SARIF、終了コード、解析対象一覧、実行ログは `s2-implementation-2026-11-19/qlty/` に保持する。
+  基準と最終の両方で `qlty.toml` の未対応設定に関する警告が記録された。
+- 準備状況はローカル検証完了。S2 の独立実装レビュー、完了承認、完了コミット、PR の必須チェックは Main の後続作業。
+  S2 PR の最新ヘッドチェック前に S3 へ進まない。webpack には既存の Web asset size 警告がある。
+- Main の未追跡 `.serena/` は対象外で変更していない。検証スナップショットと Qlty 対象にも含めていない。
+
+### S2 実装レビュー指摘の修正（2026-11-20）
+
+- `s2-review-v1/summary.txt` の4件を、承認済みS2パス内で修正した。
+  ベースは引き続き `a42a7d9857373d0b346c913daf2603c78d30b7ff`。
+- 51継続は初回行の複製を除き、先頭18バイト、予備45バイト、5項目×16回の320バイト、
+  予備129バイトに変更した。定義は86項目となり、最初と最後の内訳額の位置・型、負額と診断なしを
+  fake host と実ホスト smoke の両方で確認した。通常入力では診断0件。
+- 11と51の継続通番は `02`〜`99` を受け入れ、`00` と非数字通番を未知行として診断する。
+  初回 `01`、継続 `02`・`03`・`99` と範囲外を fake host で確認した。
+- Kサンプルと実ホスト fixture は電話番号1件、明細レコード数 `02`、請求額4567、内訳合計4567を一致させた。
+  51初回の請求件数と91総合計請求件数は電話番号数の `1`。口座名義と氏名はUTF-8で各文字3バイトの
+  半角カナにし、fake host で全レコードの一致を確認した。西日本資料に残る旧予定「2026年1月」と
+  延期後の適用開始「2026年9月」をサンプル案内で説明する。
+- fake host の通常の形式選択では、マルチバイト文字途中の境界診断、別形式からの `utf8bom` 再読込、
+  文書内容、dirty 状態、保存イベント不変を確認した。実ホスト smoke は診断なし、ファイル書込み0件。
+- 型検査、`test:prepare`、使い捨てスナップショットでの安定版 Desktop 53件、安定版 Web smoke、
+  production webpack、最小版1.100.0を通過した。最小版は Main が `/private/tmp/ntt-s2-min-fix-final.m3AHaN`
+  から実行し、拡張 active・exit 0。生成物3件の SHA は `s2-main/min-script-review-fix-final.log` にある。
+- Qlty 0.645.0 の最終 `npm run qlty`、`check`、`smells` は0件。
+  `check` は `--no-cache` で実行し、`smells` には当該バージョンの CLI に無キャッシュ指定がないことを確認した。
+  SARIF、終了コード、実行ログ、Qlty の設定・入力一覧 `qlty-final-metadata.txt` と
+  `qlty-final-input-paths.txt`、`final-files.sha256`、`final-diff.patch`、
+  `final-diff.sha256` は
+  `s2-review-fix-2026-11-20/` に保持する。
+  Qlty の基準と適用範囲、旧警告は `s2-implementation-2026-11-19/qlty/` の記録を再利用した。
+- TRACEABILITY.md は設けていない。R1〜R6 の要件対応は SPECS.md と本書で維持し、今回追加した
+  R2/R3/R4/R5 の境界検証を本書に反映した。webpack の既存 Web asset size 警告は継続する。
+
+### S2 再レビュー指摘の修正（2026-11-20）
+
+- 再レビューの残り2件を承認済みパス内で修正した。S1 の `dial_meisai_2026` 定義は、63項目を含む
+  オブジェクト全体をベース `a42a7d9857373d0b346c913daf2603c78d30b7ff` のバイト列に復元した。
+  S2 の `telephone_2026` 定義オブジェクトは変更していない。
+- 10桁請求テストは6行すべての顧客番号を先頭SP2文字＋10桁に統一した。管理・51初回/継続・91は
+  先頭12バイト、11初回/継続は各レコードの顧客番号欄を置換し、6欄の値、512バイト幅、診断0件を確認した。
+- 型検査、`test:prepare`、安定版 Desktop 53件、Web smoke、アーキテクチャ7/7、production webpack、
+  Qlty の `npm run qlty`・全体 `check`・`smells` は通過した。前回 Main が実行した最小版1.100.0の
+  3生成物と、extension/web bundle、production bundleのSHAは今回の生成物と一致した。
+  前回の最小版証跡（`s2-main/min-script-review-fix-final.log`）を再利用した。
+- 最新の SARIF、設定・全125入力パス、実行ログ、生成物比較、S1バイト一致確認は
+  `s2-review-fix-2026-11-20/re-review/` に保持する。最終10パスのSHA一覧と差分SHA-256は
+  `final-files.sha256` と `final-diff.sha256`、差分本体は `final-diff.patch` に記録した。
+  以前の検証メタデータ追記時の候補ハッシュは `final-diff-before-task-metadata.*` に退避し、
+  その候補からの変化は `candidate-history.txt` に記録した。
+
+### S2 の独立実装レビュー
+
+- `implementation-reviewer` による3回目の判定は Ready、指摘0件。
+  先行するレビューの指摘を解消し、西日本・東日本の公式資料4点と
+  6種類のレコード全294項目の名称・型・幅・順序を照合した。
+- レビュー対象は S1 ヘッドに対する10パス。下記は対象を特定する
+  `final-files.sha256` と `final-diff.patch` の SHA-256。
+
+  ```text
+  55ad5d2c8b677aaf629841fe0357905846ed6d01d7f192bf0dcd95bf96b0732d
+  36677c282eb9ada5448707c54083a463c7995731fe75ea0807883c6342eac579
+  ```
+
+- 判定と本節の追記に対する検証は Git 外の `ntt-billing-evidence/s2-review-v3/` に保持する。
+- 2026-11-20、このチャットで利用者が S2 の完了差分を承認した。
+  対象は上記のレビュー済み10パスと、別途検証した状態記録。承認対象一覧の SHA-256 は次のとおり。
+
+  ```text
+  1928bfbebb6587dc1ceaead9bce885982c4d7d00a3ff9fe1756ee91e83b7e404
+  ```
+
+- 完了コミットと PR の証跡は Git 外の `ntt-billing-evidence/s2-approval/` に保持する。
 
 ## スライス S3. 電話番号別明細内訳書（ひかり電話）
 
