@@ -1,6 +1,6 @@
 name = "feature-author"
 description = "計画の前に、対象機能を1件選び、目的と範囲を記録する。"
-model = "gpt-6.1-sol"
+model = "gpt-6.2-sol"
 model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
 developer_instructions = """

@@ -1,5 +1,6 @@
 import clear from "../../resource/definitions/clear.json";
 import jpx from "../../resource/definitions/jpx.json";
+import ntt from "../../resource/definitions/ntt.json";
 import zengin from "../../resource/definitions/zengin.json";
 import type {
   FixedWidthDefinition,
@@ -47,7 +48,7 @@ function compileRows(rows: readonly RawRow[]): FixedWidthRowRule[] {
 }
 
 export function loadBuiltInDefinitions(): FixedWidthDefinition[] {
-  const rawDefinitions = [clear, zengin, jpx] as RawDefinition[];
+  const rawDefinitions = [clear, zengin, jpx, ntt] as RawDefinition[];
   return rawDefinitions.flatMap((definition) =>
     definition.files.map((file) => ({
       fileType: `${file.file_type}@${definition.type}`,

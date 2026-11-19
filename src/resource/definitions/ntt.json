@@ -1,0 +1,114 @@
+{
+  "type": "ntt",
+  "name": "NTT",
+  "files": [
+    {
+      "file_type": "dial_meisai_2026",
+      "name": "ダイヤル通話料金明細内訳書（2026年9月以降）",
+      "finame_pattern": "^M(?:[0-9]{10}|[0-9]{12})_[0-9]{6}$",
+      "encoding": "utf8bom",
+      "length_unit": "byte",
+      "rows": [
+        {
+          "name": "共通管理レコード",
+          "condition": "^1",
+          "fields": [
+            { "name": "レコード識別", "length": 1, "type": "C" },
+            { "name": "お客様番号", "length": 12, "type": "C" },
+            { "name": "ファイル作成日付", "length": 8, "type": "C" },
+            { "name": "料金月", "length": 6, "type": "C" },
+            { "name": "ファイル作成通番", "length": 2, "type": "C" },
+            { "name": "予備", "length": 99, "type": "C" }
+          ]
+        },
+        {
+          "name": "電番管理レコード",
+          "condition": "^2",
+          "fields": [
+            { "name": "レコード識別", "length": 1, "type": "C" },
+            { "name": "お客様番号", "length": 12, "type": "C" },
+            { "name": "電話番号", "length": 13, "type": "C" },
+            { "name": "サービス区分", "length": 2, "type": "C" },
+            { "name": "送付明細呼数", "length": 7, "type": "C" },
+            { "name": "利用月日初日", "length": 8, "type": "C" },
+            { "name": "利用月日末日", "length": 8, "type": "C" },
+            { "name": "各種サービス番号", "length": 11, "type": "C" },
+            { "name": "出力形式", "length": 1, "type": "C" },
+            { "name": "利用内訳", "length": 2, "type": "C" },
+            { "name": "料金月", "length": 6, "type": "C" },
+            { "name": "予備", "length": 57, "type": "C" }
+          ]
+        },
+        {
+          "name": "通話明細レコード",
+          "condition": "^3",
+          "fields": [
+            { "name": "レコード識別", "length": 1, "type": "C" },
+            { "name": "お客様番号", "length": 12, "type": "C" },
+            { "name": "電話番号", "length": 13, "type": "C" },
+            { "name": "サービス区分", "length": 2, "type": "C" },
+            { "name": "通信元電話番号", "length": 13, "type": "C" },
+            { "name": "通話月日", "length": 4, "type": "C" },
+            { "name": "通話開始時刻", "length": 6, "type": "C" },
+            { "name": "着信電話番号", "length": 13, "type": "C" },
+            { "name": "県名", "length": 2, "type": "C" },
+            { "name": "通話時間", "length": 8, "type": "C" },
+            { "name": "通話料金", "length": 10, "type": "N" },
+            { "name": "発信県名", "length": 2, "type": "C" },
+            { "name": "通話種別", "length": 3, "type": "C" },
+            { "name": "昼夜別", "length": 3, "type": "C" },
+            { "name": "フリーダイヤルサービス種別", "length": 1, "type": "C" },
+            { "name": "発ＭＡ", "length": 3, "type": "C" },
+            { "name": "利用内訳", "length": 2, "type": "C" },
+            { "name": "料金月", "length": 6, "type": "C" },
+            { "name": "予備", "length": 24, "type": "C" }
+          ]
+        },
+        {
+          "name": "電番合計レコード",
+          "condition": "^4",
+          "fields": [
+            { "name": "レコード識別", "length": 1, "type": "C" },
+            { "name": "お客様番号", "length": 12, "type": "C" },
+            { "name": "電話番号", "length": 13, "type": "C" },
+            { "name": "サービス区分", "length": 2, "type": "C" },
+            { "name": "利用区分", "length": 2, "type": "C" },
+            { "name": "合計金額", "length": 9, "type": "N" },
+            { "name": "非希望時合計金額", "length": 9, "type": "N" },
+            { "name": "請求額金額", "length": 9, "type": "N" },
+            { "name": "通話時間", "length": 10, "type": "C" },
+            { "name": "利用内訳", "length": 2, "type": "C" },
+            { "name": "料金月", "length": 6, "type": "C" },
+            { "name": "予備", "length": 53, "type": "C" }
+          ]
+        },
+        {
+          "name": "割引情報レコード",
+          "condition": "^5",
+          "fields": [
+            { "name": "レコード識別", "length": 1, "type": "C" },
+            { "name": "お客様番号", "length": 12, "type": "C" },
+            { "name": "電話番号", "length": 13, "type": "C" },
+            { "name": "サービス区分", "length": 2, "type": "C" },
+            { "name": "利用区分", "length": 2, "type": "C" },
+            { "name": "割引対象通話料", "length": 10, "type": "N" },
+            { "name": "利用内訳", "length": 2, "type": "C" },
+            { "name": "料金月", "length": 6, "type": "C" },
+            { "name": "予備", "length": 80, "type": "C" }
+          ]
+        },
+        {
+          "name": "終了レコード",
+          "condition": "^6",
+          "fields": [
+            { "name": "レコード識別", "length": 1, "type": "C" },
+            { "name": "ファイル作成数", "length": 2, "type": "C" },
+            { "name": "総出力レコード数", "length": 9, "type": "N" },
+            { "name": "料金月", "length": 6, "type": "C" },
+            { "name": "予備", "length": 110, "type": "C" }
+          ]
+        }
+      ]
+    }
+  ]
+}

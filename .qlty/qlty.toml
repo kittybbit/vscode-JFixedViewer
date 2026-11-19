@@ -13,16 +13,14 @@
 # Or for a full reference, visit https://qlty.sh/d/qlty-toml
 config_version = "0"
 
-[sources.default]
-repository = "https://github.com/kittybbit/vscode-JFixedViewer.git"
-branch = "main"
-
+# Qlty の既定の除外を維持し、Serena の作業ファイルを追加で除外する。
 exclude_patterns = [
   "*_min.*",
   "*-min.*",
   "*.min.*",
-  "**/*.d.ts",
   "**/.yarn/**",
+  "**/.serena/**",
+  "**/*.d.ts",
   "**/bower_components/**",
   "**/build/**",
   "**/cache/**",
@@ -32,6 +30,7 @@ exclude_patterns = [
   "**/dist/**",
   "**/extern/**",
   "**/external/**",
+  "**/fixtures/**",
   "**/generated/**",
   "**/Godeps/**",
   "**/gradlew/**",
@@ -42,9 +41,11 @@ exclude_patterns = [
   "**/target/**",
   "**/testdata/**",
   "**/vendor/**",
-  "**/assets/**",
-  "**/.vscode-test-web/**",
 ]
+
+[sources.default]
+repository = "https://github.com/kittybbit/vscode-JFixedViewer.git"
+branch = "main"
 
 test_patterns = [
   "**/test/**",

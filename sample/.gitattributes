@@ -1,2 +1,3 @@
 jpx/SH_DER.csv text eol=lf whitespace=-blank-at-eol
 zengin/*.dat text eol=lf whitespace=-blank-at-eol
+ntt/M000000000001_202609 -text whitespace=-blank-at-eol
