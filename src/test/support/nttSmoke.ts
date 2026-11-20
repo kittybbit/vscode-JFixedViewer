@@ -13,6 +13,8 @@ const telephoneNumber = "00-0000-0000";
 const billingMonth = "202609";
 const telephoneFileType = "telephone_2026@ntt";
 const telephoneFileName = "K000000000001_202609";
+const hikariFileType = "hikari_2026@ntt";
+const hikariFileName = "N0000000001_202609";
 
 type FieldValue = readonly [number, string, ("left" | "right")?];
 
@@ -247,6 +249,7 @@ export async function verifyNttDialSmoke(): Promise<void> {
   }
 
   await verifyNttTelephoneSmoke();
+  await verifyNttHikariSmoke();
 }
 
 function utf8Record(fields: readonly FieldValue[]): string {
@@ -349,6 +352,108 @@ export function createTelephoneSmokeLines(): string[] {
       [157, ""],
     ]),
     utf8Record([...totalHead("02"), [45, ""], ...details(true), [129, ""]]),
+    utf8Record([
+      [12, customerNumber],
+      [2, "91"],
+      [12, "000000004567"],
+      [8, "00000001"],
+      [478, ""],
+    ]),
+  ];
+}
+
+function hikariBreakdownGroup(
+  index: number,
+  amount = "00000000000",
+): FieldValue[] {
+  return [
+    [2, index === 1 ? "02" : "01"],
+    [4, `3${String(index).padStart(3, "0")}`],
+    [11, amount],
+    [2, "11"],
+  ];
+}
+
+const hikariZeroAmounts = Array.from({ length: 17 }, () => "00000000000");
+const hikariSampleAmounts = [
+  "-0000000123",
+  "00000004690",
+  ...hikariZeroAmounts.slice(2),
+];
+
+function hikariDetailGroups(amounts: string[]): FieldValue[] {
+  return amounts.flatMap((amount, index) =>
+    hikariBreakdownGroup(index + 1, amount),
+  );
+}
+
+export function createHikariSmokeLines(): string[] {
+  const customerNumber = "  0000000001";
+  const telephoneNumber = "0799998888";
+  const detailHead = (recordNumber: string): FieldValue[] => [
+    [10, telephoneNumber],
+    [2, "  "],
+    [2, "11"],
+    [2, recordNumber],
+    [2, "02"],
+    [12, customerNumber],
+  ];
+  const totalHead = (recordNumber: string): FieldValue[] => [
+    [12, customerNumber],
+    [2, "51"],
+    [2, recordNumber],
+    [2, "02"],
+  ];
+  const accountName = "ﾐﾅﾄｶｲｼｬ".repeat(10).slice(0, 40);
+  const recipientName = "ﾔﾏﾀﾛｳ".repeat(10).slice(0, 50);
+
+  return [
+    utf8Record([
+      [12, customerNumber],
+      [2, "01"],
+      [6, billingMonth],
+      [1, "5"],
+      [491, ""],
+    ]),
+    utf8Record([
+      ...detailHead("01"),
+      [1, "0"],
+      [2, "03"],
+      [4, "0912"],
+      [4, "0928"],
+      [11, "00000004567"],
+      [11, "00000004567"],
+      ...hikariDetailGroups(hikariSampleAmounts),
+      [126, ""],
+    ]),
+    utf8Record([
+      ...detailHead("02"),
+      [1, ""],
+      [2, "03"],
+      [30, ""],
+      ...hikariDetailGroups(hikariZeroAmounts),
+      [126, ""],
+    ]),
+    utf8Record([
+      ...totalHead("01"),
+      [15, ""],
+      [4, "0912"],
+      [4, "0928"],
+      [11, "00000004567"],
+      [11, "00000004567"],
+      [8, "00000001"],
+      [7, "0000000"],
+      [7, "0000000"],
+      [120, accountName],
+      [150, recipientName],
+      [157, ""],
+    ]),
+    utf8Record([
+      ...totalHead("02"),
+      [45, ""],
+      ...hikariDetailGroups(hikariSampleAmounts),
+      [126, ""],
+    ]),
     utf8Record([
       [12, customerNumber],
       [2, "91"],
@@ -522,6 +627,212 @@ async function verifyNttTelephoneSmoke(): Promise<void> {
         provider.readCount >= 1 &&
         provider.writeCount === 0,
       "NTT 電話番号別レコードの読込と描画で文書変更または書込みが発生しました。",
+    );
+  } finally {
+    session.dispose();
+    editorDecorations.dispose();
+    if (editor) {
+      await vscode.commands.executeCommand(
+        "workbench.action.closeActiveEditor",
+      );
+    }
+    registration.dispose();
+    provider.dispose();
+  }
+}
+
+async function verifyNttHikariSmoke(): Promise<void> {
+  const lines = createHikariSmokeLines();
+  const bytes = createUtf8BomBytes(lines);
+  const scheme = `jfixedviewerntthikari${Date.now()}`;
+  const provider = new ReadOnlyNttProvider(hikariFileName, bytes);
+  const registration = vscode.workspace.registerFileSystemProvider(
+    scheme,
+    provider,
+    { isCaseSensitive: true },
+  );
+  const uri = vscode.Uri.parse(`${scheme}:/${hikariFileName}`);
+  const definition = loadBuiltInDefinitions().find(
+    ({ fileType }) => fileType === hikariFileType,
+  );
+  if (!definition) {
+    throw new Error("NTT ひかり電話形式が実ローダーに登録されていません。");
+  }
+
+  const editorDecorations = new EditorDecorations();
+  const decoration = createFixedWidthDecoration(
+    loadBuiltInDefinitions(),
+    new VscodeTextEncodingAdapter(),
+  );
+  const session = new DocumentRenderSession(decoration, editorDecorations);
+  let editor: vscode.TextEditor | undefined;
+  try {
+    const opened = await vscode.workspace.openTextDocument(uri);
+    const encodingResult = await ensureDocumentEncoding(opened, "utf8bom");
+    if (!encodingResult.ok) {
+      throw new Error(
+        "VS Code が NTT ひかり電話形式を UTF-8 BOM で再読込できません。",
+      );
+    }
+    const document = encodingResult.document;
+    const originalText = document.getText();
+    verify(
+      document.encoding === "utf8bom",
+      "NTT ひかり電話形式の文書 encoding が utf8bom ではありません。",
+    );
+    verify(
+      document.eol === vscode.EndOfLine.CRLF,
+      "NTT ひかり電話形式の CRLF が実ホストで認識されません。",
+    );
+    verify(
+      lines.every((line, index) => document.lineAt(index).text === line),
+      "BOM と CRLF を除いた NTT ひかり電話レコード内容が一致しません。",
+    );
+
+    const analysis = await decoration.analyze({
+      fileType: hikariFileType,
+      lines: lines.map((text, line) => ({
+        line,
+        text,
+        isEmptyOrWhitespace: /^\s*$/u.test(text),
+      })),
+      validationEnabled: true,
+      currentEncoding: document.encoding,
+    });
+    const accountName = analysis.fields.find(
+      (field) => field.line === 3 && field.fieldName === "口座名義",
+    );
+    const customerNumbers = analysis.fields.filter(
+      (field) => field.fieldName === "お客様番号",
+    );
+    const firstTotalCurrentMonth = analysis.fields.find(
+      (field) => field.line === 3 && field.fieldName === "通話料・今月分",
+    );
+    const firstAmount = analysis.fields.find(
+      (field) => field.line === 1 && field.fieldName === "内訳額（1）",
+    );
+    const lastAmount = analysis.fields.find(
+      (field) => field.line === 4 && field.fieldName === "内訳額（17）",
+    );
+    verify(
+      analysis.failure === undefined,
+      "NTT ひかり電話スモークの6レコードを解析できません。",
+    );
+    verify(
+      analysis.issues.length === 0,
+      "NTT ひかり電話スモークの6レコードに検証上の問題があります。",
+    );
+    verify(
+      analysis.fields.length === 258,
+      "NTT ひかり電話スモークの6レコードに項目数の問題があります。",
+    );
+    verify(
+      JSON.stringify(
+        customerNumbers.map((field) => [
+          field.line,
+          field.start,
+          field.end,
+          lines[field.line]?.slice(field.start, field.end),
+        ]),
+      ) ===
+        JSON.stringify(
+          [
+            [0, 0],
+            [1, 18],
+            [2, 18],
+            [3, 0],
+            [4, 0],
+            [5, 0],
+          ].map(([line, start]) => [
+            line,
+            start,
+            Number(start) + 12,
+            "  0000000001",
+          ]),
+        ),
+      "NTT ひかり電話の全6行でお客様番号の位置・幅・値が一致しません。",
+    );
+    verify(
+      JSON.stringify([
+        firstTotalCurrentMonth?.start,
+        firstTotalCurrentMonth?.end,
+        firstTotalCurrentMonth?.type,
+        lines[3]?.slice(41, 52),
+      ]) === JSON.stringify([41, 52, "N", "00000004567"]),
+      "NTT ひかり電話の51初回の通話料・今月分の位置・幅・型・値が一致しません。",
+    );
+    verify(
+      accountName?.start === 85,
+      "NTT ひかり電話の半角カナ欄の開始位置が一致しません。",
+    );
+    verify(
+      accountName?.end === 205,
+      "NTT ひかり電話の半角カナ欄の終了位置が一致しません。",
+    );
+    verify(
+      accountName?.displayStart === 85,
+      "NTT ひかり電話の半角カナ欄の表示開始位置が一致しません。",
+    );
+    verify(
+      accountName?.displayEnd === 125,
+      "NTT ひかり電話の半角カナ欄の表示終了位置が一致しません。",
+    );
+    verify(
+      accountName?.lengthUnit === "byte",
+      "NTT ひかり電話の半角カナ欄の UTF-8 バイト単位が一致しません。",
+    );
+    verify(
+      JSON.stringify([
+        firstAmount?.start,
+        firstAmount?.end,
+        firstAmount?.type,
+        lines[1]?.slice(69, 80),
+        lastAmount?.start,
+        lastAmount?.end,
+        lastAmount?.type,
+        lines[4]?.slice(373, 384),
+      ]) ===
+        JSON.stringify([
+          69,
+          80,
+          "符号付き数値",
+          "-0000000123",
+          373,
+          384,
+          "符号付き数値",
+          "00000000000",
+        ]),
+      "NTT ひかり電話の内訳1と17の位置・型・値が一致しません。",
+    );
+
+    editor = await vscode.window.showTextDocument(document, {
+      preview: false,
+    });
+    const request = session.beginSelection(document, hikariFileType);
+    verify(
+      session.activateSelection(request),
+      "NTT ひかり電話形式を実ホストのレンダーセッションへ適用できません。",
+    );
+    const rendered = await session.render(request);
+    verify(rendered === true, "NTT ひかり電話の実ホスト描画が完了しません。");
+    verify(
+      editorDecorations.has(editor) &&
+        session.getSelectedFileType(uri.toString()) === hikariFileType,
+      "NTT ひかり電話の項目装飾が実ホストに適用されません。",
+    );
+    verify(
+      vscode.languages
+        .getDiagnostics(document.uri)
+        .filter((diagnostic) => diagnostic.source === "JFixedViewer").length ===
+        0,
+      "正常な NTT ひかり電話レコードに診断が発生しました。",
+    );
+    verify(
+      !document.isDirty &&
+        document.getText() === originalText &&
+        provider.readCount >= 1 &&
+        provider.writeCount === 0,
+      "NTT ひかり電話レコードの読込と描画で文書変更または書込みが発生しました。",
     );
   } finally {
     session.dispose();

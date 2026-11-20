@@ -24,12 +24,12 @@
 
 <!-- markdownlint-disable MD013 -->
 
-| 層  | スライス      | ブランチ                        | PR の対象     | ベースとヘッド            |
-| --- | ------------- | ------------------------------- | ------------- | ------------------------- |
-| 1   | S1 ダイヤル   | `codex/ntt-billing`             | `main`        | PR #25                    |
-| 2   | S2 固定電話   | `codex/ntt-billing-telephone`   | S1 のブランチ | S1 最新通過ヘッドから作成 |
-| 3   | S3 ひかり電話 | `codex/ntt-billing-hikari`      | S2 のブランチ | S2 最新通過ヘッドから作成 |
-| 4   | S4 専用線     | `codex/ntt-billing-leased-line` | S3 のブランチ | S3 最新通過ヘッドから作成 |
+| 層  | スライス      | ブランチ                        | PR の対象     | ベースとヘッド        |
+| --- | ------------- | ------------------------------- | ------------- | --------------------- |
+| 1   | S1 ダイヤル   | `codex/ntt-billing`             | `main`        | PR #25                |
+| 2   | S2 固定電話   | `codex/ntt-billing-telephone`   | S1 のブランチ | PR #26                |
+| 3   | S3 ひかり電話 | `codex/ntt-billing-hikari`      | S2 のブランチ | PR #26 最新通過ヘッド |
+| 4   | S4 専用線     | `codex/ntt-billing-leased-line` | S3 のブランチ | S3 最新通過ヘッド     |
 
 <!-- markdownlint-enable MD013 -->
 
@@ -62,7 +62,7 @@
   S1 は帳票に加えて、下記4ロールのモデル変更と専用検証を含む。
   承認対象の識別情報と `plan-review-v4` の判定は「計画レビューの証跡（plan-v4）」を参照する。
   計画コミットと承認の証跡は Git 外の `ntt-billing-evidence/plan-approval-v4/summary.txt` に保持する。
-- S1 と S2 の完了承認は `Approved`。S3・S4 の完了承認、終了承認、マージ承認は `Pending`。
+- S1〜S3 の完了承認は `Approved`。S4 の完了承認、終了承認、マージ承認は `Pending`。
 - 計画承認は列挙した範囲に適用する。各スライスの完了コミット、PR、マージ結果は未記録。
   後続の各承認段階は Main が利用者の承認とレビューを結び付けて追記する。
 
@@ -226,7 +226,7 @@
 
 ## スライス S2. 電話番号別明細内訳書
 
-- 状態 `SLICE_APPROVED`。独立レビューで指摘0件、利用者の完了承認済み。第2層。
+- 状態 `SLICE_COMMITTED`。独立レビューと完了承認を経て、PR #26 を公開した。第2層。
   実装ベースは S1 の `a42a7d9857373d0b346c913daf2603c78d30b7ff`。
 - 価値は固定電話の請求内訳と合計を両請求区分で確認できること。
   R1〜R6 と共通設計・共通検証を適用する。
@@ -345,9 +345,29 @@
 
 - 完了コミットと PR の証跡は Git 外の `ntt-billing-evidence/s2-approval/` に保持する。
 
+### S2 の公開と必須チェック
+
+- 完了コミットは
+  `c4d206f9b0d5d0fff5eae2431f6bc558bd35d0ff`。
+  [PR #26](https://github.com/kittybbit/vscode-JFixedViewer/pull/26) のベースは
+  S1 の `a42a7d9857373d0b346c913daf2603c78d30b7ff`。
+- 初回の Verify で作業記録の Markdown に MD013 が1件出た。
+  独立レビューで指摘0件の修正を、2026-11-20に利用者が限定完了承認した。
+  対象は本書の該当段落のみ。Main が修正をコミットして同じ PR を更新した。
+- 最新ヘッド `6aeb892e2ca9bb0e2f402e7494c37f8b334fca6e` で
+  [Verify](https://github.com/kittybbit/vscode-JFixedViewer/actions/runs/44643311034)
+  と [CodeQL](https://github.com/kittybbit/vscode-JFixedViewer/actions/runs/44643301663)
+  が通過した。CodeQL は同じヘッドの Actions と JavaScript/TypeScript を解析し、検出は0件。
+  4件のチェックがすべて成功した。このヘッドから S3 のブランチを作成した。
+- 限定完了承認、修正差分、PR のチェック結果は
+  `ntt-billing-evidence/s2-approval/verify-44637600962/` に保持する。
+
 ## スライス S3. 電話番号別明細内訳書（ひかり電話）
 
-- 状態 `PLAN_APPROVED`。依存は S2 の完了コミット・PR 公開・最新チェック通過。第3層。
+- 状態 `SLICE_APPROVED`。独立再レビューで指摘0件。利用者の完了承認済み。
+  ベース `6aeb892e2ca9bb0e2f402e7494c37f8b334fca6e`。第3層。
+- 計画承認は計画コミット `014e316e17c9a96301994daf5af64b695e507c44` と
+  `plan-review-v4/`、`plan-approval-v4/` の証跡に基づく。
 - 価値はひかり電話の専用項目と内訳を確認できること。
   R1〜R6 と共通設計・共通検証を適用する。
 - 承認パスは `src/resource/definitions/ntt.json` の当該形式、
@@ -356,9 +376,56 @@
 - 追加サンプルは `sample/ntt/N0000000001_202609`。
 - 管理、電話番号別内訳の初回・継続、合計の初回・継続、総合計を含め、全通常行512バイト。
   固定電話の定義を流用して項目を省略せず、ひかり電話の反復数と各幅を確認する。
+- ひかり電話の電話番号別内訳は17組の内訳を持ち、内訳額には日割表示コードがない。
+  管理レコードの網識別コードは `5`。ファイル名は10桁の N 形式。
+- 51継続レコードも17組の内訳とし、各明細・合計の初回と継続で通番を区別する。
+- 独立レビューのP2指摘を受け、51初回の byte[41,52) を
+  `通話料・今月分` 11B `N` とし、11初回と同じ架空値にそろえた。
+  標準サンプルと実ホストfixtureの全6行で、お客様番号欄を
+  「先頭2桁の空白と10桁の0000000001」に統一した。
 - 網識別コード `5`、日本語欄、符号付き内訳額、
   先頭識別子の前にある ASCII の幅と通番による初回・継続の分岐を確認する。
+- S3 の変更パスは `src/resource/definitions/ntt.json`、`src/test/extension.test.ts`、
+  `src/test/support/nttSmoke.ts`、`sample/ntt/N0000000001_202609`、`sample/.gitattributes`、
+  `sample/README.md`、`README.md`、`CHANGELOG.md`、
+  `docs/requirements/use-cases/uc-display-fixed-width.md`、本書。
+- 受け入れ条件は6レコードすべての512バイト幅、UTF-8 BOM と CRLF、17組の内訳、
+  網識別コード `5`、符号付き額、初回・継続の選択、10桁の N ファイル名。
+  境界テストで短長行、未知通番、N 型、UTF-8 の項目境界、形式切替後の文書内容と未保存状態を確認する。
+  51初回の11B N型の位置・ホバー・不正値診断と、6行のお客様番号の位置・幅も確認する。
+- `npm run test:prepare`、`npx tsc --noEmit -p .`、
+  `npm run test:architecture`（7件）、production webpack を通過。
+  VS Code 1.147.0 デスクトップで54件、最小版1.100.0と Web 1.147.0で実ホストのスモークが成功した。
+  最小版/Web の使い捨て実行成果物はローカルの最終生成物と SHA-256 が一致する。
+- Qlty 0.645.0 の `npm run qlty`、基準と最終の全体 SARIF 検査、
+  PR 対象 Markdown の `markdownlint-cli2@0.22.0`、`git diff --check` は通過。
+  詳細ログ、SARIF、パス一覧、最終 SHA-256 は
+  `ntt-billing-evidence/s3-implementation-2026-11-20/` に保持する。
+- 独立した `TRACEABILITY.md` はなく、既存の要件・受入条件と本書の検証記録で追跡するため新設しない。
+- 独立レビューの指摘2件を修正し、上記の境界テストと最終検証を更新した。
+  サンプルは架空値で、実際の請求書データとの照合はしていない。
 - 完了承認後のコミットと S3 PR の最新チェックを Main が記録してから S4 を委任する。
+
+### S3 の独立実装レビュー
+
+- 独立再レビューは Ready、指摘0件。西11と東018の比較表に照らし、
+  全6種類のレコードの258項目を照合した。先行する定義のバイト一致も確認した。
+- レビュー対象は S2 ヘッドに対する10パス。以下は対象一覧と候補差分の SHA-256。
+
+  ```text
+  b463fd9ef6d5387e1bd6e9217f291e1b0274773febcf0b3a0a545e2b3cc2168c
+  c940a1b20102e68fa75bd320c8bc0012944f8a7dfd10a676f05ed44f342e7f70
+  ```
+
+- 判定と状態追記の検証は Git 外の `ntt-billing-evidence/s3-review-v2/` に保持する。
+- 2026-11-21、このチャットで利用者が S3 の完了差分を承認した。
+  対象は上記10パスと状態記録。承認対象一覧の SHA-256 は次のとおり。
+
+  ```text
+  412389c132570efb957adfa2fdad5c5fd22c8d3e39445da548e23a29420b7895
+  ```
+
+- 完了コミットと PR の証跡は Git 外の `ntt-billing-evidence/s3-approval/` に保持する。
 
 ## スライス S4. 専用線番号別明細内訳書
 
