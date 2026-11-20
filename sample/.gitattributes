@@ -3,3 +3,4 @@ zengin/*.dat text eol=lf whitespace=-blank-at-eol
 ntt/M000000000001_202609 -text whitespace=-blank-at-eol
 ntt/K000000000001_202609 -text whitespace=-blank-at-eol
 ntt/N0000000001_202609 -text whitespace=-blank-at-eol
+ntt/S0000000001_202609 -text whitespace=-blank-at-eol

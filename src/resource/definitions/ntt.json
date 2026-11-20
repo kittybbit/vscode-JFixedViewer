@@ -2959,6 +2959,714 @@
           ]
         }
       ]
+    },
+    {
+      "file_type": "leased_line_2026",
+      "name": "専用線番号別明細内訳書（2026年9月以降）",
+      "finame_pattern": "^S[0-9]{10}_[0-9]{6}$",
+      "encoding": "utf8bom",
+      "length_unit": "byte",
+      "rows": [
+        {
+          "name": "管理レコード",
+          "condition": "^01",
+          "fields": [
+            {
+              "name": "レコード区分",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "お客様番号",
+              "length": 12,
+              "type": "C"
+            },
+            {
+              "name": "請求年月",
+              "length": 6,
+              "type": "C"
+            },
+            {
+              "name": "網識別コード",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 679,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "ヘッダレコード",
+          "condition": "^11",
+          "fields": [
+            {
+              "name": "レコード区分",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "計上事業所コード",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "企業等コード",
+              "length": 7,
+              "type": "C"
+            },
+            {
+              "name": "付加コード",
+              "length": 5,
+              "type": "C"
+            },
+            {
+              "name": "会社識別コード",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "作成年月日",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "請求年月",
+              "length": 6,
+              "type": "C"
+            },
+            {
+              "name": "支払い期限",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 655,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "データレコード（専用線回線番号単位）",
+          "condition": "^12",
+          "fields": [
+            {
+              "name": "レコード区分",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "回線ＩＤ",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "地域区分コード",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "会社識別コード",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "申込内容",
+              "length": 33,
+              "type": "C"
+            },
+            {
+              "name": "開通年月日",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "承諾年月日",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "承諾番号",
+              "length": 11,
+              "type": "C"
+            },
+            {
+              "name": "回線名：上位事業所名",
+              "length": 75,
+              "type": "C"
+            },
+            {
+              "name": "回線名：下位事業所名",
+              "length": 75,
+              "type": "C"
+            },
+            {
+              "name": "回線名：分岐名",
+              "length": 75,
+              "type": "C"
+            },
+            {
+              "name": "回線名：分類名",
+              "length": 75,
+              "type": "C"
+            },
+            {
+              "name": "回線名：回線番号",
+              "length": 5,
+              "type": "C"
+            },
+            {
+              "name": "回線名：回線種類",
+              "length": 75,
+              "type": "C"
+            },
+            {
+              "name": "回線名：回線符号コード",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "お客様管理番号",
+              "length": 75,
+              "type": "C"
+            },
+            {
+              "name": "合計金額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "基本回線料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "分岐回線料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "分岐料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "多重アクセス減額料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "高額利用割引額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "機械専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "配線設備専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "回線終端装置専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "その他専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "日割額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "工事に関する費用",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "加減算額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "消費税相当額",
+              "length": 12,
+              "type": "N"
+            }
+          ]
+        },
+        {
+          "name": "トレーラレコード（計上事業所単位）",
+          "condition": "^13",
+          "fields": [
+            {
+              "name": "レコード区分",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "合計金額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "基本回線専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "分岐回線専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "分岐料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "多重アクセス減額料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "高額利用割引額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "機械専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "配線設備専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "回線終端装置専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "その他専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "日割額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "工事に関する費用",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "加減算額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "消費税相当額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "延滞利息",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "回線数計",
+              "length": 7,
+              "type": "N"
+            },
+            {
+              "name": "予備",
+              "length": 511,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "会社別トレーラレコード（NTT東日本）",
+          "condition": "^14",
+          "fields": [
+            {
+              "name": "レコード区分",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "合計金額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "基本回線専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "分岐回線専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "分岐料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "多重アクセス減額料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "高額利用割引額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "機械専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "配線設備専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "回線終端装置専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "その他専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "日割額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "工事に関する費用",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "加減算額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "消費税相当額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "延滞利息",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "回線数計",
+              "length": 7,
+              "type": "N"
+            },
+            {
+              "name": "予備",
+              "length": 511,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "会社別トレーラレコード（NTT西日本）",
+          "condition": "^15",
+          "fields": [
+            {
+              "name": "レコード区分",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "合計金額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "基本回線専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "分岐回線専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "分岐料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "多重アクセス減額料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "高額利用割引額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "機械専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "配線設備専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "回線終端装置専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "その他専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "日割額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "工事に関する費用",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "加減算額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "消費税相当額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "延滞利息",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "回線数計",
+              "length": 7,
+              "type": "N"
+            },
+            {
+              "name": "予備",
+              "length": 511,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "エンドレコード（専用線ID単位）",
+          "condition": "^21",
+          "fields": [
+            {
+              "name": "レコード区分",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "合計金額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "基本回線専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "分岐回線専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "分岐料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "多重アクセス減額料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "高額利用割引額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "機械専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "配線設備専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "回線終端装置専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "その他専用料",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "日割額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "工事に関する費用",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "加減算額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "消費税相当額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "延滞利息",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "回線数計",
+              "length": 7,
+              "type": "N"
+            },
+            {
+              "name": "予備",
+              "length": 511,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "請求単位レコード",
+          "condition": "^81",
+          "fields": [
+            {
+              "name": "レコード区分",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "お客様番号",
+              "length": 12,
+              "type": "C"
+            },
+            {
+              "name": "金融機関コード",
+              "length": 7,
+              "type": "C"
+            },
+            {
+              "name": "口座区分",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "口座番号",
+              "length": 7,
+              "type": "C"
+            },
+            {
+              "name": "請求金額",
+              "length": 11,
+              "type": "N"
+            },
+            {
+              "name": "請求件数",
+              "length": 5,
+              "type": "N"
+            },
+            {
+              "name": "予備",
+              "length": 655,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "総合計レコード",
+          "condition": "^91",
+          "fields": [
+            {
+              "name": "レコード区分",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "お客様番号",
+              "length": 12,
+              "type": "C"
+            },
+            {
+              "name": "総合計請求額",
+              "length": 11,
+              "type": "N"
+            },
+            {
+              "name": "総合計請求件数",
+              "length": 5,
+              "type": "N"
+            },
+            {
+              "name": "予備",
+              "length": 670,
+              "type": "C"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
