@@ -292,9 +292,9 @@
   延期後の適用開始「2026年9月」をサンプル案内で説明する。
 - fake host の通常の形式選択では、マルチバイト文字途中の境界診断、別形式からの `utf8bom` 再読込、
   文書内容、dirty 状態、保存イベント不変を確認した。実ホスト smoke は診断なし、ファイル書込み0件。
-- 型検査、`test:prepare`、使い捨てスナップショットでの安定版 Desktop 53件、安定版 Web smoke、
-  production webpack、最小版1.100.0を通過した。最小版は Main が `/private/tmp/ntt-s2-min-fix-final.m3AHaN`
-  から実行し、拡張 active・exit 0。生成物3件の SHA は `s2-main/min-script-review-fix-final.log` にある。
+- 型検査、`test:prepare`、安定版 Desktop 53件、安定版 Web smoke、production webpack、
+  最小版1.100.0を通過した。最小版は `/private/tmp/ntt-s2-min-fix-final.m3AHaN` から実行し、
+  拡張 active・exit 0。生成物3件の SHA は `s2-main/min-script-review-fix-final.log` に記録した。
 - Qlty 0.645.0 の最終 `npm run qlty`、`check`、`smells` は0件。
   `check` は `--no-cache` で実行し、`smells` には当該バージョンの CLI に無キャッシュ指定がないことを確認した。
   SARIF、終了コード、実行ログ、Qlty の設定・入力一覧 `qlty-final-metadata.txt` と
