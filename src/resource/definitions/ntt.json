@@ -1624,6 +1624,1341 @@
           ]
         }
       ]
+    },
+    {
+      "file_type": "hikari_2026",
+      "name": "電話番号別明細内訳書（ひかり電話）（2026年9月以降）",
+      "finame_pattern": "^N[0-9]{10}_[0-9]{6}$",
+      "encoding": "utf8bom",
+      "length_unit": "byte",
+      "rows": [
+        {
+          "name": "管理レコード",
+          "condition": "^.{12}01",
+          "fields": [
+            {
+              "name": "お客様番号",
+              "length": 12,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求年月",
+              "length": 6,
+              "type": "C"
+            },
+            {
+              "name": "網識別コード",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 491,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "電話番号別内訳レコード（初回）",
+          "condition": "^.{12}11(?:01)",
+          "fields": [
+            {
+              "name": "電話番号",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "レコードNO",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "レコード数",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "お客様番号",
+              "length": 12,
+              "type": "C"
+            },
+            {
+              "name": "減算不能区分コード",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "サービス種別",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "ご利用期間基本料開始",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "ご利用期間基本料締切",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "通話料・今月分",
+              "length": 11,
+              "type": "N"
+            },
+            {
+              "name": "請求額",
+              "length": 11,
+              "type": "N"
+            },
+            {
+              "name": "利用内訳コード（1）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（1）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（1）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（1）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（2）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（2）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（2）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（2）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（3）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（3）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（3）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（3）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（4）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（4）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（4）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（4）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（5）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（5）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（5）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（5）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（6）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（6）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（6）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（6）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（7）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（7）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（7）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（7）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（8）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（8）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（8）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（8）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（9）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（9）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（9）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（9）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（10）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（10）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（10）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（10）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（11）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（11）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（11）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（11）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（12）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（12）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（12）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（12）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（13）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（13）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（13）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（13）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（14）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（14）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（14）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（14）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（15）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（15）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（15）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（15）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（16）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（16）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（16）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（16）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（17）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（17）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（17）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（17）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 126,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "電話番号別内訳レコード（継続）",
+          "condition": "^.{12}11(?:0[2-9]|[1-9][0-9])",
+          "fields": [
+            {
+              "name": "電話番号",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "レコードNO",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "レコード数",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "お客様番号",
+              "length": 12,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "サービス種別",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 30,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（1）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（1）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（1）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（1）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（2）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（2）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（2）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（2）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（3）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（3）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（3）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（3）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（4）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（4）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（4）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（4）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（5）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（5）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（5）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（5）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（6）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（6）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（6）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（6）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（7）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（7）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（7）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（7）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（8）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（8）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（8）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（8）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（9）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（9）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（9）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（9）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（10）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（10）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（10）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（10）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（11）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（11）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（11）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（11）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（12）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（12）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（12）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（12）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（13）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（13）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（13）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（13）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（14）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（14）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（14）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（14）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（15）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（15）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（15）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（15）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（16）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（16）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（16）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（16）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（17）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（17）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（17）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（17）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 126,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "お客様番号合計レコード（初回）",
+          "condition": "^.{12}51(?:01)",
+          "fields": [
+            {
+              "name": "お客様番号",
+              "length": 12,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "レコードNO",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "レコード数",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 15,
+              "type": "C"
+            },
+            {
+              "name": "ご利用期間基本料開始",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "ご利用期間基本料締切",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "通話料・今月分",
+              "length": 11,
+              "type": "N"
+            },
+            {
+              "name": "請求額",
+              "length": 11,
+              "type": "N"
+            },
+            {
+              "name": "請求件数",
+              "length": 8,
+              "type": "N"
+            },
+            {
+              "name": "金融機関コード",
+              "length": 7,
+              "type": "C"
+            },
+            {
+              "name": "口座番号",
+              "length": 7,
+              "type": "C"
+            },
+            {
+              "name": "口座名義",
+              "length": 120,
+              "type": "C"
+            },
+            {
+              "name": "氏名",
+              "length": 150,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 157,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "お客様番号合計レコード（継続）",
+          "condition": "^.{12}51(?:0[2-9]|[1-9][0-9])",
+          "fields": [
+            {
+              "name": "お客様番号",
+              "length": 12,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "レコードNO",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "レコード数",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 45,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（1）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（1）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（1）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（1）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（2）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（2）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（2）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（2）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（3）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（3）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（3）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（3）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（4）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（4）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（4）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（4）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（5）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（5）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（5）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（5）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（6）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（6）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（6）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（6）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（7）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（7）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（7）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（7）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（8）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（8）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（8）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（8）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（9）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（9）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（9）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（9）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（10）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（10）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（10）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（10）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（11）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（11）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（11）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（11）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（12）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（12）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（12）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（12）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（13）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（13）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（13）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（13）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（14）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（14）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（14）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（14）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（15）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（15）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（15）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（15）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（16）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（16）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（16）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（16）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード（17）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求内訳コード（17）",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳額（17）",
+              "length": 11,
+              "type": "符号付き数値"
+            },
+            {
+              "name": "税区分コード（17）",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "予備",
+              "length": 126,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "総合計レコード",
+          "condition": "^.{12}91",
+          "fields": [
+            {
+              "name": "お客様番号",
+              "length": 12,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "総合計請求額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "総合計請求件数",
+              "length": 8,
+              "type": "N"
+            },
+            {
+              "name": "予備",
+              "length": 478,
+              "type": "C"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
