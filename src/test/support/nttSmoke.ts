@@ -15,6 +15,8 @@ const telephoneFileType = "telephone_2026@ntt";
 const telephoneFileName = "K000000000001_202609";
 const hikariFileType = "hikari_2026@ntt";
 const hikariFileName = "N0000000001_202609";
+const leasedLineFileType = "leased_line_2026@ntt";
+const leasedLineFileName = "S0000000001_202609";
 
 type FieldValue = readonly [number, string, ("left" | "right")?];
 
@@ -250,16 +252,14 @@ export async function verifyNttDialSmoke(): Promise<void> {
 
   await verifyNttTelephoneSmoke();
   await verifyNttHikariSmoke();
+  await verifyNttLeasedLineSmoke();
 }
 
-function utf8Record(fields: readonly FieldValue[]): string {
+function utf8Record(fields: readonly FieldValue[], recordWidth = 512): string {
   const line = fields
     .map(([width, value = "", alignment = "left"]) => {
       const valueWidth = new TextEncoder().encode(value).length;
-      verify(
-        valueWidth <= width,
-        "NTT 電話番号別スモークの値が項目幅を超えています。",
-      );
+      verify(valueWidth <= width, "NTT スモークの値が項目幅を超えています。");
       const padding = " ".repeat(width - valueWidth);
       return alignment === "right"
         ? `${padding}${value}`
@@ -267,8 +267,8 @@ function utf8Record(fields: readonly FieldValue[]): string {
     })
     .join("");
   verify(
-    new TextEncoder().encode(line).length === 512,
-    "NTT 電話番号別スモークのレコード幅が512バイトではありません。",
+    new TextEncoder().encode(line).length === recordWidth,
+    `NTT スモークのレコード幅が${recordWidth}バイトではありません。`,
   );
   return line;
 }
@@ -461,6 +461,133 @@ export function createHikariSmokeLines(): string[] {
       [8, "00000001"],
       [478, ""],
     ]),
+  ];
+}
+
+function japaneseText(value: string, characterWidth: number): string {
+  const characters = Array.from(value);
+  verify(
+    characters.length <= characterWidth,
+    "NTT 専用線スモークの日本語欄が項目幅を超えています。",
+  );
+  return `${value}${"　".repeat(characterWidth - characters.length)}`;
+}
+
+function leasedLineAmounts(): FieldValue[] {
+  const representativeCharge = "000000000013";
+  const noCharge = "000000000000";
+  return [
+    [12, representativeCharge],
+    [12, representativeCharge],
+    ...Array.from({ length: 12 }, () => [12, noCharge] as FieldValue),
+  ];
+}
+
+function leasedLineSummary(recordType: string, lineCount: 1 | 2): FieldValue[] {
+  const total = String(lineCount * 13).padStart(12, "0");
+  const count = String(lineCount).padStart(7, "0");
+  return [
+    [2, recordType],
+    [12, total],
+    [12, total],
+    ...Array.from({ length: 13 }, () => [12, "000000000000"] as FieldValue),
+    [7, count],
+    [511, ""],
+  ];
+}
+
+export function createLeasedLineSmokeLines(): string[] {
+  const customerNumber = "  0000000001";
+  const dataRecord = (companyCode: "1" | "2", lineId: string) =>
+    utf8Record(
+      [
+        [2, "12"],
+        [9, lineId],
+        [2, "25"],
+        [1, companyCode],
+        [33, japaneseText("新規申込", 11)],
+        [8, "20260901"],
+        [8, "20260815"],
+        [11, "01234567890"],
+        [75, japaneseText("架空東営業所", 25)],
+        [75, japaneseText("架空西営業所", 25)],
+        [75, japaneseText("架空分岐局", 25)],
+        [75, japaneseText("専用線サービス", 25)],
+        [5, "12345"],
+        [75, japaneseText("専用線デジタル回線", 25)],
+        [3, "001"],
+        [75, japaneseText("架空のお客様管理番号", 25)],
+        ...leasedLineAmounts(),
+      ],
+      700,
+    );
+  const companyHeader = (
+    companyCode: "1" | "2",
+    officeCode: "12345678" | "87654321",
+  ) =>
+    utf8Record(
+      [
+        [2, "11"],
+        [8, officeCode],
+        [7, "1234567"],
+        [5, "12345"],
+        [1, companyCode],
+        [8, "20261010"],
+        [6, "202609"],
+        [8, "20261030"],
+        [655, ""],
+      ],
+      700,
+    );
+  const eastOfficeTotal = utf8Record(leasedLineSummary("13", 1), 700);
+  const westOfficeTotal = utf8Record(leasedLineSummary("13", 1), 700);
+  const companyEast = utf8Record(leasedLineSummary("14", 1), 700);
+  const companyWest = utf8Record(leasedLineSummary("15", 1), 700);
+  const end = utf8Record(leasedLineSummary("21", 2), 700);
+
+  return [
+    utf8Record(
+      [
+        [2, "01"],
+        [12, customerNumber],
+        [6, billingMonth],
+        [1, "3"],
+        [679, ""],
+      ],
+      700,
+    ),
+    companyHeader("1", "12345678"),
+    dataRecord("1", "123456789"),
+    eastOfficeTotal,
+    companyHeader("2", "87654321"),
+    dataRecord("2", "223456789"),
+    westOfficeTotal,
+    companyEast,
+    companyWest,
+    end,
+    utf8Record(
+      [
+        [2, "81"],
+        [12, customerNumber],
+        [7, "1234567"],
+        [1, "1"],
+        [7, "1234567"],
+        [11, "00000000026"],
+        [5, "00002"],
+        [655, ""],
+      ],
+      700,
+    ),
+    utf8Record(
+      [
+        [2, "91"],
+        [12, customerNumber],
+        [11, "00000000026"],
+        [5, "00002"],
+        [670, ""],
+      ],
+      700,
+    ),
   ];
 }
 
@@ -833,6 +960,146 @@ async function verifyNttHikariSmoke(): Promise<void> {
         provider.readCount >= 1 &&
         provider.writeCount === 0,
       "NTT ひかり電話レコードの読込と描画で文書変更または書込みが発生しました。",
+    );
+  } finally {
+    session.dispose();
+    editorDecorations.dispose();
+    if (editor) {
+      await vscode.commands.executeCommand(
+        "workbench.action.closeActiveEditor",
+      );
+    }
+    registration.dispose();
+    provider.dispose();
+  }
+}
+
+async function verifyNttLeasedLineSmoke(): Promise<void> {
+  const lines = createLeasedLineSmokeLines();
+  const bytes = createUtf8BomBytes(lines);
+  const scheme = `jfixedviewernttleased${Date.now()}`;
+  const provider = new ReadOnlyNttProvider(leasedLineFileName, bytes);
+  const registration = vscode.workspace.registerFileSystemProvider(
+    scheme,
+    provider,
+    { isCaseSensitive: true },
+  );
+  const uri = vscode.Uri.parse(`${scheme}:/${leasedLineFileName}`);
+  const definition = loadBuiltInDefinitions().find(
+    ({ fileType }) => fileType === leasedLineFileType,
+  );
+  if (!definition) {
+    throw new Error("NTT 専用線形式が実ローダーに登録されていません。");
+  }
+
+  const editorDecorations = new EditorDecorations();
+  const decoration = createFixedWidthDecoration(
+    loadBuiltInDefinitions(),
+    new VscodeTextEncodingAdapter(),
+  );
+  const session = new DocumentRenderSession(decoration, editorDecorations);
+  let editor: vscode.TextEditor | undefined;
+  try {
+    const opened = await vscode.workspace.openTextDocument(uri);
+    const encodingResult = await ensureDocumentEncoding(opened, "utf8bom");
+    if (!encodingResult.ok) {
+      throw new Error(
+        "VS Code が NTT 専用線形式を UTF-8 BOM で再読込できません。",
+      );
+    }
+    const document = encodingResult.document;
+    const originalText = document.getText();
+    verify(
+      document.encoding === "utf8bom",
+      "NTT 専用線形式の文書 encoding が utf8bom ではありません。",
+    );
+    verify(
+      document.eol === vscode.EndOfLine.CRLF,
+      "NTT 専用線形式の CRLF が実ホストで認識されません。",
+    );
+    verify(
+      lines.every((line, index) => document.lineAt(index).text === line),
+      "BOM と CRLF を除いた NTT 専用線レコード内容が一致しません。",
+    );
+
+    const analysis = await decoration.analyze({
+      fileType: leasedLineFileType,
+      lines: lines.map((text, line) => ({
+        line,
+        text,
+        isEmptyOrWhitespace: /^\s*$/u.test(text),
+      })),
+      validationEnabled: true,
+      currentEncoding: document.encoding,
+    });
+    const application = analysis.fields.find(
+      (field) => field.line === 2 && field.fieldName === "申込内容",
+    );
+    const customers = analysis.fields.filter(
+      (field) => field.fieldName === "お客様番号",
+    );
+    verify(
+      analysis.failure === undefined &&
+        analysis.issues.length === 0 &&
+        analysis.fields.length === 186,
+      "NTT 専用線スモークの12レコードに文字コードまたは検証の問題があります。",
+    );
+    verify(
+      JSON.stringify([
+        application?.start,
+        application?.end,
+        application?.displayStart,
+        application?.displayEnd,
+        application?.type,
+        application?.lengthUnit,
+      ]) === JSON.stringify([14, 47, 14, 25, "C", "byte"]),
+      "NTT 専用線の全角申込内容のバイト範囲と表示位置が一致しません。",
+    );
+    verify(
+      JSON.stringify(
+        customers.map((field) => [
+          field.line,
+          field.start,
+          field.end,
+          lines[field.line]?.slice(field.start, field.end),
+        ]),
+      ) ===
+        JSON.stringify([
+          [0, 2, 14, "  0000000001"],
+          [10, 2, 14, "  0000000001"],
+          [11, 2, 14, "  0000000001"],
+        ]),
+      "NTT 専用線の顧客番号位置または10桁番号が一致しません。",
+    );
+
+    editor = await vscode.window.showTextDocument(document, {
+      preview: false,
+    });
+    const request = session.beginSelection(document, leasedLineFileType);
+    verify(
+      session.activateSelection(request),
+      "NTT 専用線形式を実ホストのレンダーセッションへ適用できません。",
+    );
+    const rendered = await session.render(request);
+    verify(rendered === true, "NTT 専用線の実ホスト描画が完了しません。");
+    verify(
+      editorDecorations.has(editor) &&
+        session.getSelectedFileType(uri.toString()) === leasedLineFileType,
+      "NTT 専用線の項目装飾が実ホストに適用されません。",
+    );
+    verify(
+      vscode.languages
+        .getDiagnostics(document.uri)
+        .filter((diagnostic) => diagnostic.source === "JFixedViewer").length ===
+        0,
+      "正常な NTT 専用線レコードに診断が発生しました。",
+    );
+    verify(
+      !document.isDirty &&
+        document.getText() === originalText &&
+        provider.readCount >= 1 &&
+        provider.writeCount === 0,
+      "NTT 専用線の読込と描画で文書変更または書込みが発生しました。",
     );
   } finally {
     session.dispose();

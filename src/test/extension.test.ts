@@ -4,6 +4,7 @@ import path = require("node:path");
 import { CharacterizationHost } from "./support/characterizationHost";
 import {
   createHikariSmokeLines,
+  createLeasedLineSmokeLines,
   createTelephoneSmokeLines,
 } from "./support/nttSmoke";
 import {
@@ -30,6 +31,8 @@ const nttTelephoneFileType = "telephone_2026@ntt";
 const nttHikariMeisai =
   "NTT/電話番号別明細内訳書（ひかり電話）（2026年9月以降）";
 const nttHikariFileType = "hikari_2026@ntt";
+const nttLeasedLineMeisai = "NTT/専用線番号別明細内訳書（2026年9月以降）";
+const nttLeasedLineFileType = "leased_line_2026@ntt";
 const clearType = "なし/なし";
 const jpxFourPricesFieldNames = [
   "レコード区分",
@@ -236,6 +239,45 @@ function rowNames(editor: FakeEditor, line: number): string[] {
       hover.match(/^(.+?) \/ .+ \(項目 \d+\)/u);
     return match?.[1]?.split(" / ", 1)[0] ?? "";
   });
+}
+
+function leasedLineNumber(line: string, byteOffset: number, byteLength = 12) {
+  return Number(
+    Buffer.from(line, "utf8")
+      .subarray(byteOffset, byteOffset + byteLength)
+      .toString("ascii"),
+  );
+}
+
+function assertLeasedLineSummaryMatches(
+  summaryLine: string,
+  detailLines: string[],
+) {
+  const detailTotal = detailLines.reduce(
+    (total, line) => total + leasedLineNumber(line, 532),
+    0,
+  );
+  assert.strictEqual(leasedLineNumber(summaryLine, 2), detailTotal);
+
+  const detailAmountOffsets = Array.from(
+    { length: 13 },
+    (_, index) => 544 + index * 12,
+  );
+  const expectedAmountTotals = detailAmountOffsets.map((offset) =>
+    detailLines.reduce(
+      (total, line) => total + leasedLineNumber(line, offset),
+      0,
+    ),
+  );
+  const summaryAmountOffsets = Array.from(
+    { length: 14 },
+    (_, index) => 14 + index * 12,
+  );
+  assert.deepStrictEqual(
+    summaryAmountOffsets.map((offset) => leasedLineNumber(summaryLine, offset)),
+    [...expectedAmountTotals, 0],
+  );
+  assert.strictEqual(leasedLineNumber(summaryLine, 182, 7), detailLines.length);
 }
 
 function hasRow(editor: FakeEditor, line: number, name: string): boolean {
@@ -1119,6 +1161,366 @@ suite("固定長表示の現行挙動", () => {
     );
     const blankNumeric = `${callRecord.slice(0, 74)}${" ".repeat(10)}${callRecord.slice(84)}`;
     const blankNumericEditor = await openFile("M000000000001_blank-n", [
+      blankNumeric,
+    ]);
+    assert.deepStrictEqual(host.diagnosticsFor(blankNumericEditor), []);
+  });
+
+  test("NTT専用線形式の8種9コード、会社別トレーラ、BOM、700バイト境界と診断を確認する", async () => {
+    const definition = loadBuiltInDefinitions().find(
+      ({ fileType }) => fileType === nttLeasedLineFileType,
+    );
+    assert.ok(definition);
+    assert.deepStrictEqual(
+      {
+        name: definition.name,
+        encoding: definition.encoding,
+        lengthUnit: definition.lengthUnit,
+      },
+      {
+        name: nttLeasedLineMeisai,
+        encoding: "utf8bom",
+        lengthUnit: "byte",
+      },
+    );
+    assert.deepStrictEqual(
+      definition.rows.map((row) => row.condition.source),
+      ["^01", "^11", "^12", "^13", "^14", "^15", "^21", "^81", "^91"],
+    );
+    assert.deepStrictEqual(
+      definition.rows.map((row) => row.fields?.length),
+      [5, 9, 30, 18, 18, 18, 18, 8, 5],
+    );
+    const amountFields = [
+      ["合計金額", 12, "N"],
+      ["基本回線専用料", 12, "N"],
+      ["分岐回線専用料", 12, "N"],
+      ["分岐料", 12, "N"],
+      ["多重アクセス減額料", 12, "N"],
+      ["高額利用割引額", 12, "N"],
+      ["機械専用料", 12, "N"],
+      ["配線設備専用料", 12, "N"],
+      ["回線終端装置専用料", 12, "N"],
+      ["その他専用料", 12, "N"],
+      ["日割額", 12, "N"],
+      ["工事に関する費用", 12, "N"],
+      ["加減算額", 12, "N"],
+      ["消費税相当額", 12, "N"],
+      ["延滞利息", 12, "N"],
+    ] as const;
+    const trailerFields = [
+      ["レコード区分", 2, "C"],
+      ...amountFields,
+      ["回線数計", 7, "N"],
+      ["予備", 511, "C"],
+    ] as const;
+    assert.deepStrictEqual(
+      definition.rows.map((row) =>
+        row.fields?.map(({ name, length, type }) => [name, length, type]),
+      ),
+      [
+        [
+          ["レコード区分", 2, "C"],
+          ["お客様番号", 12, "C"],
+          ["請求年月", 6, "C"],
+          ["網識別コード", 1, "C"],
+          ["予備", 679, "C"],
+        ],
+        [
+          ["レコード区分", 2, "C"],
+          ["計上事業所コード", 8, "C"],
+          ["企業等コード", 7, "C"],
+          ["付加コード", 5, "C"],
+          ["会社識別コード", 1, "C"],
+          ["作成年月日", 8, "C"],
+          ["請求年月", 6, "C"],
+          ["支払い期限", 8, "C"],
+          ["予備", 655, "C"],
+        ],
+        [
+          ["レコード区分", 2, "C"],
+          ["回線ＩＤ", 9, "C"],
+          ["地域区分コード", 2, "C"],
+          ["会社識別コード", 1, "C"],
+          ["申込内容", 33, "C"],
+          ["開通年月日", 8, "C"],
+          ["承諾年月日", 8, "C"],
+          ["承諾番号", 11, "C"],
+          ["回線名：上位事業所名", 75, "C"],
+          ["回線名：下位事業所名", 75, "C"],
+          ["回線名：分岐名", 75, "C"],
+          ["回線名：分類名", 75, "C"],
+          ["回線名：回線番号", 5, "C"],
+          ["回線名：回線種類", 75, "C"],
+          ["回線名：回線符号コード", 3, "C"],
+          ["お客様管理番号", 75, "C"],
+          ["合計金額", 12, "N"],
+          ["基本回線料", 12, "N"],
+          ["分岐回線料", 12, "N"],
+          ["分岐料", 12, "N"],
+          ["多重アクセス減額料", 12, "N"],
+          ["高額利用割引額", 12, "N"],
+          ["機械専用料", 12, "N"],
+          ["配線設備専用料", 12, "N"],
+          ["回線終端装置専用料", 12, "N"],
+          ["その他専用料", 12, "N"],
+          ["日割額", 12, "N"],
+          ["工事に関する費用", 12, "N"],
+          ["加減算額", 12, "N"],
+          ["消費税相当額", 12, "N"],
+        ],
+        trailerFields,
+        trailerFields,
+        trailerFields,
+        trailerFields,
+        [
+          ["レコード区分", 2, "C"],
+          ["お客様番号", 12, "C"],
+          ["金融機関コード", 7, "C"],
+          ["口座区分", 1, "C"],
+          ["口座番号", 7, "C"],
+          ["請求金額", 11, "N"],
+          ["請求件数", 5, "N"],
+          ["予備", 655, "C"],
+        ],
+        [
+          ["レコード区分", 2, "C"],
+          ["お客様番号", 12, "C"],
+          ["総合計請求額", 11, "N"],
+          ["総合計請求件数", 5, "N"],
+          ["予備", 670, "C"],
+        ],
+      ],
+    );
+    assert.deepStrictEqual(
+      definition.rows.map((row) =>
+        row.fields?.reduce((total, field) => total + field.length, 0),
+      ),
+      Array.from({ length: 9 }, () => 700),
+    );
+    assert.strictEqual(
+      definition.fileNamePattern.test("S1234567890_202609"),
+      true,
+    );
+    assert.strictEqual(
+      definition.fileNamePattern.test("S123456789_202609"),
+      false,
+    );
+    assert.strictEqual(
+      definition.fileNamePattern.test("S12345678901_202609"),
+      false,
+    );
+    assert.strictEqual(
+      definition.fileNamePattern.test("S1234567890_202609.dat"),
+      false,
+    );
+
+    const samplePath = path.resolve(
+      __dirname,
+      "../../sample/ntt/S0000000001_202609",
+    );
+    const sampleBytes = readFileSync(samplePath);
+    assert.deepStrictEqual([...sampleBytes.subarray(0, 3)], [0xef, 0xbb, 0xbf]);
+    const sampleText = sampleBytes.toString("utf8").replace(/^\uFEFF/u, "");
+    assert.strictEqual(sampleText.endsWith("\r\n"), true);
+    assert.strictEqual(sampleText.replace(/\r\n/gu, "").includes("\n"), false);
+    const sampleLines = sampleText.split("\r\n");
+    assert.strictEqual(sampleLines.pop(), "");
+    assert.strictEqual(sampleLines.length, 12);
+    assert.deepStrictEqual(sampleLines, createLeasedLineSmokeLines());
+    assert.deepStrictEqual(
+      sampleLines.map((line) => Buffer.byteLength(line, "utf8")),
+      Array.from({ length: 12 }, () => 700),
+    );
+    assert.deepStrictEqual(
+      sampleLines.map((line) => line.slice(0, 2)),
+      ["01", "11", "12", "13", "11", "12", "13", "14", "15", "21", "81", "91"],
+    );
+    const detailLines = sampleLines.filter((line) => line.startsWith("12"));
+    assert.deepStrictEqual(
+      detailLines.map((line) => leasedLineNumber(line, 532)),
+      [13, 13],
+    );
+    const expectedDetailAmounts = [13, ...Array.from({ length: 12 }, () => 0)];
+    assert.deepStrictEqual(
+      detailLines.map((line) =>
+        Array.from({ length: 13 }, (_, index) =>
+          leasedLineNumber(line, 544 + index * 12),
+        ),
+      ),
+      [expectedDetailAmounts, expectedDetailAmounts],
+    );
+
+    const officeDetails = ["1", "2"].map((companyCode) =>
+      detailLines.filter((line) => line.slice(13, 14) === companyCode),
+    );
+    assert.deepStrictEqual(
+      officeDetails.map((lines) => lines.length),
+      [1, 1],
+    );
+    const officeTotals = sampleLines.filter((line) => line.startsWith("13"));
+    assert.strictEqual(officeTotals.length, 2);
+    officeTotals.forEach((line, index) => {
+      const details = officeDetails[index];
+      assert.ok(details);
+      assertLeasedLineSummaryMatches(line, details);
+    });
+
+    const eastCompanyTotal = sampleLines.find((line) => line.startsWith("14"));
+    const westCompanyTotal = sampleLines.find((line) => line.startsWith("15"));
+    const endTotal = sampleLines.find((line) => line.startsWith("21"));
+    const [eastDetails, westDetails] = officeDetails;
+    assert.ok(eastCompanyTotal);
+    assert.ok(westCompanyTotal);
+    assert.ok(endTotal);
+    assert.ok(eastDetails);
+    assert.ok(westDetails);
+    assertLeasedLineSummaryMatches(eastCompanyTotal, eastDetails);
+    assertLeasedLineSummaryMatches(westCompanyTotal, westDetails);
+    assertLeasedLineSummaryMatches(endTotal, detailLines);
+
+    const detailTotal = detailLines.reduce(
+      (total, line) => total + leasedLineNumber(line, 532),
+      0,
+    );
+    const billingTotals = [
+      ["81", 29, 40],
+      ["91", 14, 25],
+    ] as const;
+    billingTotals.forEach(([recordType, totalOffset, countOffset]) => {
+      const summary = sampleLines.find((line) => line.startsWith(recordType));
+      assert.ok(summary);
+      assert.strictEqual(
+        leasedLineNumber(summary, totalOffset, 11),
+        detailTotal,
+      );
+      assert.strictEqual(
+        leasedLineNumber(summary, countOffset, 5),
+        detailLines.length,
+      );
+    });
+
+    const openFile = async (fileName: string, lines: string[]) => {
+      const editor = host.createEditor(fileName, lines);
+      host.setActiveEditor(editor);
+      await host.chooseFileType(nttLeasedLineMeisai);
+      await host.waitForAnalysis();
+      return editor;
+    };
+    const sampleEditor = await openFile("S0000000001_202609", sampleLines);
+    assert.strictEqual(sampleEditor.document.encoding, "utf8bom");
+    assert.strictEqual(sampleEditor.document.isDirty, false);
+    assert.strictEqual(sampleEditor.document.getText(), sampleLines.join("\n"));
+    assert.deepStrictEqual(host.diagnosticsFor(sampleEditor), []);
+    assert.deepStrictEqual(
+      sampleLines.map((_, index) => [
+        ...new Set(rowNames(sampleEditor, index)),
+      ]),
+      [
+        ["管理レコード"],
+        ["ヘッダレコード"],
+        ["データレコード（専用線回線番号単位）"],
+        ["トレーラレコード（計上事業所単位）"],
+        ["ヘッダレコード"],
+        ["データレコード（専用線回線番号単位）"],
+        ["トレーラレコード（計上事業所単位）"],
+        ["会社別トレーラレコード（NTT東日本）"],
+        ["会社別トレーラレコード（NTT西日本）"],
+        ["エンドレコード（専用線ID単位）"],
+        ["請求単位レコード"],
+        ["総合計レコード"],
+      ],
+    );
+    assert.deepStrictEqual(
+      [
+        sampleLines[0]?.slice(2, 14),
+        sampleLines[10]?.slice(2, 14),
+        sampleLines[11]?.slice(2, 14),
+      ],
+      Array.from({ length: 3 }, () => "  0000000001"),
+    );
+    assert.deepStrictEqual(
+      [sampleLines[2]?.slice(11, 13), sampleLines[5]?.slice(11, 13)],
+      ["25", "25"],
+    );
+    assert.deepStrictEqual(
+      [sampleLines[2]?.slice(13, 14), sampleLines[5]?.slice(13, 14)],
+      ["1", "2"],
+    );
+    const application = optionsForLine(sampleEditor, 2).find((option) =>
+      option.hoverMessage?.value.includes("申込内容"),
+    );
+    assert.ok(application);
+    assert.deepStrictEqual(
+      {
+        start: application.range.start.character,
+        end: application.range.end.character,
+        hover: application.hoverMessage?.value,
+      },
+      {
+        start: 14,
+        end: 25,
+        hover:
+          "**データレコード（専用線回線番号単位） / 申込内容 (項目 5)**  \n位置: 15 - 47 (33バイト)\nデータ型: C",
+      },
+    );
+
+    const assertIssue = async (
+      fileName: string,
+      line: string,
+      code: string,
+    ) => {
+      const editor = await openFile(fileName, [line]);
+      assert.deepStrictEqual(
+        host.diagnosticsFor(editor)?.map((diagnostic) => diagnostic.code),
+        [code],
+      );
+      assert.strictEqual(editor.document.getText(), line);
+      assert.strictEqual(editor.document.isDirty, false);
+    };
+    const replaceNumericField = (line: string, replacement: string) => {
+      const bytes = Buffer.from(line, "utf8");
+      const value = Buffer.from(replacement, "ascii");
+      return Buffer.concat([
+        bytes.subarray(0, 532),
+        value,
+        bytes.subarray(532 + value.length),
+      ]).toString("utf8");
+    };
+    await assertIssue(
+      "S0000000001_unknown",
+      `99${" ".repeat(698)}`,
+      "UNKNOWN_RECORD",
+    );
+    const recordByType = new Map(
+      sampleLines.map((line) => [line.slice(0, 2), line]),
+    );
+    for (const [recordType, line] of recordByType) {
+      await assertIssue(
+        `S0000000001_${recordType}_short`,
+        line.slice(0, -1),
+        "INVALID_LENGTH",
+      );
+      await assertIssue(
+        `S0000000001_${recordType}_long`,
+        `${line} `,
+        "INVALID_LENGTH",
+      );
+    }
+    const dataRecord = sampleLines[2];
+    assert.ok(dataRecord);
+    await assertIssue(
+      "S0000000001_invalid-n",
+      replaceNumericField(dataRecord, "X00000000001"),
+      "INVALID_TYPE",
+    );
+    await assertIssue(
+      "S0000000001_mixed-n",
+      replaceNumericField(dataRecord, "00000001 001"),
+      "INVALID_TYPE",
+    );
+    const blankNumeric = replaceNumericField(dataRecord, " ".repeat(12));
+    const blankNumericEditor = await openFile("S0000000001_blank-n", [
       blankNumeric,
     ]);
     assert.deepStrictEqual(host.diagnosticsFor(blankNumericEditor), []);
