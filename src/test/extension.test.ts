@@ -167,27 +167,77 @@ function optionsForLine(editor: FakeEditor, line: number) {
   );
 }
 
+function decorationThemeColor(type: { options: unknown }) {
+  const { backgroundColor } = type.options as {
+    backgroundColor?: { id?: string };
+  };
+  return backgroundColor?.id;
+}
+
 function cursorDecorationCall(editor: FakeEditor) {
-  return [...editor.decorationCalls].reverse().find(({ type }) => {
-    const options = type.options as {
-      backgroundColor?: { id?: string };
-    };
-    return (
-      options.backgroundColor?.id === "editor.wordHighlightStrongBackground"
+  return [...editor.decorationCalls]
+    .reverse()
+    .find(
+      ({ type }) =>
+        decorationThemeColor(type) === "editor.wordHighlightStrongBackground",
     );
-  });
 }
 
 function fieldDecorationCalls(editor: FakeEditor) {
-  return editor.decorationCalls.filter(({ type }) => {
-    const options = type.options as {
-      backgroundColor?: { id?: string } | string;
-    };
-    return (
-      typeof options.backgroundColor !== "object" ||
-      options.backgroundColor?.id !== "editor.wordHighlightStrongBackground"
+  return editor.decorationCalls
+    .filter(({ type }) => !isWholeLine(type))
+    .filter(
+      ({ type }) =>
+        decorationThemeColor(type) !== "editor.wordHighlightStrongBackground",
     );
+}
+
+function isWholeLine(type: { options: unknown }) {
+  return (type.options as { isWholeLine?: boolean }).isWholeLine === true;
+}
+
+function rowBackgroundDecorationCalls(editor: FakeEditor) {
+  return editor.decorationCalls.filter(({ type }) => isWholeLine(type));
+}
+
+function currentRowBackgroundCalls(editor: FakeEditor) {
+  const callsByType = new Map<
+    FakeEditor["decorationCalls"][number]["type"],
+    FakeEditor["decorationCalls"][number]
+  >();
+  rowBackgroundDecorationCalls(editor).forEach((call) => {
+    callsByType.delete(call.type);
+    callsByType.set(call.type, call);
   });
+  return [...callsByType.values()].reverse();
+}
+
+function rowBackgroundRows(editor: FakeEditor) {
+  return currentRowBackgroundCalls(editor).flatMap(({ type, options }) => {
+    const style = type.options as {
+      light: { backgroundColor: string };
+      dark: { backgroundColor: string };
+    };
+    assert.ok(style.light);
+    assert.ok(style.dark);
+    return options.map(({ range }) => ({
+      line: range.start.line,
+      light: style.light.backgroundColor,
+      dark: style.dark.backgroundColor,
+    }));
+  });
+}
+
+function sortedRowBackgroundRows(editor: FakeEditor) {
+  return rowBackgroundRows(editor).sort(
+    (left, right) => left.line - right.line,
+  );
+}
+
+function rowBackgroundOptionsForLine(editor: FakeEditor, line: number) {
+  return currentRowBackgroundCalls(editor).flatMap(({ options }) =>
+    options.filter(({ range }) => range.start.line === line),
+  );
 }
 
 function visibleFieldLineBounds(editor: FakeEditor) {
@@ -944,6 +994,7 @@ suite("固定長表示の現行挙動", () => {
       isWholeLine: boolean;
     };
     assert.strictEqual(decorationStyle.isWholeLine, false);
+    assert.ok(rowBackgroundRows(zengin).length > 0);
 
     const shortHeader = optionsForLine(zengin, 0);
     assert.strictEqual(shortHeader[1].range.end.character, 2);
@@ -992,6 +1043,7 @@ suite("固定長表示の現行挙動", () => {
     host.setActiveEditor(jpx);
     await host.chooseFileType(jpxFourPrices);
     assert.strictEqual(hasRow(jpx, 0, "レコード"), true);
+    assert.ok(rowBackgroundRows(jpx).length > 0);
     assert.strictEqual(jpx.document.lineAt(0).text.length, 2);
     assert.strictEqual(optionsForLine(jpx, 0)[1].range.end.character, 2);
     assert.strictEqual(
@@ -1012,6 +1064,347 @@ suite("固定長表示の現行挙動", () => {
     await host.chooseFileType(zenginLoanCalculation);
     assert.strictEqual(hasRow(loan, 0, "データ(商業手形割引〔内訳〕)"), true);
     assert.strictEqual(hasRow(loan, 0, "データ(商業手形割引〔合計〕)"), false);
+  });
+
+  test("全組み込み行に背景色を設定し、共通の行役割で色をそろえる", () => {
+    const definitions = loadBuiltInDefinitions();
+    const visibleDefinitions = definitions.filter(
+      ({ fileType }) => fileType !== "clear@clear",
+    );
+    const validColor = /^#[\da-fA-F]{6}(?:[\da-fA-F]{2})?$/u;
+    visibleDefinitions.forEach((definition) => {
+      definition.rows.forEach((row) => {
+        assert.ok(row.backgroundColor, `${definition.fileType}/${row.name}`);
+        assert.match(row.backgroundColor.light, validColor);
+        assert.match(row.backgroundColor.dark, validColor);
+      });
+    });
+
+    const rowColor = (fileType: string, name: string) => {
+      const definition = definitions.find(
+        (candidate) => candidate.fileType === fileType,
+      );
+      assert.ok(definition, fileType);
+      const row = definition.rows.find((candidate) => candidate.name === name);
+      assert.ok(row, `${fileType}/${name}`);
+      assert.ok(row.backgroundColor, `${fileType}/${name}`);
+      return row.backgroundColor;
+    };
+    const header = { light: "#5CA5EA40", dark: "#284B7140" };
+    const data = { light: "#E8B05C40", dark: "#694F2740" };
+    const detail = { light: "#A887DD40", dark: "#46365E40" };
+    const trailer = { light: "#64BC8040", dark: "#285B3D40" };
+    const end = { light: "#96969640", dark: "#55555540" };
+    assert.deepStrictEqual(
+      rowColor("sougou_furikomi@zengin", "ヘッダー"),
+      header,
+    );
+    assert.deepStrictEqual(
+      rowColor("leased_line_2026@ntt", "ヘッダレコード"),
+      header,
+    );
+    assert.deepStrictEqual(rowColor("sougou_furikomi@zengin", "データ"), data);
+    assert.deepStrictEqual(
+      rowColor("sougou_furikomi@zengin", "データ(EDI)"),
+      detail,
+    );
+    assert.deepStrictEqual(
+      rowColor("sougou_furikomi@zengin", "トレーラ"),
+      trailer,
+    );
+    assert.deepStrictEqual(
+      rowColor("leased_line_2026@ntt", "トレーラレコード（計上事業所単位）"),
+      trailer,
+    );
+    assert.deepStrictEqual(
+      rowColor("leased_line_2026@ntt", "エンドレコード（専用線ID単位）"),
+      end,
+    );
+    assert.deepStrictEqual(
+      rowColor("leased_line_2026@ntt", "総合計レコード"),
+      end,
+    );
+    assert.deepStrictEqual(
+      rowColor("dial_meisai_2026@ntt", "通話明細レコード"),
+      detail,
+    );
+    assert.deepStrictEqual(
+      rowColor("dial_meisai_2026@ntt", "終了レコード"),
+      end,
+    );
+    assert.deepStrictEqual(
+      rowColor("telephone_2026@ntt", "電話番号別内訳レコード（初回）"),
+      detail,
+    );
+    assert.deepStrictEqual(
+      rowColor("telephone_2026@ntt", "総合計レコード"),
+      end,
+    );
+  });
+
+  test("定義色ペアは両方有効な時だけ先頭一致行に適用する", async () => {
+    host.dispose();
+    host = new CharacterizationHost({
+      jpx: {
+        type: "row_background_fixture",
+        name: "行背景試験",
+        files: [
+          {
+            file_type: "rows",
+            name: "行背景",
+            finame_pattern: ".*",
+            rows: [
+              {
+                name: "同名",
+                condition: "^A",
+                backgroundColor: { light: "#AaBbCc", dark: "#11223344" },
+                fields: [{ name: "優先", length: 2, type: "C" }],
+              },
+              {
+                name: "同名",
+                condition: "^A",
+                backgroundColor: { light: "#010203", dark: "#040506" },
+                fields: [{ name: "後続", length: 1, type: "C" }],
+              },
+              {
+                name: "項目なし",
+                condition: "^B",
+                backgroundColor: { light: "#abcdef", dark: "#12345678" },
+                fields: [],
+              },
+              {
+                name: "片方不正",
+                condition: "^C",
+                backgroundColor: { light: "#12345g", dark: "#123456" },
+                fields: [],
+              },
+              {
+                name: "省略",
+                condition: "^D",
+                fields: [
+                  { name: "無色項目", length: 1, type: "C" },
+                  { name: "無色交互項目", length: 1, type: "C" },
+                ],
+              },
+              {
+                name: "桁数不正",
+                condition: "^E",
+                backgroundColor: { light: "#123456", dark: "#12345" },
+                fields: [],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    host.start();
+    const editor = host.createEditor("colors.txt", [
+      "A",
+      "B",
+      "C",
+      "DD",
+      "E",
+      "",
+      "   ",
+      "Z",
+    ]);
+    host.setActiveEditor(editor);
+    await host.chooseFileType("行背景試験/行背景");
+
+    const expectedBackgrounds = [
+      { line: 0, light: "#AaBbCc", dark: "#11223344" },
+      { line: 1, light: "#abcdef", dark: "#12345678" },
+    ];
+    const backgrounds = () =>
+      rowBackgroundRows(editor).sort((left, right) => left.line - right.line);
+    assert.deepStrictEqual(backgrounds(), expectedBackgrounds);
+    const hover = optionsForLine(editor, 0)[0].hoverMessage;
+    assert.ok(hover);
+    assert.ok(hover.value.includes("優先"));
+    assert.deepStrictEqual(optionsForLine(editor, 1), []);
+    host.setConfiguration("colors.txt", { boundaryStyle: "alternating" });
+    await host.waitForAnalysis();
+    host.setSelection(editor, 3, 0);
+    const uncoloredCursor = cursorDecorationCall(editor);
+    assert.ok(uncoloredCursor);
+    assert.strictEqual(
+      (uncoloredCursor.type.options as { border?: string }).border,
+      undefined,
+    );
+    const uncoloredAlternating = fieldDecorationCalls(editor)
+      .filter(
+        ({ type }) =>
+          decorationThemeColor(type) === "editor.rangeHighlightBackground",
+      )
+      .find(({ options }) =>
+        options.some(({ range }) => range.start.line === 3),
+      );
+    assert.ok(uncoloredAlternating);
+    assert.strictEqual(
+      (uncoloredAlternating.type.options as { border?: string }).border,
+      undefined,
+    );
+    const diagnostics = host.diagnosticsFor(editor);
+    assert.ok(diagnostics);
+    assert.deepStrictEqual(
+      diagnostics.map(({ code }) => code),
+      [
+        "INVALID_LENGTH",
+        "INVALID_LENGTH",
+        "INVALID_LENGTH",
+        "INVALID_LENGTH",
+        "UNKNOWN_RECORD",
+      ],
+    );
+
+    host.setConfiguration("colors.txt", { validationEnabled: false });
+    await host.waitForAnalysis();
+    assert.deepStrictEqual(host.diagnosticsFor(editor), []);
+    assert.deepStrictEqual(backgrounds(), expectedBackgrounds);
+  });
+
+  test("総合振込の行背景は表示範囲、分割、編集、形式切替に追従する", async () => {
+    const lines = Array.from({ length: 52 }, () => "X");
+    lines[0] = `1${"0".repeat(119)}`;
+    lines[1] = `2${"x".repeat(111)} `;
+    lines[2] = `2${"x".repeat(111)}Y `;
+    lines[50] = "8";
+    lines[51] = "9";
+    const uri = "file:///50200121.sougou_furikomi.dat";
+    const editor = host.createEditor(
+      "50200121.sougou_furikomi.dat",
+      lines,
+      uri,
+    );
+    host.setActiveEditor(editor);
+    await host.chooseFileType(zenginGeneralTransfer);
+
+    const expected = [
+      { line: 0, light: "#5CA5EA40", dark: "#284B7140" },
+      { line: 1, light: "#E8B05C40", dark: "#694F2740" },
+      { line: 2, light: "#A887DD40", dark: "#46365E40" },
+      { line: 50, light: "#64BC8040", dark: "#285B3D40" },
+      { line: 51, light: "#96969640", dark: "#55555540" },
+    ];
+    const sortedBackgrounds = (target: FakeEditor) =>
+      rowBackgroundRows(target).sort((left, right) => left.line - right.line);
+    assert.deepStrictEqual(sortedBackgrounds(editor), expected);
+    currentRowBackgroundCalls(editor).forEach((call) => {
+      const options = call.type.options as {
+        isWholeLine: boolean;
+        light: { backgroundColor: string };
+        dark: { backgroundColor: string };
+      };
+      assert.strictEqual(options.isWholeLine, true);
+      assert.ok(options.light.backgroundColor.startsWith("#"));
+      assert.ok(options.dark.backgroundColor.startsWith("#"));
+    });
+    assert.deepStrictEqual(
+      rowBackgroundOptionsForLine(editor, 50).map(({ range }) => ({
+        start: range.start.character,
+        end: range.end.character,
+      })),
+      [{ start: 0, end: 1 }],
+    );
+
+    const backgroundCallsBeforeUpdate = rowBackgroundDecorationCalls(editor);
+    host.setConfiguration(uri, { boundaryStyle: "alternating" });
+    await host.waitForAnalysis();
+    const updatedBackgroundCalls = rowBackgroundDecorationCalls(editor).slice(
+      backgroundCallsBeforeUpdate.length,
+    );
+    assert.strictEqual(updatedBackgroundCalls.length, 5);
+    assert.strictEqual(
+      new Set(updatedBackgroundCalls.map(({ type }) => type)).size,
+      updatedBackgroundCalls.length,
+    );
+    const cursorCall = cursorDecorationCall(editor);
+    assert.ok(cursorCall);
+    const cursorBorder = cursorCall.type.options as {
+      border?: string;
+      borderColor?: { id?: string };
+    };
+    assert.strictEqual(cursorBorder.border, "1px solid");
+    assert.ok(cursorBorder.borderColor);
+    assert.strictEqual(
+      cursorBorder.borderColor.id,
+      "editor.wordHighlightStrongBorder",
+    );
+    const alternatingCall = fieldDecorationCalls(editor)
+      .filter(
+        ({ type }) =>
+          decorationThemeColor(type) === "editor.rangeHighlightBackground",
+      )
+      .filter(
+        ({ type }) =>
+          (type.options as { border?: string }).border === "1px dotted",
+      )
+      .find(({ options }) =>
+        options.some(({ range }) => range.start.line === 0),
+      );
+    assert.ok(alternatingCall);
+    const alternatingOnFirstLine = alternatingCall.options.filter(
+      ({ range }) => range.start.line === 0,
+    );
+    assert.ok(
+      alternatingOnFirstLine.some(
+        ({ renderOptions }) => renderOptions === undefined,
+      ),
+    );
+
+    const encodingCalls = host.encodeCallCount;
+    host.setVisibleRanges(editor, [
+      new FakeRange(new FakePosition(0, 0), new FakePosition(0, 0)),
+    ]);
+    const split = host.createEditor("50200121.sougou_furikomi.dat", lines, uri);
+    host.setVisibleRanges(split, [
+      new FakeRange(new FakePosition(51, 0), new FakePosition(51, 0)),
+    ]);
+    host.setVisibleEditors([editor, split]);
+    assert.deepStrictEqual(
+      sortedBackgrounds(editor).map(({ line }) => line),
+      [0, 1, 2],
+    );
+    assert.deepStrictEqual(
+      sortedBackgrounds(split).map(({ line }) => line),
+      [50, 51],
+    );
+    const [editorBackground] = currentRowBackgroundCalls(editor);
+    const [splitBackground] = currentRowBackgroundCalls(split);
+    assert.notStrictEqual(editorBackground.type, splitBackground.type);
+    assert.strictEqual(host.encodeCallCount, encodingCalls);
+
+    await host.chooseFileType(zenginGeneralTransfer);
+    assert.strictEqual(editorBackground.type.disposeCount, 0);
+    assert.deepStrictEqual(
+      sortedBackgrounds(editor).map(({ line }) => line),
+      [0, 1, 2],
+    );
+
+    const updatedLines = [...lines];
+    updatedLines[50] = "X";
+    host.changeDocument(editor, updatedLines);
+    await host.waitForPendingRender();
+    assert.deepStrictEqual(
+      sortedBackgrounds(editor).map(({ line }) => line),
+      [0, 1, 2],
+    );
+    assert.deepStrictEqual(
+      sortedBackgrounds(split).map(({ line }) => line),
+      [51],
+    );
+
+    const editorTypes = currentRowBackgroundCalls(editor).map(
+      ({ type }) => type,
+    );
+    const splitTypes = currentRowBackgroundCalls(split).map(({ type }) => type);
+    await host.chooseFileType(zenginAccount);
+    assert.ok(editorTypes.every((type) => type.disposeCount === 1));
+    assert.ok(splitTypes.every((type) => type.disposeCount === 1));
+    assert.ok(sortedBackgrounds(editor).some(({ line }) => line === 0));
+    assert.ok(sortedBackgrounds(editor).every(({ line }) => line !== 50));
+    assert.ok(sortedBackgrounds(split).some(({ line }) => line === 51));
+    assert.ok(sortedBackgrounds(split).every(({ line }) => line !== 50));
   });
 
   test("NTTダイヤル形式の6種、BOM付きサンプル、請求番号、境界とN型を確認する", async () => {
@@ -1899,6 +2292,10 @@ suite("固定長表示の現行挙動", () => {
         [...new Set(rowNames(switchEditor, 3))],
         ["お客様番号合計レコード（初回）"],
       );
+      assert.deepStrictEqual(
+        sortedRowBackgroundRows(switchEditor).filter(({ line }) => line === 3),
+        [{ line: 3, light: "#64BC8040", dark: "#285B3D40" }],
+      );
       assert.strictEqual(
         optionsForLine(switchEditor, 3).some((option) =>
           option.hoverMessage?.value.includes("口座名義"),
@@ -2254,6 +2651,10 @@ suite("固定長表示の現行挙動", () => {
       assert.deepStrictEqual(
         [...new Set(rowNames(switchEditor, 3))],
         ["お客様番号合計レコード（初回）"],
+      );
+      assert.deepStrictEqual(
+        sortedRowBackgroundRows(switchEditor).filter(({ line }) => line === 3),
+        [{ line: 3, light: "#64BC8040", dark: "#285B3D40" }],
       );
       assert.strictEqual(
         optionsForLine(switchEditor, 3).some((option) =>
@@ -3082,6 +3483,10 @@ suite("固定長表示の現行挙動", () => {
     assert.strictEqual(hasRow(general, 0, "データ(EDI)"), false);
     assert.strictEqual(hasRow(general, 1, "データ(EDI)"), true);
     assert.strictEqual(hasRow(general, 1, "データ"), false);
+    assert.deepStrictEqual(sortedRowBackgroundRows(general), [
+      { line: 0, light: "#E8B05C40", dark: "#694F2740" },
+      { line: 1, light: "#A887DD40", dark: "#46365E40" },
+    ]);
 
     const first = host.createEditor("50200003-first.txt", [header("5"), "2"]);
     host.setActiveEditor(first);
@@ -3091,11 +3496,16 @@ suite("固定長表示の現行挙動", () => {
       hasRow(first, 1, "データ(通知預金・定期預金・積立定期預金)"),
       true,
     );
+    assert.deepStrictEqual(sortedRowBackgroundRows(first), [
+      { line: 0, light: "#5CA5EA40", dark: "#284B7140" },
+      { line: 1, light: "#E8B05C40", dark: "#694F2740" },
+    ]);
 
     const sameType = host.createEditor("50200003-second.txt", ["2"]);
     host.setActiveEditor(sameType);
     await host.chooseFileType(zenginTransfer);
     assert.deepStrictEqual(optionsForLine(sameType, 0), []);
+    assert.deepStrictEqual(sortedRowBackgroundRows(sameType), []);
     const sameTypeHandleBeforeForeign =
       fieldDecorationCalls(sameType).at(-1)?.type;
 
@@ -3113,6 +3523,10 @@ suite("固定長表示の現行挙動", () => {
       ),
       true,
     );
+    assert.deepStrictEqual(sortedRowBackgroundRows(otherType), [
+      { line: 0, light: "#5CA5EA40", dark: "#284B7140" },
+      { line: 1, light: "#E8B05C40", dark: "#694F2740" },
+    ]);
     const beforeSwitch = host.reporters[0].events.length;
     host.setActiveEditor(sameType);
     await host.waitForAnalysis();
@@ -3138,6 +3552,9 @@ suite("固定長表示の現行挙動", () => {
     await host.chooseFileType(zenginTransfer);
     assert.strictEqual(hasRow(reset, 0, "ヘッダー"), true);
     assert.deepStrictEqual(optionsForLine(reset, 1), []);
+    assert.deepStrictEqual(sortedRowBackgroundRows(reset), [
+      { line: 0, light: "#5CA5EA40", dark: "#284B7140" },
+    ]);
 
     const update = host.createEditor("50200003-updated.txt", [
       header("1"),
@@ -3149,6 +3566,10 @@ suite("固定長表示の現行挙動", () => {
       hasRow(update, 1, "データ(普通預金・当座預金・貯蓄預金)"),
       true,
     );
+    assert.deepStrictEqual(sortedRowBackgroundRows(update), [
+      { line: 0, light: "#5CA5EA40", dark: "#284B7140" },
+      { line: 1, light: "#E8B05C40", dark: "#694F2740" },
+    ]);
   });
 
   test("エディターがない選択、キャンセル、テレメトリの順序と安全な値を保つ", async () => {
@@ -3235,6 +3656,38 @@ suite("固定長表示の現行挙動", () => {
       hasRow(editor, 1, "データ(普通預金・当座預金・貯蓄預金)"),
       true,
     );
+
+    host.changeDocument(editor, [header("X"), "2"]);
+    await host.waitForPendingRender();
+    assert.deepStrictEqual(sortedRowBackgroundRows(editor), [
+      { line: 0, light: "#5CA5EA40", dark: "#284B7140" },
+    ]);
+    assert.strictEqual(
+      hasRow(editor, 1, "データ(普通預金・当座預金・貯蓄預金)"),
+      false,
+    );
+
+    host.changeDocument(editor, [header("1"), "2"]);
+    await host.waitForPendingRender();
+    assert.deepStrictEqual(sortedRowBackgroundRows(editor), [
+      { line: 0, light: "#5CA5EA40", dark: "#284B7140" },
+      { line: 1, light: "#E8B05C40", dark: "#694F2740" },
+    ]);
+
+    host.changeDocument(editor, [header("1"), "2", "8", "9"]);
+    await host.waitForPendingRender();
+    assert.deepStrictEqual(sortedRowBackgroundRows(editor), [
+      { line: 0, light: "#5CA5EA40", dark: "#284B7140" },
+      { line: 1, light: "#E8B05C40", dark: "#694F2740" },
+      { line: 2, light: "#64BC8040", dark: "#285B3D40" },
+      { line: 3, light: "#96969640", dark: "#55555540" },
+    ]);
+    host.changeDocument(editor, [header("1"), "2"]);
+    await host.waitForPendingRender();
+    assert.deepStrictEqual(sortedRowBackgroundRows(editor), [
+      { line: 0, light: "#5CA5EA40", dark: "#284B7140" },
+      { line: 1, light: "#E8B05C40", dark: "#694F2740" },
+    ]);
 
     const unselected = host.createEditor("unselected.txt", ["2"]);
     host.setActiveEditor(unselected);
@@ -3394,6 +3847,8 @@ suite("固定長表示の現行挙動", () => {
     await host.waitForPendingRender();
 
     const options = () => fieldDecorationCalls(primary).at(-1)?.options ?? [];
+    const visibleBackgroundLines = (editor: FakeEditor) =>
+      sortedRowBackgroundRows(editor).map(({ line }) => line);
     const visibleLineBounds = (editor: FakeEditor) => {
       const fieldOptions = fieldDecorationCalls(editor).at(-1)?.options ?? [];
       return fieldOptions.length
@@ -3404,6 +3859,10 @@ suite("固定長表示の現行挙動", () => {
         : undefined;
     };
     assert.deepStrictEqual(visibleLineBounds(primary), { min: 420, max: 462 });
+    assert.deepStrictEqual(
+      visibleBackgroundLines(primary),
+      Array.from({ length: 43 }, (_, index) => 420 + index),
+    );
     assert.ok(options().length <= 43 * 16);
     assert.ok(
       host
@@ -3424,6 +3883,10 @@ suite("固定長表示の現行挙動", () => {
       new FakeRange(new FakePosition(900, 0), new FakePosition(902, 0)),
     ]);
     assert.deepStrictEqual(visibleLineBounds(primary), { min: 880, max: 922 });
+    assert.deepStrictEqual(
+      visibleBackgroundLines(primary),
+      Array.from({ length: 43 }, (_, index) => 880 + index),
+    );
     assert.ok(options().length <= 43 * 16);
     assert.strictEqual(host.encodeCallCount, encodeCount);
     assert.strictEqual(primary.document.lineAtCallCount, lineAtCount);
@@ -3433,6 +3896,10 @@ suite("固定長表示の現行挙動", () => {
       new FakeRange(new FakePosition(300, 0), new FakePosition(302, 0)),
     ]);
     assert.deepStrictEqual(visibleLineBounds(primary), { min: 80, max: 322 });
+    assert.deepStrictEqual(visibleBackgroundLines(primary), [
+      ...Array.from({ length: 43 }, (_, index) => 80 + index),
+      ...Array.from({ length: 43 }, (_, index) => 280 + index),
+    ]);
     assert.ok(options().length <= 86 * 16);
     assert.strictEqual(
       new Set(
@@ -3449,19 +3916,33 @@ suite("固定長表示の現行挙動", () => {
       new FakeRange(new FakePosition(105, 0), new FakePosition(115, 0)),
     ]);
     assert.deepStrictEqual(visibleLineBounds(primary), { min: 80, max: 135 });
+    assert.deepStrictEqual(
+      visibleBackgroundLines(primary),
+      Array.from({ length: 56 }, (_, index) => 80 + index),
+    );
     assert.ok(options().length <= 56 * 16);
 
     host.setVisibleRanges(primary, [
       new FakeRange(new FakePosition(0, 0), new FakePosition(0, 0)),
     ]);
     assert.deepStrictEqual(visibleLineBounds(primary), { min: 0, max: 20 });
+    assert.deepStrictEqual(
+      visibleBackgroundLines(primary),
+      Array.from({ length: 21 }, (_, index) => index),
+    );
     host.setVisibleRanges(primary, [
       new FakeRange(new FakePosition(1003, 0), new FakePosition(1003, 0)),
     ]);
     assert.deepStrictEqual(visibleLineBounds(primary), { min: 983, max: 1003 });
+    assert.deepStrictEqual(visibleBackgroundLines(primary), [
+      ...Array.from({ length: 18 }, (_, index) => 983 + index),
+      1002,
+      1003,
+    ]);
 
     host.setVisibleRanges(primary, []);
     assert.deepStrictEqual(options(), []);
+    assert.deepStrictEqual(visibleBackgroundLines(primary), []);
 
     const split = host.createEditor("visible-ranges.txt", [], uri);
     host.setVisibleRanges(split, [
@@ -3473,6 +3954,10 @@ suite("固定長表示の現行挙動", () => {
     assert.ok(splitOptions().length > 0);
     assert.ok(splitOptions().every(({ range }) => range.start.line >= 580));
     assert.ok(splitOptions().every(({ range }) => range.start.line <= 621));
+    assert.deepStrictEqual(
+      visibleBackgroundLines(split),
+      Array.from({ length: 42 }, (_, index) => 580 + index),
+    );
     assert.strictEqual(host.encodeCallCount, encodeCount);
 
     host.setVisibleRanges(primary, [
@@ -3592,6 +4077,9 @@ suite("固定長表示の現行挙動", () => {
     const eventsBeforeEdit = reporter.events.length;
     const callsBeforeEdit = fieldDecorationCalls(editor).length;
     const originalType = fieldDecorationCalls(editor).at(-1)?.type;
+    const originalBackgroundTypes = currentRowBackgroundCalls(editor).map(
+      ({ type }) => type,
+    );
     const timers = host.useFakeTimers();
     try {
       host.changeDocument(editor, [header("5"), "2"]);
@@ -3637,6 +4125,13 @@ suite("固定長表示の現行挙動", () => {
         fieldDecorationCalls(editor).at(-1)?.type,
         originalType,
       );
+      assert.deepStrictEqual(sortedRowBackgroundRows(editor), [
+        { line: 0, light: "#5CA5EA40", dark: "#284B7140" },
+        { line: 1, light: "#E8B05C40", dark: "#694F2740" },
+      ]);
+      assert.ok(
+        originalBackgroundTypes.every((type) => type.disposeCount === 0),
+      );
       assert.strictEqual(reporter.events.length, eventsBeforeEdit + 1);
 
       const callsAfterReselection = fieldDecorationCalls(editor).length;
@@ -3664,6 +4159,9 @@ suite("固定長表示の現行挙動", () => {
     const eventsBeforeEdit = reporter.events.length;
     const callsBeforeEdit = fieldDecorationCalls(editor).length;
     const originalType = fieldDecorationCalls(editor).at(-1)?.type;
+    const originalBackgroundTypes = currentRowBackgroundCalls(editor).map(
+      ({ type }) => type,
+    );
     const timers = host.useFakeTimers();
     try {
       host.changeDocument(editor, [header("5"), "2"]);
@@ -3673,6 +4171,10 @@ suite("固定長表示の現行挙動", () => {
       await host.chooseFileType(clearType);
       assert.strictEqual(timers.pendingCount, 0);
       assert.strictEqual(originalType?.disposeCount, 1);
+      assert.ok(
+        originalBackgroundTypes.every((type) => type.disposeCount === 1),
+      );
+      assert.deepStrictEqual(sortedRowBackgroundRows(editor), []);
       assert.strictEqual(
         fieldDecorationCalls(editor).length,
         callsBeforeEdit + 1,
@@ -3710,6 +4212,9 @@ suite("固定長表示の現行挙動", () => {
     await host.waitForAnalysis();
 
     const originalType = fieldDecorationCalls(editor).at(-1)?.type;
+    const originalBackgroundTypes = currentRowBackgroundCalls(editor).map(
+      ({ type }) => type,
+    );
     const timers = host.useFakeTimers();
     try {
       const paused = pauseNextDecode(host);
@@ -3720,6 +4225,10 @@ suite("固定長表示の現行挙動", () => {
       host.setDocumentEncoding(editor, "utf8");
       assert.strictEqual(timers.pendingCount, 0);
       assert.strictEqual(originalType?.disposeCount, 1);
+      assert.ok(
+        originalBackgroundTypes.every((type) => type.disposeCount === 1),
+      );
+      assert.deepStrictEqual(sortedRowBackgroundRows(editor), []);
       assert.deepStrictEqual(fieldDecorationCalls(editor).at(-1)?.options, []);
       const callsAfterEncodingChange = fieldDecorationCalls(editor).length;
       host.setVisibleRanges(editor, [
@@ -3739,6 +4248,7 @@ suite("固定長表示の現行挙動", () => {
         callsAfterEncodingChange,
       );
       assert.strictEqual(originalType?.disposeCount, 1);
+      assert.deepStrictEqual(sortedRowBackgroundRows(editor), []);
     } finally {
       timers.restore();
     }
@@ -3755,6 +4265,9 @@ suite("固定長表示の現行挙動", () => {
     await host.waitForAnalysis();
 
     const originalType = fieldDecorationCalls(editor).at(-1)?.type;
+    const originalBackgroundTypes = currentRowBackgroundCalls(editor).map(
+      ({ type }) => type,
+    );
     const timers = host.useFakeTimers();
     try {
       const paused = pauseNextDecode(host);
@@ -3764,6 +4277,10 @@ suite("固定長表示の現行挙動", () => {
 
       host.closeDocument(editor);
       assert.strictEqual(originalType?.disposeCount, 1);
+      assert.ok(
+        originalBackgroundTypes.every((type) => type.disposeCount === 1),
+      );
+      assert.deepStrictEqual(sortedRowBackgroundRows(editor), []);
       assert.deepStrictEqual(fieldDecorationCalls(editor).at(-1)?.options, []);
       const callsAfterClose = fieldDecorationCalls(editor).length;
       host.setVisibleRanges(editor, [
@@ -3776,6 +4293,7 @@ suite("固定長表示の現行挙動", () => {
       timers.advanceBy(100);
       assert.strictEqual(fieldDecorationCalls(editor).length, callsAfterClose);
       assert.strictEqual(originalType?.disposeCount, 1);
+      assert.deepStrictEqual(sortedRowBackgroundRows(editor), []);
     } finally {
       timers.restore();
     }
@@ -3790,6 +4308,9 @@ suite("固定長表示の現行挙動", () => {
     const eventsBeforeEdit = reporter.events.length;
     const callsBeforeEdit = fieldDecorationCalls(editor).length;
     const originalType = fieldDecorationCalls(editor).at(-1)?.type;
+    const originalBackgroundTypes = currentRowBackgroundCalls(editor).map(
+      ({ type }) => type,
+    );
     const timers = host.useFakeTimers();
     try {
       host.changeDocument(editor, [header("5"), "2"]);
@@ -3799,6 +4320,10 @@ suite("固定長表示の現行挙動", () => {
       host.setVisibleEditors([]);
       assert.strictEqual(timers.pendingCount, 0);
       assert.strictEqual(originalType?.disposeCount, 1);
+      assert.ok(
+        originalBackgroundTypes.every((type) => type.disposeCount === 1),
+      );
+      assert.deepStrictEqual(sortedRowBackgroundRows(editor), []);
       assert.strictEqual(
         fieldDecorationCalls(editor).length,
         callsBeforeEdit + 1,
@@ -3810,6 +4335,18 @@ suite("固定長表示の現行挙動", () => {
       timers.advanceBy(100);
       assert.strictEqual(fieldDecorationCalls(editor).length, callsAfterHide);
       assert.strictEqual(reporter.events.length, eventsBeforeEdit);
+
+      host.setVisibleEditors([editor]);
+      await host.waitForAnalysis();
+      assert.deepStrictEqual(sortedRowBackgroundRows(editor), [
+        { line: 0, light: "#5CA5EA40", dark: "#284B7140" },
+        { line: 1, light: "#E8B05C40", dark: "#694F2740" },
+      ]);
+      assert.ok(
+        currentRowBackgroundCalls(editor)
+          .filter(({ options }) => options.length > 0)
+          .every(({ type }) => !originalBackgroundTypes.includes(type)),
+      );
     } finally {
       timers.restore();
     }
@@ -3826,6 +4363,9 @@ suite("固定長表示の現行挙動", () => {
     const reporter = host.reporters[0];
     const eventsBeforeEdit = reporter.events.length;
     const callsBeforeEdit = fieldDecorationCalls(editor).length;
+    const originalBackgroundTypes = currentRowBackgroundCalls(editor).map(
+      ({ type }) => type,
+    );
     const timers = host.useFakeTimers();
     try {
       host.changeDocument(editor, [header("5"), "2"]);
@@ -3834,6 +4374,9 @@ suite("固定長表示の現行挙動", () => {
 
       host.dispose();
       assert.strictEqual(timers.pendingCount, 0);
+      assert.ok(
+        originalBackgroundTypes.every((type) => type.disposeCount === 1),
+      );
       assert.strictEqual(host.commandDisposalCount, 1);
       assert.deepStrictEqual(host.eventSubscriptionStats, {
         activeEditor: { registered: 0, disposed: 0, active: 0 },
@@ -3874,11 +4417,16 @@ suite("固定長表示の現行挙動", () => {
     host.setActiveEditor(editor);
     await host.chooseFileType(zenginAccount);
     const originalType = fieldDecorationCalls(editor).at(-1)?.type;
+    const originalBackgroundTypes = currentRowBackgroundCalls(editor).map(
+      ({ type }) => type,
+    );
     assert.strictEqual(optionsForLine(editor, 0).length, 1);
 
     const eventsBeforeClear = host.reporters[0].events.length;
     await host.chooseFileType(clearType);
     assert.strictEqual(originalType?.disposeCount, 1);
+    assert.ok(originalBackgroundTypes.every((type) => type.disposeCount === 1));
+    assert.deepStrictEqual(sortedRowBackgroundRows(editor), []);
     assert.deepStrictEqual(fieldDecorationCalls(editor).at(-1)?.options, []);
     assert.strictEqual(host.reporters[0].events.length, eventsBeforeClear + 1);
     assert.deepStrictEqual(host.reporters[0].events.at(-1), {

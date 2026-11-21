@@ -341,7 +341,12 @@ export class DocumentRenderSession implements vscode.Disposable {
         currentEncoding: request.encoding,
       });
     } catch {
-      return { fields: [], issues: [], failure: "ENCODING_FAILED" };
+      return {
+        fields: [],
+        rowBackgrounds: [],
+        issues: [],
+        failure: "ENCODING_FAILED",
+      };
     }
   }
 
@@ -354,6 +359,12 @@ export class DocumentRenderSession implements vscode.Disposable {
     const update: EditorDecorationUpdate = {
       fileType: request.fileType,
       fieldsByLine: groupFieldsByLine(analysis.fields),
+      rowBackgroundsByLine: new Map(
+        analysis.rowBackgrounds.map(({ line, backgroundColor }) => [
+          line,
+          backgroundColor,
+        ]),
+      ),
       lineLengths: new Map(lines.map((line) => [line.line, line.text.length])),
       hasFieldMetadata: analysis.fields.some(
         (field) => field.fieldName !== undefined,

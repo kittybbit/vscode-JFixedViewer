@@ -3,6 +3,7 @@ import jpx from "../../resource/definitions/jpx.json";
 import ntt from "../../resource/definitions/ntt.json";
 import zengin from "../../resource/definitions/zengin.json";
 import type {
+  FixedWidthBackgroundColor,
   FixedWidthDefinition,
   FixedWidthRowRule,
 } from "../../domain/fixedWidth/projectFields";
@@ -10,6 +11,7 @@ import type {
 type RawRow = {
   name: string;
   condition?: string;
+  backgroundColor?: unknown;
   mode_rule?: string;
   mode_rule_position?: number;
   mode?: string;
@@ -20,6 +22,24 @@ type RawRow = {
   }[];
   columns?: number[];
 };
+
+function parseBackgroundColor(
+  value: unknown,
+): FixedWidthBackgroundColor | undefined {
+  if (typeof value !== "object" || value === null) {
+    return undefined;
+  }
+  const color = value as { light?: unknown; dark?: unknown };
+  if (
+    typeof color.light !== "string" ||
+    typeof color.dark !== "string" ||
+    !/^#[\da-fA-F]{6}(?:[\da-fA-F]{2})?$/u.test(color.light) ||
+    !/^#[\da-fA-F]{6}(?:[\da-fA-F]{2})?$/u.test(color.dark)
+  ) {
+    return undefined;
+  }
+  return { light: color.light, dark: color.dark };
+}
 
 type RawFile = {
   file_type: string;
@@ -40,6 +60,7 @@ function compileRows(rows: readonly RawRow[]): FixedWidthRowRule[] {
   return rows.map((row) => ({
     name: row.name,
     condition: new RegExp(row.condition ?? "^(?!s*$).+"),
+    backgroundColor: parseBackgroundColor(row.backgroundColor),
     modeRule: row.mode_rule ? new RegExp(row.mode_rule) : undefined,
     modeRulePosition: row.mode_rule_position,
     mode: row.mode ? new RegExp(row.mode) : undefined,
