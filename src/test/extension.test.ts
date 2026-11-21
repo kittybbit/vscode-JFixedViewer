@@ -10,6 +10,7 @@ import {
 import { createFixedWidthDecoration } from "../application/fixedWidth/FixedWidthDecoration";
 import { projectFields } from "../domain/fixedWidth/projectFields";
 import { validateRecord } from "../domain/fixedWidth/validateRecord";
+import { loadBuiltInDefinitions } from "../infrastructure/definitions/loadBuiltInDefinitions";
 
 const commandId = "vscode-JFixedViewer.FiletypePicker";
 const zenginAccount = "全銀協規定形式/振込入金通知(A)";
@@ -18,6 +19,8 @@ const zenginGeneralTransfer = "全銀協規定形式/総合振込";
 const zenginLoanCalculation = "全銀協規定形式/借入金計算書";
 const zenginForeignCurrency = "全銀協規定形式/外貨預金入出金取引明細";
 const jpxFourPrices = "JPX/四本値(デリバティブ)";
+const nttDialMeisai = "NTT/ダイヤル通話料金明細内訳書（2026年9月以降）";
+const nttDialFileType = "dial_meisai_2026@ntt";
 const clearType = "なし/なし";
 const jpxFourPricesFieldNames = [
   "レコード区分",
@@ -958,6 +961,158 @@ suite("固定長表示の現行挙動", () => {
     await host.chooseFileType(zenginLoanCalculation);
     assert.strictEqual(hasRow(loan, 0, "データ(商業手形割引〔内訳〕)"), true);
     assert.strictEqual(hasRow(loan, 0, "データ(商業手形割引〔合計〕)"), false);
+  });
+
+  test("NTTダイヤル形式の6種、BOM付きサンプル、請求番号、境界とN型を確認する", async () => {
+    const definition = loadBuiltInDefinitions().find(
+      ({ fileType }) => fileType === nttDialFileType,
+    );
+    assert.ok(definition);
+    assert.deepStrictEqual(
+      {
+        name: definition.name,
+        encoding: definition.encoding,
+        lengthUnit: definition.lengthUnit,
+      },
+      {
+        name: nttDialMeisai,
+        encoding: "utf8bom",
+        lengthUnit: "byte",
+      },
+    );
+    assert.strictEqual(definition.rows.length, 6);
+    assert.deepStrictEqual(
+      definition.rows.map((row) =>
+        row.fields?.reduce((total, field) => total + field.length, 0),
+      ),
+      [128, 128, 128, 128, 128, 128],
+    );
+    assert.strictEqual(
+      definition.fileNamePattern.test("M1234567890_202609"),
+      true,
+    );
+    assert.strictEqual(
+      definition.fileNamePattern.test("M123456789012_202609"),
+      true,
+    );
+    assert.strictEqual(
+      definition.fileNamePattern.test("M12345678901_202609"),
+      false,
+    );
+    assert.strictEqual(
+      definition.fileNamePattern.test("M123456789_202609"),
+      false,
+    );
+    assert.strictEqual(
+      definition.fileNamePattern.test("M123456789012_202609.dat"),
+      false,
+    );
+
+    const samplePath = path.resolve(
+      __dirname,
+      "../../sample/ntt/M000000000001_202609",
+    );
+    const sampleBytes = readFileSync(samplePath);
+    assert.deepStrictEqual([...sampleBytes.subarray(0, 3)], [0xef, 0xbb, 0xbf]);
+    const sampleText = sampleBytes.toString("utf8").replace(/^\uFEFF/u, "");
+    assert.strictEqual(sampleText.endsWith("\r\n"), true);
+    assert.strictEqual(sampleText.replace(/\r\n/gu, "").includes("\n"), false);
+    const sampleLines = sampleText.split("\r\n");
+    assert.strictEqual(sampleLines.pop(), "");
+    assert.strictEqual(sampleLines.length, 6);
+    assert.deepStrictEqual(
+      sampleLines.map((line) => Buffer.byteLength(line, "utf8")),
+      [128, 128, 128, 128, 128, 128],
+    );
+
+    const openFile = async (fileName: string, lines: string[]) => {
+      const editor = host.createEditor(fileName, lines);
+      host.setActiveEditor(editor);
+      await host.chooseFileType(nttDialMeisai);
+      await host.waitForAnalysis();
+      return editor;
+    };
+    const sampleEditor = await openFile("M000000000001_202609", sampleLines);
+    assert.strictEqual(sampleEditor.document.encoding, "utf8bom");
+    assert.strictEqual(sampleEditor.document.isDirty, false);
+    assert.strictEqual(sampleEditor.document.getText(), sampleLines.join("\n"));
+    assert.deepStrictEqual(host.diagnosticsFor(sampleEditor), []);
+    assert.deepStrictEqual(
+      sampleLines.map((_, index) => [
+        ...new Set(rowNames(sampleEditor, index)),
+      ]),
+      [
+        ["共通管理レコード"],
+        ["電番管理レコード"],
+        ["通話明細レコード"],
+        ["電番合計レコード"],
+        ["割引情報レコード"],
+        ["終了レコード"],
+      ],
+    );
+    assert.strictEqual(
+      optionsForLine(sampleEditor, 0)[1].range.end.character,
+      13,
+    );
+    assert.strictEqual(
+      optionsForLine(sampleEditor, 0)[1].hoverMessage?.value,
+      "**共通管理レコード / お客様番号 (項目 2)**  \n位置: 2 - 13 (12バイト)\nデータ型: C",
+    );
+
+    const tenDigitCustomer = "  1234567890";
+    const tenDigitLines = sampleLines.map((line, index) =>
+      index < 5
+        ? `${line.slice(0, 1)}${tenDigitCustomer}${line.slice(13)}`
+        : line,
+    );
+    const tenDigitEditor = await openFile("M1234567890_202609", tenDigitLines);
+    assert.strictEqual(
+      tenDigitEditor.document.lineAt(0).text.slice(1, 13),
+      tenDigitCustomer,
+    );
+    assert.deepStrictEqual(host.diagnosticsFor(tenDigitEditor), []);
+
+    const callRecord = sampleLines[2];
+    assert.ok(callRecord);
+    const assertIssue = async (
+      fileName: string,
+      line: string,
+      code: string,
+    ) => {
+      const editor = await openFile(fileName, [line]);
+      assert.deepStrictEqual(
+        host.diagnosticsFor(editor)?.map((diagnostic) => diagnostic.code),
+        [code],
+      );
+      assert.strictEqual(editor.document.getText(), line);
+      assert.strictEqual(editor.document.isDirty, false);
+    };
+    await assertIssue(
+      "M000000000001_unknown",
+      `7${" ".repeat(127)}`,
+      "UNKNOWN_RECORD",
+    );
+    await assertIssue(
+      "M000000000001_short",
+      callRecord.slice(0, -1),
+      "INVALID_LENGTH",
+    );
+    await assertIssue("M000000000001_long", `${callRecord} `, "INVALID_LENGTH");
+    await assertIssue(
+      "M000000000001_invalid-n",
+      `${callRecord.slice(0, 74)}X${callRecord.slice(75)}`,
+      "INVALID_TYPE",
+    );
+    await assertIssue(
+      "M000000000001_mixed-n",
+      `${callRecord.slice(0, 74)}0000001 23${callRecord.slice(84)}`,
+      "INVALID_TYPE",
+    );
+    const blankNumeric = `${callRecord.slice(0, 74)}${" ".repeat(10)}${callRecord.slice(84)}`;
+    const blankNumericEditor = await openFile("M000000000001_blank-n", [
+      blankNumeric,
+    ]);
+    assert.deepStrictEqual(host.diagnosticsFor(blankNumericEditor), []);
   });
 
   test("全銀33形式のサンプルを公式レコード行へ割り当てる", async function () {

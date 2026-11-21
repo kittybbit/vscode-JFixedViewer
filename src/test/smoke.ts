@@ -4,6 +4,7 @@ import {
   toDiagnostics,
 } from "../presentation/vscode/diagnostics";
 import { verifyTextEncodingApi } from "./support/encodingSmoke";
+import { verifyNttDialSmoke } from "./support/nttSmoke";
 import { verifyVisibleRangeRendering } from "./support/visibleRangeSmoke";
 
 const extensionId = "kittybbit.vscode-JFixedViewer";
@@ -13,6 +14,7 @@ const commandId = "vscode-JFixedViewer.FiletypePicker";
 export async function run(): Promise<void> {
   await verifyExtensionCommand();
   await verifyTextEncodingApi();
+  await verifyNttDialSmoke();
   verifyDefaultSettings();
   const diagnostics = verifyDiagnosticConversion();
   await verifyDiagnosticCollection(diagnostics);
