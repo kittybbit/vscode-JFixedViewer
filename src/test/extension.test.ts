@@ -2,6 +2,7 @@ import * as assert from "assert";
 import { readFileSync, readdirSync } from "node:fs";
 import path = require("node:path");
 import { CharacterizationHost } from "./support/characterizationHost";
+import { createTelephoneSmokeLines } from "./support/nttSmoke";
 import {
   FakePosition,
   FakeRange,
@@ -21,6 +22,8 @@ const zenginForeignCurrency = "全銀協規定形式/外貨預金入出金取引
 const jpxFourPrices = "JPX/四本値(デリバティブ)";
 const nttDialMeisai = "NTT/ダイヤル通話料金明細内訳書（2026年9月以降）";
 const nttDialFileType = "dial_meisai_2026@ntt";
+const nttTelephoneMeisai = "NTT/電話番号別明細内訳書（2026年9月以降）";
+const nttTelephoneFileType = "telephone_2026@ntt";
 const clearType = "なし/なし";
 const jpxFourPricesFieldNames = [
   "レコード区分",
@@ -1113,6 +1116,393 @@ suite("固定長表示の現行挙動", () => {
       blankNumeric,
     ]);
     assert.deepStrictEqual(host.diagnosticsFor(blankNumericEditor), []);
+  });
+
+  test("NTT電話番号別形式の初回・継続、合計、UTF-8境界と診断を確認する", async () => {
+    const definition = loadBuiltInDefinitions().find(
+      ({ fileType }) => fileType === nttTelephoneFileType,
+    );
+    assert.ok(definition);
+    assert.deepStrictEqual(
+      {
+        name: definition.name,
+        encoding: definition.encoding,
+        lengthUnit: definition.lengthUnit,
+      },
+      {
+        name: nttTelephoneMeisai,
+        encoding: "utf8bom",
+        lengthUnit: "byte",
+      },
+    );
+    assert.strictEqual(definition.rows.length, 6);
+    assert.deepStrictEqual(
+      definition.rows.map((row) => row.fields?.length),
+      [5, 94, 89, 15, 86, 5],
+    );
+    assert.deepStrictEqual(
+      definition.rows.map((row) =>
+        row.fields?.reduce((total, field) => total + field.length, 0),
+      ),
+      [512, 512, 512, 512, 512, 512],
+    );
+    assert.strictEqual(
+      definition.fileNamePattern.test("K1234567890_202609"),
+      true,
+    );
+    assert.strictEqual(
+      definition.fileNamePattern.test("K123456789012_202609"),
+      true,
+    );
+    assert.strictEqual(
+      definition.fileNamePattern.test("K12345678901_202609"),
+      false,
+    );
+    assert.strictEqual(
+      definition.fileNamePattern.test("K123456789_202609"),
+      false,
+    );
+    assert.strictEqual(
+      definition.fileNamePattern.test("K123456789012_202609.dat"),
+      false,
+    );
+
+    const samplePath = path.resolve(
+      __dirname,
+      "../../sample/ntt/K000000000001_202609",
+    );
+    const sampleBytes = readFileSync(samplePath);
+    assert.deepStrictEqual([...sampleBytes.subarray(0, 3)], [0xef, 0xbb, 0xbf]);
+    const sampleText = sampleBytes.toString("utf8").replace(/^\uFEFF/u, "");
+    assert.strictEqual(sampleText.endsWith("\r\n"), true);
+    assert.strictEqual(sampleText.replace(/\r\n/gu, "").includes("\n"), false);
+    const sampleLines = sampleText.split("\r\n");
+    assert.strictEqual(sampleLines.pop(), "");
+    assert.strictEqual(sampleLines.length, 6);
+    assert.deepStrictEqual(sampleLines, createTelephoneSmokeLines());
+    assert.deepStrictEqual(
+      sampleLines.map((line) => Buffer.byteLength(line, "utf8")),
+      [512, 512, 512, 512, 512, 512],
+    );
+    const firstTelephoneRecord = sampleLines[1];
+    const continuedTelephoneRecord = sampleLines[2];
+    const firstTotalRecord = sampleLines[3];
+    const continuedTotalRecord = sampleLines[4];
+    const overallTotalRecord = sampleLines[5];
+    assert.ok(firstTelephoneRecord);
+    assert.ok(continuedTelephoneRecord);
+    assert.ok(firstTotalRecord);
+    assert.ok(continuedTotalRecord);
+    assert.ok(overallTotalRecord);
+    assert.strictEqual(
+      firstTelephoneRecord.slice(0, 10),
+      continuedTelephoneRecord.slice(0, 10),
+    );
+    assert.deepStrictEqual(
+      [
+        firstTelephoneRecord.slice(14, 18),
+        continuedTelephoneRecord.slice(14, 18),
+        firstTotalRecord.slice(14, 18),
+        continuedTotalRecord.slice(14, 18),
+      ],
+      ["0102", "0202", "0102", "0202"],
+    );
+    assert.strictEqual(Number(firstTotalRecord.slice(63, 71)), 1);
+    assert.strictEqual(Number(overallTotalRecord.slice(26, 34)), 1);
+    assert.strictEqual(firstTelephoneRecord.slice(52, 63), "00000004567");
+    assert.strictEqual(firstTotalRecord.slice(52, 63), "00000004567");
+    const breakdownTotal = (line: string) =>
+      Array.from({ length: 16 }, (_, index) =>
+        Number(line.slice(70 + index * 20, 81 + index * 20)),
+      ).reduce((total, amount) => total + amount, 0);
+    assert.strictEqual(breakdownTotal(firstTelephoneRecord), 4567);
+    assert.strictEqual(breakdownTotal(continuedTotalRecord), 4567);
+    assert.strictEqual(continuedTotalRecord.slice(12, 18), "510202");
+
+    const openFile = async (fileName: string, lines: string[]) => {
+      const editor = host.createEditor(fileName, lines);
+      host.setActiveEditor(editor);
+      await host.chooseFileType(nttTelephoneMeisai);
+      await host.waitForAnalysis();
+      return editor;
+    };
+    const sampleEditor = await openFile("K000000000001_202609", sampleLines);
+    assert.strictEqual(sampleEditor.document.encoding, "utf8bom");
+    assert.strictEqual(sampleEditor.document.isDirty, false);
+    assert.strictEqual(sampleEditor.document.getText(), sampleLines.join("\n"));
+    assert.deepStrictEqual(host.diagnosticsFor(sampleEditor), []);
+    assert.deepStrictEqual(
+      sampleLines.map((_, index) => [
+        ...new Set(rowNames(sampleEditor, index)),
+      ]),
+      [
+        ["管理レコード"],
+        ["電話番号別内訳レコード（初回）"],
+        ["電話番号別内訳レコード（継続）"],
+        ["お客様番号合計レコード（初回）"],
+        ["お客様番号合計レコード（継続）"],
+        ["総合計レコード"],
+      ],
+    );
+
+    const signedAmount = optionsForLine(sampleEditor, 1).find((option) =>
+      option.hoverMessage?.value.includes("内訳額（1）"),
+    );
+    assert.ok(signedAmount);
+    assert.match(
+      signedAmount.hoverMessage?.value ?? "",
+      /データ型: 符号付き数値/u,
+    );
+    const accountName = optionsForLine(sampleEditor, 3).find((option) =>
+      option.hoverMessage?.value.includes("口座名義"),
+    );
+    assert.ok(accountName);
+    assert.deepStrictEqual(
+      [
+        accountName.range.start.character,
+        accountName.range.end.character,
+        accountName.hoverMessage?.value.includes("(120バイト)"),
+      ],
+      [85, 125, true],
+    );
+    const recipientName = optionsForLine(sampleEditor, 3).find((option) =>
+      option.hoverMessage?.value.includes("氏名"),
+    );
+    assert.ok(recipientName);
+    assert.deepStrictEqual(
+      [
+        recipientName.range.start.character,
+        recipientName.range.end.character,
+        recipientName.hoverMessage?.value.includes("(150バイト)"),
+      ],
+      [125, 175, true],
+    );
+
+    const continuedAmountOptions = optionsForLine(sampleEditor, 4);
+    const firstContinuedAmount = continuedAmountOptions.find((option) =>
+      option.hoverMessage?.value.includes("内訳額（1）"),
+    );
+    const lastContinuedAmount = continuedAmountOptions.find((option) =>
+      option.hoverMessage?.value.includes("内訳額（16）"),
+    );
+    assert.ok(firstContinuedAmount);
+    assert.ok(lastContinuedAmount);
+    assert.deepStrictEqual(
+      [
+        firstContinuedAmount.range.start.character,
+        firstContinuedAmount.range.end.character,
+        firstContinuedAmount.hoverMessage?.value.includes(
+          "データ型: 符号付き数値",
+        ),
+        continuedTotalRecord.slice(70, 81),
+      ],
+      [70, 81, true, "-0000000123"],
+    );
+    assert.deepStrictEqual(
+      [
+        lastContinuedAmount.range.start.character,
+        lastContinuedAmount.range.end.character,
+        lastContinuedAmount.hoverMessage?.value.includes(
+          "データ型: 符号付き数値",
+        ),
+        continuedTotalRecord.slice(370, 381),
+      ],
+      [370, 381, true, "00000000000"],
+    );
+
+    const tenDigitCustomer = "  1234567890";
+    const customerFieldOffsets = [0, 18, 18, 0, 0, 0] as const;
+    const tenDigitLines = sampleLines.map((line, index) => {
+      const offset = customerFieldOffsets[index]!;
+      return `${line.slice(0, offset)}${tenDigitCustomer}${line.slice(offset + 12)}`;
+    });
+    assert.strictEqual(tenDigitLines.length, 6);
+    assert.deepStrictEqual(
+      tenDigitLines.map((line, index) => {
+        const offset = customerFieldOffsets[index]!;
+        return line.slice(offset, offset + 12);
+      }),
+      Array.from({ length: 6 }, () => tenDigitCustomer),
+    );
+    assert.deepStrictEqual(
+      tenDigitLines.map((line) => Buffer.byteLength(line, "utf8")),
+      [512, 512, 512, 512, 512, 512],
+    );
+    const tenDigitEditor = await openFile("K1234567890_202609", tenDigitLines);
+    assert.deepStrictEqual(host.diagnosticsFor(tenDigitEditor), []);
+
+    const assertIssue = async (
+      fileName: string,
+      line: string,
+      code: string,
+    ) => {
+      const editor = await openFile(fileName, [line]);
+      assert.deepStrictEqual(
+        host.diagnosticsFor(editor)?.map((diagnostic) => diagnostic.code),
+        [code],
+      );
+      assert.strictEqual(editor.document.getText(), line);
+      assert.strictEqual(editor.document.isDirty, false);
+    };
+    const assertSelectedRow = async (
+      fileName: string,
+      line: string,
+      expectedRow: string,
+    ) => {
+      const editor = await openFile(fileName, [line]);
+      assert.deepStrictEqual(host.diagnosticsFor(editor), []);
+      assert.deepStrictEqual([...new Set(rowNames(editor, 0))], [expectedRow]);
+      assert.strictEqual(editor.document.getText(), line);
+      assert.strictEqual(editor.document.isDirty, false);
+    };
+    const withRecordNumber = (line: string, number: string) =>
+      `${line.slice(0, 14)}${number}${line.slice(16)}`;
+    await assertSelectedRow(
+      "K000000000001_11_02",
+      withRecordNumber(continuedTelephoneRecord, "02"),
+      "電話番号別内訳レコード（継続）",
+    );
+    await assertSelectedRow(
+      "K000000000001_11_03",
+      withRecordNumber(continuedTelephoneRecord, "03"),
+      "電話番号別内訳レコード（継続）",
+    );
+    await assertSelectedRow(
+      "K000000000001_11_99",
+      withRecordNumber(continuedTelephoneRecord, "99"),
+      "電話番号別内訳レコード（継続）",
+    );
+    await assertSelectedRow(
+      "K000000000001_51_02",
+      withRecordNumber(continuedTotalRecord, "02"),
+      "お客様番号合計レコード（継続）",
+    );
+    await assertSelectedRow(
+      "K000000000001_51_03",
+      withRecordNumber(continuedTotalRecord, "03"),
+      "お客様番号合計レコード（継続）",
+    );
+    await assertSelectedRow(
+      "K000000000001_51_99",
+      withRecordNumber(continuedTotalRecord, "99"),
+      "お客様番号合計レコード（継続）",
+    );
+    const adminRecord = sampleLines[0];
+    const firstDetail = sampleLines[1];
+    assert.ok(adminRecord);
+    assert.ok(firstDetail);
+    await assertIssue(
+      "K000000000001_unknown",
+      `${adminRecord.slice(0, 12)}99${adminRecord.slice(14)}`,
+      "UNKNOWN_RECORD",
+    );
+    await assertIssue(
+      "K000000000001_11_00",
+      withRecordNumber(continuedTelephoneRecord, "00"),
+      "UNKNOWN_RECORD",
+    );
+    await assertIssue(
+      "K000000000001_11_0A",
+      withRecordNumber(continuedTelephoneRecord, "0A"),
+      "UNKNOWN_RECORD",
+    );
+    await assertIssue(
+      "K000000000001_51_00",
+      withRecordNumber(continuedTotalRecord, "00"),
+      "UNKNOWN_RECORD",
+    );
+    await assertIssue(
+      "K000000000001_51_0A",
+      withRecordNumber(continuedTotalRecord, "0A"),
+      "UNKNOWN_RECORD",
+    );
+    await assertIssue(
+      "K000000000001_short",
+      adminRecord.slice(0, -1),
+      "INVALID_LENGTH",
+    );
+    await assertIssue(
+      "K000000000001_long",
+      `${adminRecord} `,
+      "INVALID_LENGTH",
+    );
+    await assertIssue(
+      "K000000000001_invalid-n",
+      `${firstDetail.slice(0, 52)}X${firstDetail.slice(53)}`,
+      "INVALID_TYPE",
+    );
+    await assertIssue(
+      "K000000000001_mixed-n",
+      `${firstDetail.slice(0, 52)}00000045 67${firstDetail.slice(63)}`,
+      "INVALID_TYPE",
+    );
+    const blankAmount = `${firstDetail.slice(0, 52)}${" ".repeat(11)}${firstDetail.slice(63)}`;
+    const blankAmountEditor = await openFile("K000000000001_blank-n", [
+      blankAmount,
+    ]);
+    assert.deepStrictEqual(host.diagnosticsFor(blankAmountEditor), []);
+
+    const totalInitial = sampleLines[3];
+    assert.ok(totalInitial);
+    const invalidBoundaryLine = `${totalInitial.slice(0, 85)}${"A".repeat(119)}ｱ${totalInitial.slice(125, -2)}`;
+    assert.strictEqual(Buffer.byteLength(invalidBoundaryLine, "utf8"), 512);
+    const switchLines = [...sampleLines];
+    switchLines[3] = invalidBoundaryLine;
+    const switchEditor = host.createEditor(
+      "K000000000001_format-switch",
+      switchLines,
+    );
+    host.setActiveEditor(switchEditor);
+    const originalText = switchEditor.document.getText();
+    const requestStart = host.openTextDocumentRequests.length;
+    let saveCount = 0;
+    const saveListener = host.documentSaveEmitter.event(() => {
+      saveCount += 1;
+    });
+    try {
+      await host.chooseFileType(jpxFourPrices);
+      await host.waitForAnalysis();
+      assert.notStrictEqual(switchEditor.document.encoding, "utf8bom");
+      assert.strictEqual(switchEditor.document.getText(), originalText);
+      assert.strictEqual(switchEditor.document.isDirty, false);
+
+      await host.chooseFileType(nttTelephoneMeisai);
+      await host.waitForAnalysis();
+      const selectionRequests =
+        host.openTextDocumentRequests.slice(requestStart);
+      assert.ok(
+        selectionRequests.some(({ encoding }) => encoding !== "utf8bom"),
+      );
+      assert.ok(
+        selectionRequests.some(({ encoding }) => encoding === "utf8bom"),
+      );
+      assert.strictEqual(switchEditor.document.encoding, "utf8bom");
+      const boundaryDiagnostics = host.diagnosticsFor(switchEditor);
+      assert.ok(boundaryDiagnostics && boundaryDiagnostics.length > 0);
+      assert.deepStrictEqual(
+        boundaryDiagnostics.map(({ code }) => code),
+        [
+          "INVALID_BYTE_BOUNDARY",
+          "INVALID_BYTE_BOUNDARY",
+          "INVALID_BYTE_BOUNDARY",
+        ],
+      );
+      assert.deepStrictEqual(
+        [...new Set(rowNames(switchEditor, 3))],
+        ["お客様番号合計レコード（初回）"],
+      );
+      assert.strictEqual(
+        optionsForLine(switchEditor, 3).some((option) =>
+          option.hoverMessage?.value.includes("口座名義"),
+        ),
+        false,
+      );
+      assert.strictEqual(switchEditor.document.getText(), originalText);
+      assert.strictEqual(switchEditor.document.isDirty, false);
+      assert.strictEqual(saveCount, 0);
+    } finally {
+      saveListener.dispose();
+    }
   });
 
   test("全銀33形式のサンプルを公式レコード行へ割り当てる", async function () {

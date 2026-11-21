@@ -11,6 +11,8 @@ const fileName = "M000000000001_202609";
 const customerNumber = "000000000001";
 const telephoneNumber = "00-0000-0000";
 const billingMonth = "202609";
+const telephoneFileType = "telephone_2026@ntt";
+const telephoneFileName = "K000000000001_202609";
 
 type FieldValue = readonly [number, string, ("left" | "right")?];
 
@@ -124,7 +126,7 @@ function createUtf8BomBytes(lines: readonly string[]): Uint8Array {
   return bytes;
 }
 
-/** Desktop と Web の実ホストで NTT ダイヤル形式の読込と描画を確認する。 */
+/** Desktop と Web の実ホストで NTT 帳票の読込と描画を確認する。 */
 export async function verifyNttDialSmoke(): Promise<void> {
   const lines = createSmokeLines();
   const bytes = createUtf8BomBytes(lines);
@@ -231,6 +233,295 @@ export async function verifyNttDialSmoke(): Promise<void> {
         provider.readCount >= 1 &&
         provider.writeCount === 0,
       "NTT ダイヤルの読込と描画で文書変更または書込みが発生しました。",
+    );
+  } finally {
+    session.dispose();
+    editorDecorations.dispose();
+    if (editor) {
+      await vscode.commands.executeCommand(
+        "workbench.action.closeActiveEditor",
+      );
+    }
+    registration.dispose();
+    provider.dispose();
+  }
+
+  await verifyNttTelephoneSmoke();
+}
+
+function utf8Record(fields: readonly FieldValue[]): string {
+  const line = fields
+    .map(([width, value = "", alignment = "left"]) => {
+      const valueWidth = new TextEncoder().encode(value).length;
+      verify(
+        valueWidth <= width,
+        "NTT 電話番号別スモークの値が項目幅を超えています。",
+      );
+      const padding = " ".repeat(width - valueWidth);
+      return alignment === "right"
+        ? `${padding}${value}`
+        : `${value}${padding}`;
+    })
+    .join("");
+  verify(
+    new TextEncoder().encode(line).length === 512,
+    "NTT 電話番号別スモークのレコード幅が512バイトではありません。",
+  );
+  return line;
+}
+
+function telephoneDetailGroup(
+  index: number,
+  amount = "00000000000",
+): FieldValue[] {
+  return [
+    [2, index === 1 ? "02" : "01"],
+    [4, `3${String(index).padStart(3, "0")}`],
+    [1, index % 2 === 0 ? "1" : "0"],
+    [11, amount],
+    [2, "11"],
+  ];
+}
+
+export function createTelephoneSmokeLines(): string[] {
+  const detailHead = (recordNumber: string): FieldValue[] => [
+    [6, "079999"],
+    [4, "8888"],
+    [2, "  "],
+    [2, "11"],
+    [2, recordNumber],
+    [2, "02"],
+    [12, customerNumber],
+  ];
+  const detailAmounts = [
+    "-0000000123",
+    "00000004690",
+    ...Array.from({ length: 14 }, () => "00000000000"),
+  ];
+  const details = (withAmounts = false) =>
+    Array.from({ length: 16 }, (_, index) =>
+      telephoneDetailGroup(
+        index + 1,
+        withAmounts ? (detailAmounts[index] ?? "00000000000") : undefined,
+      ),
+    ).flat();
+  const totalHead = (recordNumber: string): FieldValue[] => [
+    [12, customerNumber],
+    [2, "51"],
+    [2, recordNumber],
+    [2, "02"],
+  ];
+  const accountName = "ﾐﾅﾄｶｲｼｬ".repeat(10).slice(0, 40);
+  const recipientName = "ﾔﾏﾀﾛｳ".repeat(10).slice(0, 50);
+
+  return [
+    utf8Record([
+      [12, customerNumber],
+      [2, "01"],
+      [6, billingMonth],
+      [1, "1"],
+      [491, ""],
+    ]),
+    utf8Record([
+      ...detailHead("01"),
+      [1, "0"],
+      [2, "  "],
+      [4, "0912"],
+      [4, "0928"],
+      [11, ""],
+      [11, "00000004567"],
+      ...details(true),
+      [129, ""],
+    ]),
+    utf8Record([...detailHead("02"), [33, ""], ...details(), [129, ""]]),
+    utf8Record([
+      ...totalHead("01"),
+      [15, ""],
+      [4, "0912"],
+      [4, "0928"],
+      [11, ""],
+      [11, "00000004567"],
+      [8, "00000001"],
+      [7, "0000000"],
+      [7, "0000000"],
+      [120, accountName],
+      [150, recipientName],
+      [157, ""],
+    ]),
+    utf8Record([...totalHead("02"), [45, ""], ...details(true), [129, ""]]),
+    utf8Record([
+      [12, customerNumber],
+      [2, "91"],
+      [12, "000000004567"],
+      [8, "00000001"],
+      [478, ""],
+    ]),
+  ];
+}
+
+async function verifyNttTelephoneSmoke(): Promise<void> {
+  const lines = createTelephoneSmokeLines();
+  const bytes = createUtf8BomBytes(lines);
+  const scheme = `jfixedviewerntttelephone${Date.now()}`;
+  const provider = new ReadOnlyNttProvider(telephoneFileName, bytes);
+  const registration = vscode.workspace.registerFileSystemProvider(
+    scheme,
+    provider,
+    { isCaseSensitive: true },
+  );
+  const uri = vscode.Uri.parse(`${scheme}:/${telephoneFileName}`);
+  const definition = loadBuiltInDefinitions().find(
+    ({ fileType: candidate }) => candidate === telephoneFileType,
+  );
+  if (!definition) {
+    throw new Error("NTT 電話番号別形式が実ローダーに登録されていません。");
+  }
+
+  const editorDecorations = new EditorDecorations();
+  const decoration = createFixedWidthDecoration(
+    loadBuiltInDefinitions(),
+    new VscodeTextEncodingAdapter(),
+  );
+  const session = new DocumentRenderSession(decoration, editorDecorations);
+  let editor: vscode.TextEditor | undefined;
+  try {
+    const opened = await vscode.workspace.openTextDocument(uri);
+    const encodingResult = await ensureDocumentEncoding(opened, "utf8bom");
+    if (!encodingResult.ok) {
+      throw new Error(
+        "VS Code が NTT 電話番号別形式を UTF-8 BOM で再読込できません。",
+      );
+    }
+    const document = encodingResult.document;
+    const originalText = document.getText();
+    verify(
+      document.encoding === "utf8bom",
+      "NTT 電話番号別形式の文書 encoding が utf8bom ではありません。",
+    );
+    verify(
+      document.eol === vscode.EndOfLine.CRLF,
+      "NTT 電話番号別形式の CRLF が実ホストで認識されません。",
+    );
+    verify(
+      lines.every((line, index) => document.lineAt(index).text === line),
+      "BOM と CRLF を除いた NTT 電話番号別レコード内容が一致しません。",
+    );
+
+    const analysis = await decoration.analyze({
+      fileType: telephoneFileType,
+      lines: lines.map((text, line) => ({
+        line,
+        text,
+        isEmptyOrWhitespace: /^\s*$/u.test(text),
+      })),
+      validationEnabled: true,
+      currentEncoding: document.encoding,
+    });
+    const accountName = analysis.fields.find(
+      (field) => field.line === 3 && field.fieldName === "口座名義",
+    );
+    verify(
+      analysis.failure === undefined &&
+        analysis.issues.length === 0 &&
+        analysis.fields.length === 294,
+      "NTT 電話番号別スモークの6レコードに文字コードまたは検証の問題があります。",
+    );
+    verify(
+      accountName?.start === 85 && accountName.end === 205,
+      "日本語を含むNTT項目のUTF-8バイト範囲が一致しません。",
+    );
+    verify(
+      accountName?.displayStart === 85 &&
+        accountName.displayEnd === 125 &&
+        accountName.lengthUnit === "byte",
+      "日本語を含むNTT項目の表示位置が一致しません。",
+    );
+    const recipientName = analysis.fields.find(
+      (field) => field.line === 3 && field.fieldName === "氏名",
+    );
+    const firstContinuedAmount = analysis.fields.find(
+      (field) => field.line === 4 && field.fieldName === "内訳額（1）",
+    );
+    const lastContinuedAmount = analysis.fields.find(
+      (field) => field.line === 4 && field.fieldName === "内訳額（16）",
+    );
+    verify(
+      JSON.stringify([
+        [
+          accountName?.start,
+          accountName?.end,
+          accountName?.displayStart,
+          accountName?.displayEnd,
+          accountName?.type,
+          accountName?.lengthUnit,
+        ],
+        [
+          recipientName?.start,
+          recipientName?.end,
+          recipientName?.displayStart,
+          recipientName?.displayEnd,
+          recipientName?.type,
+          recipientName?.lengthUnit,
+        ],
+        [
+          firstContinuedAmount?.start,
+          firstContinuedAmount?.end,
+          firstContinuedAmount?.displayStart,
+          firstContinuedAmount?.displayEnd,
+          firstContinuedAmount?.type,
+          firstContinuedAmount?.lengthUnit,
+          lines[4]?.slice(70, 81),
+        ],
+        [
+          lastContinuedAmount?.start,
+          lastContinuedAmount?.end,
+          lastContinuedAmount?.displayStart,
+          lastContinuedAmount?.displayEnd,
+          lastContinuedAmount?.type,
+          lastContinuedAmount?.lengthUnit,
+          lines[4]?.slice(370, 381),
+        ],
+      ]) ===
+        JSON.stringify([
+          [85, 205, 85, 125, "C", "byte"],
+          [205, 355, 125, 175, "C", "byte"],
+          [70, 81, 70, 81, "符号付き数値", "byte", "-0000000123"],
+          [370, 381, 370, 381, "符号付き数値", "byte", "00000000000"],
+        ]),
+      "NTT帳票の半角カナ欄と合計継続内訳の位置・型・値が一致しません。",
+    );
+
+    editor = await vscode.window.showTextDocument(document, {
+      preview: false,
+    });
+    const request = session.beginSelection(document, telephoneFileType);
+    verify(
+      session.activateSelection(request),
+      "NTT 電話番号別形式を実ホストのレンダーセッションへ適用できません。",
+    );
+    const rendered = await session.render(request);
+    verify(
+      rendered === true,
+      "NTT 電話番号別形式の実ホスト描画が完了しません。",
+    );
+    verify(
+      editorDecorations.has(editor) &&
+        session.getSelectedFileType(uri.toString()) === telephoneFileType,
+      "NTT 電話番号別形式の項目装飾が実ホストに適用されません。",
+    );
+    verify(
+      vscode.languages
+        .getDiagnostics(document.uri)
+        .filter((diagnostic) => diagnostic.source === "JFixedViewer").length ===
+        0,
+      "正常な NTT 電話番号別レコードに診断が発生しました。",
+    );
+    verify(
+      !document.isDirty &&
+        document.getText() === originalText &&
+        provider.readCount >= 1 &&
+        provider.writeCount === 0,
+      "NTT 電話番号別レコードの読込と描画で文書変更または書込みが発生しました。",
     );
   } finally {
     session.dispose();
