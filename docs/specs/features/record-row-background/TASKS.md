@@ -10,16 +10,23 @@
 
 ## 現在の状態
 
-- 機能とスライス1の改訂計画は独立レビュー R4 と利用者の承認を経て `PLAN_APPROVED`。
-  完了済みのスライスはない。
+- 現在の再計画は `PLAN_APPROVED`。このスライスのローカル検証は GUI を起動せず、
+  テストコードで確認できる範囲に限る。独立計画レビューと利用者の承認を得た。計画コミットは未完了。
+- 直前の実装状態は `IMPLEMENTED`。Qlty の複雑度検査で出た7件を修正し、基準・修正後とも
+  指摘0件を確認した。独立実装レビュー R4 は、当時の計画で求めた実ホスト試験と目視、および
+  Qlty の一部証跡の不足により Findings と判定した。
 - 当初計画は `c08455a05ad32383008a095bb714d079e5788c16` としてコミット済みで、親と比較ベースは
   `64f09ff622a6719776e590be47967def9c3da4b4`。以前記録した `.git/index.lock` の書き込み失敗は
   この計画コミットで解消済み。
+- 改訂計画は独立レビュー R4 と利用者の承認を経て
+  `921f346d9f9e1d52d38d3e148356c1164730c40d`（tree `bcbca7897a837ae41838636bc0ee63ff83b69acc`）として
+  コミット済み。親は当初計画 `c08455a05ad32383008a095bb714d079e5788c16`、統合ベースは
+  `64f09ff622a6719776e590be47967def9c3da4b4`。開始条件を満たし、先行スライスはない。
 - 2026-11-21 の追加ユーザー指示で、全銀・JPX・NTT の38形式・206行への配色、近い役割への共通色、
-  および `npm run compile` の修正が追加された。当初の R2 レビューと計画承認は当初計画に適用する。
+  および `npm run compile` の修正が加わった。当初の R2 は初回計画のみ、R4 は改訂計画を対象とする。
 - 配色方式はファイル定義 JSON の `light` / `dark` 別の RGB 指定を採用する。
-- 作業ツリーの製品・テスト差分は未コミットの実装候補。改訂計画文書をコミットした後に作業を再開する。
-  ホスト実行と Qlty の必須証跡の不足は[調査と文書検証](#調査と文書検証)を参照。
+- 実装差分は未コミット。現在の比較ベース、パス、差分識別、通過と不足は
+  [調査と文書検証](#調査と文書検証)を参照する。
 
 [ライフサイクル状態](../../README.md#ライフサイクル状態)に従う。
 
@@ -29,8 +36,9 @@
   `codex/record-row-background`。比較ベースは `64f09ff622a6719776e590be47967def9c3da4b4`。
 - 当初計画コミットは `c08455a05ad32383008a095bb714d079e5788c16`、親と比較ベースは
   `64f09ff622a6719776e590be47967def9c3da4b4`。計画コミットには `SPECS.md` と `TASKS.md` のみを含む。
-- 再計画は当初計画コミットを親とし、`SPECS.md` と `TASKS.md` のみを含める。
-  スライス1の実装候補は未コミット。スライスの完了コミットと PR URL は未確定。
+- 改訂計画コミットは `921f346d9f9e1d52d38d3e148356c1164730c40d`、親は当初計画コミット、tree は
+  `bcbca7897a837ae41838636bc0ee63ff83b69acc`。これも `SPECS.md` と `TASKS.md` のみを含む。
+- スライス1の実装差分は比較ベースからの未コミット変更。スライス完了コミットと PR URL は未確定。
   完了承認と完了コミットの直後に Main が PR を公開し、ベース・ヘッド・差分・PR URL を記録する。
   同じ PR の最上位ヘッドに終了差分を含める。
 - 終了判定に進む前と終了コミット後に、Main が最新ヘッドの Verify、CodeQL の解析対象との対応、
@@ -43,10 +51,20 @@
 
 - 当初計画 `Approved`。利用者がレビュー済みの当初計画を `c08455a05ad32383008a095bb714d079e5788c16`
   としてコミットした。独立レビュー R2 の対象と判定は[調査と文書検証](#調査と文書検証)を参照する。
-- 改訂計画 `Approved`。独立レビュー R4 後に利用者が明示的に承認した。
+- 改訂計画 `Approved`。独立レビュー R4 後に利用者が明示的に承認し、
+  `921f346d9f9e1d52d38d3e148356c1164730c40d` としてコミットした。
   対象はこの2文書と、[実装と検証支援のパス](#実装と検証支援のパス)に列挙したスライス1の範囲。
   承認時点の文書 blob は `1426f7b7bc2e14faec861b684cae5cd3d2211a6a` と
   `bf324a389722bd8c23379a4c00d61d2eeb30f8e0`。承認記録の追記のみで計画の内容に変更はない。
+- GUI を起動しない検証への再計画 `Approved`。2026-11-22 に利用者が明示的に承認した。
+  承認対象は `TASKS.md` と `SPECS.md` の検証方法の変更。基準の HEAD は
+  `921f346d9f9e1d52d38d3e148356c1164730c40d`。計画コミットは未完了。
+  独立計画レビューは `PLAN_READY`。レビュー対象の blob は、状態・判定の追記前の
+  `SPECS.md` が `27e40dd45cd88e30dcb9037a4bc918e61538e00f`、
+  `TASKS.md` が `3edaee5c1736c9b851e89e8d30c2efacae41df46`。
+  GitHub の既存の必須チェックは引き続き適用する。
+  計画2文書の lint と差分の空白検査は通過した。ステージ時に `.git/index.lock` の作成が
+  `Operation not permitted` となり、計画コミットの手前で停止した。
 - スライス1の完了 `Pending`。対象候補は承認されたスライス1の範囲。
   独立実装レビュー、完了承認、完了コミットは未確定。
 - 終了 `Pending`。対象候補は[終了時の反映・削除](#機能の終了判定)のパス。
@@ -96,11 +114,11 @@
 組み込みの行定義は、近い役割に以下の共通色を使う。VS Code 1.100.0 では選択範囲の上に行背景が重なり、
 選択文字にテーマの前景色が使われる。通常時と選択時の文字を読めるよう、アルファを `40`（64/255）とする。
 
-| 行の役割 | `light` | `dark` |
-| -------- | ------- | ------ |
+| 行の役割       | `light`     | `dark`      |
+| -------------- | ----------- | ----------- |
 | ヘッダー・管理 | `#5CA5EA40` | `#284B7140` |
-| 通常データ | `#E8B05C40` | `#694F2740` |
-| 内訳・補足 | `#A887DD40` | `#46365E40` |
+| 通常データ     | `#E8B05C40` | `#694F2740` |
+| 内訳・補足     | `#A887DD40` | `#46365E40` |
 | 小計・トレーラ | `#64BC8040` | `#285B3D40` |
 | エンド・総合計 | `#96969640` | `#55555540` |
 
@@ -123,17 +141,16 @@ VS Code 1.100.0 のテーマ既定値に行背景を sRGB で合成した文字�
 
 <!-- markdownlint-disable MD013 -->
 
-| テーマ | ヘッダー・管理 | 通常データ | 内訳・補足 | 小計・トレーラ | エンド・総合計 |
-| ------ | -------------- | ---------- | ---------- | -------------- | -------------- |
-| Light Modern | 8.98 / 6.48 | 9.55 / 6.82 | 8.84 / 6.30 | 9.20 / 6.63 | 8.86 / 6.32 |
-| Dark Modern | 9.04 / 5.37 | 8.71 / 5.31 | 9.37 / 5.68 | 8.80 / 5.24 | 8.63 / 5.17 |
-| Light High Contrast | 11.66 / 6.42 | 12.41 / 6.27 | 11.48 / 6.85 | 11.94 / 6.30 | 11.51 / 6.86 |
-| Dark High Contrast | 18.72 / 13.71 | 18.29 / 14.10 | 19.12 / 13.37 | 18.40 / 13.98 | 18.21 / 14.21 |
+| テーマ              | ヘッダー・管理 | 通常データ    | 内訳・補足    | 小計・トレーラ | エンド・総合計 |
+| ------------------- | -------------- | ------------- | ------------- | -------------- | -------------- |
+| Light Modern        | 8.98 / 6.48    | 9.55 / 6.82   | 8.84 / 6.30   | 9.20 / 6.63    | 8.86 / 6.32    |
+| Dark Modern         | 9.04 / 5.37    | 8.71 / 5.31   | 9.37 / 5.68   | 8.80 / 5.24    | 8.63 / 5.17    |
+| Light High Contrast | 11.66 / 6.42   | 12.41 / 6.27  | 11.48 / 6.85  | 11.94 / 6.30   | 11.51 / 6.86   |
+| Dark High Contrast  | 18.72 / 13.71  | 18.29 / 14.10 | 19.12 / 13.37 | 18.40 / 13.98  | 18.21 / 14.21  |
 
 <!-- markdownlint-enable MD013 -->
 
-行背景5色の区別、選択範囲と周囲の区別、交互項目・カーソル強調・診断と重なった文字の読みやすさは、
-この計算に加えて実ホストで確認する。
+配色の読みやすさの根拠にはこの計算を用いる。装飾の設定値と更新は模擬ホストのテストで確認する。
 
 ### 実装と検証支援のパス
 
@@ -148,7 +165,7 @@ VS Code 1.100.0 のテーマ既定値に行背景を sRGB で合成した文字�
 - `src/test/extension.test.ts`（行背景の回帰と既存の装飾アサーションの対応）
 
 状態・証跡の追記はこの `TASKS.md` に置く。新規依存、拡張の設定、解除用の定義、CI、既存サンプル、
-フィクスチャ、生成物、ロックファイルを変更する作業は対象外。既存の実ホストスモークを再利用する。
+フィクスチャ、生成物、ロックファイルを変更する作業は対象外。
 恒久文書の更新は終了段階で行う。[仕様の対象外](SPECS.md#対象外)も適用する。
 
 ### 受け入れ条件と検証
@@ -168,56 +185,39 @@ VS Code 1.100.0 のテーマ既定値に行背景を sRGB で合成した文字�
   行番号による取得と全文を走査しない設計を独立レビューでも確認する。
   行の追加・削除、種別・モードの変更、古い非同期結果、同形式の再選択、他形式・解除への切替、
   非表示・再表示、close・破棄で範囲とハンドルが更新されることを確かめる。
-- 固定したリビジョンの使い捨てスナップショットで `npm ci`、`npm exec -- tsc -p . --noEmit`、
-  `npm run compile`、
+- 検証対象の差分を特定し、`npm ci`、`npm exec -- tsc -p . --noEmit`、`npm run compile`、
   `npm exec -- webpack --mode production --devtool false`、`npm run test:prepare`、
-  `npm run test:architecture`、`npm run test:desktop`、`npm run test:desktop:min`、
-  `npm run test:web` を実行する。必要に応じて Chromium と表示サーバーを用意する。
+  `npm run test:architecture` と [Node でのテスト](#node-でのテスト)を実行する。
   `engines.vscode` が `^1.100.0` のままであることと、両ビルド、両ホストへの依存方向、
   公開コマンド・設定・テレメトリ契約の維持を確認する。
   `npm run compile` が Qlty を自動起動せずに両版をビルドし、`npm run qlty` と `prepackage` の品質検査経路が
   保持されることを、スクリプトの基準との差分と実行結果で確認する。
-- [Qlty の品質条件](../../validation.md#品質条件)に従う。基準と最終の使い捨てスナップショットで
+- [Qlty の品質条件](../../validation.md#品質条件)に従う。基準と最終の入力のそれぞれに対して
   `qlty check --all --sarif --no-fix` と
   `qlty smells --all --sarif --no-snippets` を実行し、
   公式 SARIF、設定・解析パス・対象の識別情報、終了コードを保持して新規・悪化指摘を確認する。
-  総合チェック `npm run qlty` も使い捨て環境で実行し、承認パスに反映した整形があれば
-  実際の最終差分を再検証する。対象 Markdown、相対リンク・構造、差分空白を検査する。
+  総合チェック `npm run qlty` を実行し、整形で最終差分が変わった場合は再検証する。
+  対象 Markdown、相対リンク・構造、差分空白を検査する。
 
-### 実ホストの目視手順
+### Node でのテスト
 
-1. 最終スナップショットで `npm run test:prepare` を実行し、`out/smoke-extension` を使う。
-   デスクトップは安定版の拡張開発ホストにこのパスを渡す。Web は同じスナップショットで以下を実行する。
-   用意したデスクトップ 1.100.0 でも同じ拡張開発パスで手順2・3を確認する。
+`npm run test:prepare` の後、既存の模擬ホストを使う5スイートを Node と Mocha で実行する。
+テストの読み込み時に `vscode` モジュールだけを空のオブジェクトに置き換え、各テストが用意する
+模擬ホストを使う。実行結果と、使用したモジュール置換コードと対象スイートを証跡に残す。
 
-   ```sh
-   npm exec -- vscode-test-web --browserType=chromium --quality=stable \
-     --extensionDevelopmentPath=out/smoke-extension .
-   ```
+- `out/test/extension.test.js`
+- `out/test/encoding.test.js`
+- `out/test/encodingSelection.test.js`
+- `out/test/encodingLifecycle.test.js`
+- `out/test/encodingReloadRace.test.js`
 
-2. [総合振込のサンプル](../../../../sample/zengin/50200121.sougou_furikomi.dat)を開き、
-   `JFixedViewer: 固定長のファイル形式を選択` から `全銀協規定形式/総合振込` を選ぶ。
-   文字コードの再読込が必要なら未編集の状態で選択を完了させる。
-   エディターを広げ、ヘッダー、データ、データ (EDI)、トレーラ、エンドの5色が行末の右まで続くことを確認する。
-3. 同じ文書を開いたまま、Light Modern、Dark Modern、Light High Contrast、
-   Dark High Contrast の組み込みテーマを順に切り替える。形式の再選択や文書の再読込なしに色が更新され、
-   5色の違いと通常時の文字が見えることを確認する。各テーマでヘッダー、データ、データ (EDI)、
-   トレーラ、エンドの全5種について項目の一部を選択し、選択文字と選択範囲の境界を見分けられることを確かめる。
-   各テーマで `line`、`marker`、`alternating` の表示を切り替え、行背景の上でそれぞれを見分ける。
-   `alternating` では全5種で交互項目を見分けられることを確認し、カーソルを動かして現在項目の強調とホバーを確認する。
-4. 安定版デスクトップと Web でサンプルの作業用コピーを使い、データ行を増やして文書を分割する。
-   片方を先頭、もう片方を末尾までスクロールし、両方で該当する行種別が着色されることを確認する。
-   トレーラを `8` だけに短縮し、着色と行長診断を確認する。未知の種別に変えて背景が消え診断が
-   更新されること、種別を戻して診断を無効にすると背景が残ることを確認する。行の追加・削除の後、
-   隠して再表示し、別形式に切り替え、最後に `なし/なし` を選んで両表示の残像がないことを確認する。
-5. 検査した入力、各ホストとブラウザーのバージョン、テーマ名、設定、観察結果、画面の証跡を
-   保存する。自動テストと手順2〜4の目視結果を個別に記録する。目視を実施できない場合は
-   対象ホストと不足する観察を Missing として Main に返す。
+このスライスでは、GUI を起動する実ホストのスモークと目視は対象外とし、Not Applicable と記録する。
+両版のビルドと最小対応版の宣言は確認する。既存のホストテストや CI の定義は維持する。
 
 ### リスクと停止条件
 
-- 行背景と既存の強調の重なりはテーマと描画ホストに依存する。実装担当が目視し、
-  仕様と配色の範囲で確認できない場合は Main に戻す。
+- 実際の色の合成、選択範囲や診断と重なったときの見え方、テーマ切替時の表示、
+  実ホスト固有の互換性は、色の計算・装飾オプションの検査・ビルドだけでは確認できない。
 - 表示範囲更新で全文の再処理や色別ハンドルの滞留が生じると、大きな文書や分割表示に影響する。
   実装担当が索引利用と破棄を検証し、独立レビューで確認する。
 - 承認パス、色の契約、互換性、責務、依存関係、検証や承認の境界を変える必要があれば、編集前に
@@ -262,37 +262,138 @@ VS Code 1.100.0 のテーマ既定値に行背景を sRGB で合成した文字�
   レビュー対象の `SPECS.md` は `4517ed2ba717cd97f6ab6e907ad09dabd9efb75e`、
   `TASKS.md` は判定追記前の `6e048394639e8066d43b56ba00f0401e4609e154`。
   4テーマ・3種別の通常時と選択時を独立に再計算し、計画の結果と一致した。
-- 実装候補は比較ベース `64f09ff622a6719776e590be47967def9c3da4b4` からの未コミット変更。
-  解析 DTO、色ペア検証、行背景の VS Code 描画、強調線の分離、38形式・206行の組み込み配色、
-  回帰テスト、`package.json` の compile 起動経路を含む。JSON は色プロパティを除き計画時の内容と一致し、
-  206行すべてに有効な色ペアがあり重複キーはない。
-- 使い捨てスナップショット `/tmp/JFixedViewer-row-background-final.TY9Hdf` で
-  型検査 `npm exec -- tsc -p . --noEmit` と `npm run compile`（Desktop/Web）が通過した。
-  `npm run test:prepare` も通過した。
-  `npm run test:architecture` は 7/7 通過。Node/Mocha 模擬 VS Code ホストで
-  `extension.test.js` は 34 passing（ログ `/tmp/jfixedviewer-web-check.QO1wp4/mock-test.log`）。
-  これらは実 VS Code ホストでの統合実行を代替しない。
-- 実ホストの自動試験はテスト開始前に停止した。キャッシュ済み Desktop ホストは実行ファイルがなく
-  `Electron ENOENT`。`/Applications/Visual Studio Code.app/Contents/MacOS/Code` を指定した安定版試行と、
-  `test:desktop:min` の VS Code 1.100.0 試行はいずれも `SIGABRT`。
-  Web は Chromium の起動時に macOS `bootstrap_check_in Permission denied (1100)` で停止した
-  （ログ `/tmp/jfixedviewer-web-check.QO1wp4/desktop-host.log`、`web-host.log`）。
-  最小対応版と Web の目視、および選択範囲や診断などとの重なりを含む手順2〜4の全項目は未確認。
+- 現在の HEAD は改訂計画コミット `921f346d9f9e1d52d38d3e148356c1164730c40d`、親は当初計画
+  `c08455a05ad32383008a095bb714d079e5788c16`、比較ベースは
+  `64f09ff622a6719776e590be47967def9c3da4b4`。製品・テスト変更と本記録は未コミット。
+  製品の変更パスは `package.json`、`src/application/fixedWidth/FixedWidthDecoration.ts`、
+  `src/domain/fixedWidth/projectFields.ts`、`src/infrastructure/definitions/loadBuiltInDefinitions.ts`、
+  `src/presentation/vscode/DocumentRenderSession.ts`、`src/presentation/vscode/EditorDecorations.ts`、
+  `src/resource/definitions/{jpx,ntt,zengin}.json`、`src/test/extension.test.ts`。
+  独立実装レビュー R3 時点の HEAD `921f346d9f9e1d52d38d3e148356c1164730c40d` からの
+  binary diff SHA-256（製品とテストの10パス）は
+  `d6136175e65cd04af424cad85eafd4c25890cdbcf564211d2595282b3089f4eb`。
+  未追跡の `.serena/` は作業範囲外で、このスライス差分に含めない。
+- 実装には解析時の行背景 DTO、色ペア検証、表示範囲に応じた行装飾、カーソル・交互項目の輪郭線、
+  38形式・206行の配色、既存挙動の回帰テスト、compile 時の Qlty 自動起動削除を含む。
+  組み込み JSON は色以外の内容が比較ベースと一致し、206行すべてに有効な色ペアがあり、重複キーはない。
+  既存の色装飾ハンドルを1回の描画更新で二重に設定していた呼び出しを1回にし、同色・同範囲の再描画ごとに
+  色別ハンドルを1度だけ設定するテストを追加した。表示の色や適用範囲は変えない局所的な負荷改善。
+- 更新後の実装・テストを `/tmp/JFixedViewer-row-background-final.TY9Hdf` に反映して検証した。
+  `npm exec -- tsc -p . --noEmit`、`npm run compile`（Desktop/Web）、
+  `npm run test:prepare` は通過。
+  `npm run test:architecture` は 7/7 通過。`mock-vscode.cjs` による Node/Mocha 模擬ホストで
+  `extension.test.js` は、レビュー指摘に対応した直接アサーション追加後も34 passing
+  （ログ `/tmp/jfixedviewer-row-background-findings.mock.log`）。
+  総合振込5色、全組み込み行の配色、表示範囲・スクロール・分割・編集・切替、装飾破棄を含む。
+  独立実装レビューは行背景を直接検査するテストの不足を Findings と判定した。
+  修正前の差分 SHA-256 は `ab241352713c5e7b174632e48d960ceab4d124d533f78094bb41906615488771`。
+  指摘された直接検査を既存テストに追加した。モード別行選択と
+  色の有無、byte境界不成立時の色、前後20行・範囲端・重複/離れた表示範囲、行挿入・削除、
+  失効した非同期結果、なし/なし解除、非表示後の再表示、close/dispose 後の装飾ハンドル、
+  無色行の cursor/alternating 輪郭を確認する。
+  再レビュー後、同一文書でモードを有効・不正・有効に編集し、後続行背景が消えて戻る検査も追加した。
+  独立実装レビュー R3 で製品・テストの指摘解消を確認した。必須検証証跡の不足により判定は Findings。
+  更新後 `npm exec -- tsc -p . --noEmit` と `npm run compile-tests` は通過。
+  これらは実 VS Code の自動テストや全目視を代替しない。
+- 使い捨てスナップショット `/tmp/jfixedviewer-sdd-final.nCsHjy` では、ロックファイルとキャッシュからの
+  `npm ci --offline` と本番 Webpack ビルドが通過した。Web には基準でも出るサイズ警告3件が残る。
+  `npm-ci.log` と `production.log` を参照。回帰テスト追記後も製品コードと依存関係は同一。
+- 同じスナップショットで Desktop 安定版と `test:desktop:min`（VS Code 1.100.0）を再試行した。
+  いずれもテスト開始前に `SIGABRT` で終了した。`desktop.log` と `desktop-min.log` を参照。
+  1.100.0 の GUI は起動したが、検証用フォルダーの信頼確認で止めたため、表示は未確認。
+- Web の `test:web` は Chromium 起動時の macOS
+  `bootstrap_check_in Permission denied (1100)` で停止した
+  （`/tmp/jfixedviewer-web-check.QO1wp4/web-host.log`）。別途、Main が VS Code Web 1.147.0
+  commit `8a14f0cc1b08d531eb83255ea3764ae22aa932b5` を起動し、localhost の組み込みブラウザーで
+  総合振込の5色を Light Modern、Dark Modern、Light High Contrast、Dark High Contrast で確認した。
+  DOM の computed CSS は両モード5色の RGB と alpha `0.25` が定義と一致した
+  （light: `92,165,234` / `232,176,92` / `168,135,221` / `100,188,128` / `150,150,150`、
+  dark: `40,75,113` / `105,79,39` / `70,54,94` / `40,91,61` / `85,85,85`）。
+  起動は `--browserType=none --host=127.0.0.1 --port=38117` の手動確認で、
+  変更前スナップショット `/tmp/jfixedviewer-web-check.QO1wp4` を使用し、自動 `test:web` ではない。
+  この4テーマの確認は二重呼び出し修正前であり、色・範囲の描画は同じだが、最終入力でのホスト目視ではない。
+  選択範囲、診断、表示モード、編集・分割と解除を含む残りの目視は Missing。
+  標準 `npm run test:web` は起動制限があり、Desktop 自動 test も未実行。
+- その後、最終製品差分と package-lock が一致する `/tmp/jfixedviewer-web-smoke.eQ6wsH` で
+  `npm run test:prepare`、`npm run compile`（Desktop/Web）、`npm run test:architecture`（7/7）が通過した。
+  `@vscode/test-web` の `createApp` 経路で VS Code Web 1.147.0 の既存 `smoke.js` を
+  IAB Chromium の `http://localhost:38119` から実行し、標準 `codeAutomationExit` が 0 を返した。
+  Chromium の別起動による手順であり、通常の `npm run test:web` 起動失敗と区別して Web smoke PASS とする。
+  この確認は最終差分と一致するスナップショットを使い、製品・テストソースを追加変更していない。
 - デスクトップの VS Code 1.147.0 を GUI から起動し、開発ホストで総合振込のサンプルを確認した。
   Shift JIS で表示され、5種の背景色と項目境界を目視できた。ダークテーマから Light Modern を
   一時プレビューすると、形式の再選択をせずに行背景が切り替わった。確認後はプレビューを解除した。
-- Qlty は CLI の初期ログ作成時に `PermissionDenied`、終了コード 101 となり、SARIF を取得できなかった。
-  `package.json` の変更は `compile` からの自動起動を外したもので、Qlty CLI 自体の障害を解消していない。
-  計画文書2件の Markdown lint と差分の空白チェックは通過した。
-  実ホストと Qlty の必須証跡が欠けるため、完了判定と `SLICE_READY` は保留する。
+  これは二重描画呼び出しの局所修正前の入力による観察。
+- Qlty は `qlty --version`、`qlty check --all --sarif --no-fix`、
+  `qlty smells --all --sarif --no-snippets` が初期ログの rolling appender 作成時に
+  `PermissionDenied`、終了コード 101 で停止し、SARIF を生成しなかった。`QLTY_LOG_STDERR=1` と
+  `/tmp` の XDG cache/state/data/config への指定でも同じ結果
+  （出力 `/tmp/jfixedviewer-qlty-check.log`、`/tmp/jfixedviewer-qlty-smells.log`）。
+  集約コマンド `npm run qlty` も同じ初期ログのエラーで停止した。
+  `/tmp/jfixedviewer-sdd-final.nCsHjy/qlty-aggregate.log` を参照。
+  `package.json` の変更は compile からの自動起動の削除に限る。
+- 最新の `SPECS.md` と `TASKS.md` は `markdownlint-cli2` 0.22.0 /
+  `markdownlint` 0.40.0 で lint 通過し、
+  `git diff --check 64f09ff622a6719776e590be47967def9c3da4b4` も通過。
+  Desktop の自動テスト、所定の目視、Qlty の SARIF が不足するため `SLICE_READY` は保留する。
+- 残りの検証用に `/tmp/jfixedviewer-sdd-check.M8vcZY` の `base` と `final` に使い捨て環境を用意した。
+  両方で `npm ci --offline` が通過し、`final` で最新差分を確認して `npm run test:prepare` が通過した。
+- ワークスペースの書き込み許可後に、この環境で残りのコマンドを再試行した。Desktop 安定版と
+  最小対応版はテスト開始前の `SIGABRT` でともに終了コード1。
+  `desktop-retry.log`、`desktop-min-retry.log` を参照。最小対応版の GUI は `final` を制限モードで開いた。
+  Qlty は両ツリーの `check` と `smells` がすべて終了コード101で、SARIF 出力は空だった。
+  `base-check.log`、`base-smells.log`、`final-check.log`、`final-smells.log` を参照。
+  `npm run qlty` も同じ初期ログの権限エラーで止まった。`qlty-retry.log` を参照。
+- 2026-11-21 の再開後、Qlty の初期ログを使い捨て環境に出し、公式 `smells` で基準0件、
+  導入差分7件を確認した。実装担当が承認済みの `EditorDecorations.ts` と `extension.test.ts` で
+  描画とテストの分岐を整理した。検証対象や設定、実装の範囲は維持した。修正後の HEAD からの
+  製品・テスト差分 SHA-256 は `bbf667dc29b594fa9bbf8d7634186809c054e6c72ec61510332c84ec6fb8a5dc`。
+- 修正後の証跡は `/tmp/jfixedviewer-row-qlty-r4.8W9yhI` にある。Qlty 0.645.0 の
+  `smells --all --sarif --no-snippets` は基準と最終で共通の39ファイルを解析し、いずれも終了コード0、
+  指摘0件。公式 SARIF 2.1.0、対象一覧、設定と入力のハッシュを保持した。
+  `check --all --sarif --no-fix` は共通キャッシュへのロック書き込みが許可されず終了コード99で、
+  両入力の SARIF が空。`npm run qlty` は `qlty:fmt` が終了コード99で停止し集約結果は1。
+  型検査、Desktop/Web ビルド、本番ビルド、テスト準備、アーキテクチャ7件、模擬ホスト34件、
+  変更したパスに対する Prettier と ESLint の直接検査は通過した。
+- 修正後の標準 Desktop 自動テストは安定版、1.100.0 とも、起動時に `SIGABRT` で終了コード1。
+  代替の GUI 開発ホスト（1.147.0）は既存ランナーの6ファイルを実行し、58件中57件が通過した。
+  残る既存スモークは、引き継がれたプロファイルの `jfixedviewer.boundaryStyle` が `marker` で、
+  既定値 `line` の確認に失敗した。1.100.0 を指定した GUI 起動も実際には1.147.0で実行された。
+  実行結果は `desktop-gui-runner.json` と `desktop-gui-minimum-attempt.json` に、
+  ビルド結果は `desktop-gui-prepare.log` にある。
+  Web 目視のローカルサーバーはループバックの listen が `EPERM` で停止した。
+  修正後の Web 実ホスト試験と、各ホストの所定の目視は Missing。
+- 独立実装レビュー R4 は、上記の修正後の差分 SHA-256 を照合した。全38形式・206行の配色、
+  色以外の定義と既存テストの維持、レイヤー境界、
+  表示行の索引参照、装飾の保持・破棄、Qlty `smells` の7件解消を確認した。
+  製品・テストの追加指摘はなかった。Qlty `check` と集約、および確定差分の実ホスト試験と目視を
+  証跡の指摘とし、判定は Findings（`IMPLEMENTED`）とした。
+- 利用者の指示に従い、`codex/record-row-background` の既存チェックアウトで作業を再開した。
+  承認済みの `precompile` 削除を再反映し、製品・テスト差分が R4 の SHA-256 と一致することを確認した。
+  同ブランチで `npm run compile`、`npm run test:prepare`、`npm run test:architecture`（7件）は通過。
+  Desktop 安定版は起動時に `SIGABRT`、最小対応版はキャッシュに実行ファイルがなく `ENOENT`、
+  Web は配布元の名前解決が `ENOTFOUND` となり、いずれもテスト開始前に停止した。
+- 同じブランチのビルドを使い、既存の配布物キャッシュを指定して最小対応版と Web を再試行した。
+  VS Code 1.100.0 は実行ファイルを読み込んだ後に `SIGABRT` で終了した。
+  Web は VS Code 1.147.0 の配布物を取得済みの状態で開始したが、ループバックの待ち受けが
+  `EPERM` となり、Chromium も権限エラーで終了した。ランナーは終了コード0を返したが、
+  テスト結果は出力されなかったため Pass と扱わない。
+- 同ブランチで標準の `qlty check --all --sarif --no-fix` を再実行した。
+  共有ディレクトリへのログ作成が `PermissionDenied` となり終了コード101、SARIF は空だった。
+  生ログと入力の識別情報は `/tmp/jfixedviewer-row-qlty-r4.8W9yhI` の
+  `checkout-standard-check` で始まるファイルにある。
+- 利用者の指示に従い、GUI を起動せず既存ブランチでテストコードによる検証を行った。
+  型検査とテスト準備は通過。アーキテクチャ検査は7件、模擬ホストは5スイートの57件がすべて通過。
+  実ホストのスモークと目視は今回の実行対象外。製品・テスト差分は R4 の SHA-256 と一致した。
+  出力と終了コードは同じ証跡ディレクトリの `checkout-no-gui-` で始まるファイルにある。
 - 実装候補の既存結果は、最終差分と検査内容、コマンド、設定、依存、ツール、検証範囲、比較ベースが一致し、
-  ログと入力の識別情報を参照できる項目に限って再利用する。変更で影響を受ける項目と Missing は実装段階で
-  検証し、GUI で未確認の項目も記録する。[証跡の有効性](../../evidence.md#証跡の有効性)に従う。
+  ログと入力の識別情報を参照できる項目に限って再利用する。変更で影響を受ける項目と検証範囲内の
+  Missing は実装段階で検証する。[証跡の有効性](../../evidence.md#証跡の有効性)に従う。
 
 ## 機能の終了判定
 
 - 最上位の PR と、機能フォルダー外から参照できる終了証跡に、受け入れ結果、正確な識別情報、
-  独立レビュー、承認、各ホストの検証、GitHub の最新ヘッドのチェックを保持する。
+  独立レビュー、承認、両版のビルドとテストコードの結果、GitHub の最新ヘッドのチェックを保持する。
   Main はマージ結果を確認してから `CLOSED` を記録する。残るリスクがあれば担当を記録する。
 - 終了差分で、利用者向けの変更記録と必要な恒久記述を更新する。
   - `CHANGELOG.md`（未リリースの項目に対応形式とテーマ追従を記載）
