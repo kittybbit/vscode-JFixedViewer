@@ -1,5 +1,8 @@
 import * as vscode from "vscode";
-import type { FixedWidthDecorationField } from "../../application/fixedWidth/FixedWidthDecoration";
+import type {
+  FixedWidthDecorationField,
+  FixedWidthDecorationRowBackground,
+} from "../../application/fixedWidth/FixedWidthDecoration";
 import {
   createCursorFieldDecoration,
   createFieldDecorations,
@@ -9,12 +12,23 @@ import {
   type VisibleLineRange,
 } from "./decorationStyle";
 
+type RowBackgroundColor = FixedWidthDecorationRowBackground["backgroundColor"];
+
+type VisibleRowBackground = {
+  color: RowBackgroundColor;
+  options: vscode.DecorationOptions[];
+};
+
 type EditorDecoration = {
   fileType: string;
   decorationType: vscode.TextEditorDecorationType;
   cursorDecorationType?: vscode.TextEditorDecorationType;
+  cursorBackgroundBorderType?: vscode.TextEditorDecorationType;
   fieldsByLine: ReadonlyMap<number, readonly FixedWidthDecorationField[]>;
+  rowBackgroundsByLine: ReadonlyMap<number, RowBackgroundColor>;
+  rowBackgroundDecorationTypes: Map<string, vscode.TextEditorDecorationType>;
   alternatingDecorationType?: vscode.TextEditorDecorationType;
+  alternatingBackgroundBorderType?: vscode.TextEditorDecorationType;
   alternatingBackgroundKey?: string;
   lastUpdate?: EditorDecorationUpdate;
   lastVisibleRangeKey?: string;
@@ -28,6 +42,7 @@ type EditorDecoration = {
 export type EditorDecorationUpdate = {
   fileType: string;
   fieldsByLine: ReadonlyMap<number, readonly FixedWidthDecorationField[]>;
+  rowBackgroundsByLine: ReadonlyMap<number, RowBackgroundColor>;
   lineLengths: ReadonlyMap<number, number>;
   hasFieldMetadata: boolean;
   settings: BoundarySettings;
@@ -60,6 +75,11 @@ export class EditorDecorations implements vscode.Disposable {
     const decorations = this.createVisibleDecorations(update, ranges);
     editor.setDecorations(current.decorationType, decorations.options);
     this.updateAlternating(editor, current, decorations);
+    this.updateRowBackgrounds(
+      editor,
+      current.rowBackgroundDecorationTypes,
+      visibleRowBackgrounds(update, ranges),
+    );
     current.lastUpdate = update;
     current.lastVisibleRangeKey = rangeKey;
   }
@@ -70,6 +90,7 @@ export class EditorDecorations implements vscode.Disposable {
     update: EditorDecorationUpdate,
   ): void {
     current.fieldsByLine = update.fieldsByLine;
+    current.rowBackgroundsByLine = update.rowBackgroundsByLine;
     this.ensureCursorDecoration(current, update.hasFieldMetadata);
     this.updateCursorField(editor, current);
   }
@@ -101,6 +122,28 @@ export class EditorDecorations implements vscode.Disposable {
   ): ReturnType<typeof createFieldDecorations> {
     const fields = visibleFieldsForRanges(update.fieldsByLine, ranges);
     return createFieldDecorations(fields, update.settings, update.lineLengths);
+  }
+
+  private updateRowBackgrounds(
+    editor: vscode.TextEditor,
+    types: Map<string, vscode.TextEditorDecorationType>,
+    backgrounds: ReadonlyMap<string, VisibleRowBackground>,
+  ): void {
+    for (const [key, { color }] of backgrounds) {
+      if (!types.has(key)) {
+        types.set(
+          key,
+          vscode.window.createTextEditorDecorationType({
+            isWholeLine: true,
+            light: { backgroundColor: color.light },
+            dark: { backgroundColor: color.dark },
+          }),
+        );
+      }
+    }
+    types.forEach((type, key) => {
+      editor.setDecorations(type, backgrounds.get(key)?.options ?? []);
+    });
   }
 
   public updateCursor(editor: vscode.TextEditor): void {
@@ -186,17 +229,12 @@ export class EditorDecorations implements vscode.Disposable {
     current: EditorDecoration,
   ): void {
     current.fieldsByLine = new Map();
+    current.rowBackgroundsByLine = new Map();
     delete current.lastUpdate;
     delete current.lastVisibleRangeKey;
     delete current.lastCursorPosition;
     delete current.lastCursorFieldsByLine;
-    editor.setDecorations(current.decorationType, []);
-    if (current.cursorDecorationType) {
-      editor.setDecorations(current.cursorDecorationType, []);
-    }
-    if (current.alternatingDecorationType) {
-      editor.setDecorations(current.alternatingDecorationType, []);
-    }
+    decorationTypes(current).forEach((type) => editor.setDecorations(type, []));
   }
 
   private getOrCreate(
@@ -216,6 +254,8 @@ export class EditorDecorations implements vscode.Disposable {
         isWholeLine: false,
       }),
       fieldsByLine: new Map(),
+      rowBackgroundsByLine: new Map(),
+      rowBackgroundDecorationTypes: new Map(),
     };
     this.byEditor.set(editor, created);
     return created;
@@ -254,11 +294,49 @@ export class EditorDecorations implements vscode.Disposable {
     current.lastCursorPosition = positionKey;
     current.lastCursorFieldsByLine = current.fieldsByLine;
     const lineLength = editor.document.lineAt(position.line).text.length;
-    const field = findCursorField(current.fieldsByLine, position, lineLength);
-    const selection = field
-      ? createCursorFieldDecoration(field, lineLength)
-      : undefined;
-    editor.setDecorations(decorationType, selection ? [selection] : []);
+    const selection = cursorFieldDecoration(
+      current.fieldsByLine,
+      position,
+      lineLength,
+    );
+    const bordered = this.cursorBorderForSelection(current, selection);
+    if (bordered) {
+      editor.setDecorations(decorationType, []);
+      editor.setDecorations(bordered.type, [bordered.selection]);
+      return;
+    }
+    setDecorations(editor, current.cursorBackgroundBorderType, []);
+    editor.setDecorations(
+      decorationType,
+      [selection].filter((option) => option !== undefined),
+    );
+  }
+
+  private cursorBorderForSelection(
+    current: EditorDecoration,
+    selection: vscode.DecorationOptions | undefined,
+  ):
+    | {
+        type: vscode.TextEditorDecorationType;
+        selection: vscode.DecorationOptions;
+      }
+    | undefined {
+    if (
+      !selection ||
+      !current.rowBackgroundsByLine.has(selection.range.start.line)
+    ) {
+      return;
+    }
+    current.cursorBackgroundBorderType ??=
+      vscode.window.createTextEditorDecorationType({
+        isWholeLine: false,
+        backgroundColor: new vscode.ThemeColor(
+          "editor.wordHighlightStrongBackground",
+        ),
+        border: "1px solid",
+        borderColor: new vscode.ThemeColor("editor.wordHighlightStrongBorder"),
+      });
+    return { type: current.cursorBackgroundBorderType, selection };
   }
 
   private isCurrentCursorField(
@@ -276,7 +354,8 @@ export class EditorDecorations implements vscode.Disposable {
     current: EditorDecoration,
     decorations: ReturnType<typeof createFieldDecorations>,
   ): void {
-    if (decorations.alternatingOptions.length === 0) {
+    const options = decorations.alternatingOptions;
+    if (options.length === 0) {
       this.clearAlternating(editor, current);
       return;
     }
@@ -284,29 +363,51 @@ export class EditorDecorations implements vscode.Disposable {
       current.alternatingBackgroundKey !== decorations.alternatingBackgroundKey
     ) {
       this.clearAlternating(editor, current);
-      current.alternatingDecorationType =
-        vscode.window.createTextEditorDecorationType({
-          isWholeLine: false,
-          backgroundColor: decorations.alternatingBackground,
-        });
       current.alternatingBackgroundKey = decorations.alternatingBackgroundKey;
     }
-    const decorationType = current.alternatingDecorationType;
-    if (decorationType) {
-      editor.setDecorations(decorationType, decorations.alternatingOptions);
-    }
+
+    const hasRowBackground = (option: vscode.DecorationOptions) =>
+      current.rowBackgroundsByLine.has(option.range.start.line);
+    const background = {
+      isWholeLine: false,
+      backgroundColor: decorations.alternatingBackground,
+    };
+    current.alternatingDecorationType = applyAlternatingHighlight(
+      editor,
+      current.alternatingDecorationType,
+      {
+        options: options.filter((option) => !hasRowBackground(option)),
+        style: background,
+      },
+    );
+    current.alternatingBackgroundBorderType = applyAlternatingHighlight(
+      editor,
+      current.alternatingBackgroundBorderType,
+      {
+        options: options.filter(hasRowBackground),
+        style: {
+          ...background,
+          border: "1px dotted",
+          borderColor: new vscode.ThemeColor("editor.rangeHighlightBorder"),
+        },
+      },
+    );
   }
 
   private clearAlternating(
     editor: vscode.TextEditor,
     current: EditorDecoration,
   ): void {
-    if (!current.alternatingDecorationType) {
-      return;
-    }
-    editor.setDecorations(current.alternatingDecorationType, []);
-    current.alternatingDecorationType.dispose();
+    const types = [
+      current.alternatingDecorationType,
+      current.alternatingBackgroundBorderType,
+    ].filter((type) => type !== undefined);
+    types.forEach((type) => {
+      editor.setDecorations(type, []);
+      type.dispose();
+    });
     delete current.alternatingDecorationType;
+    delete current.alternatingBackgroundBorderType;
     delete current.alternatingBackgroundKey;
   }
 
@@ -315,24 +416,90 @@ export class EditorDecorations implements vscode.Disposable {
     if (!current) {
       return;
     }
-    this.clearAlternating(editor, current);
-    if (current.cursorDecorationType) {
-      editor.setDecorations(current.cursorDecorationType, []);
-      current.cursorDecorationType.dispose();
-    }
-    editor.setDecorations(current.decorationType, []);
-    current.decorationType.dispose();
+    decorationTypes(current).forEach((type) => {
+      editor.setDecorations(type, []);
+      type.dispose();
+    });
     this.byEditor.delete(editor);
   }
 
   public dispose(): void {
-    for (const current of this.byEditor.values()) {
-      current.alternatingDecorationType?.dispose();
-      current.cursorDecorationType?.dispose();
-      current.decorationType.dispose();
-    }
+    this.byEditor.forEach((current) => {
+      decorationTypes(current).forEach((type) => type.dispose());
+    });
     this.byEditor.clear();
   }
+}
+
+function cursorFieldDecoration(
+  fieldsByLine: EditorDecoration["fieldsByLine"],
+  position: vscode.Position,
+  lineLength: number,
+): vscode.DecorationOptions | undefined {
+  const field = findCursorField(fieldsByLine, position, lineLength);
+  return field ? createCursorFieldDecoration(field, lineLength) : undefined;
+}
+
+function applyAlternatingHighlight(
+  editor: vscode.TextEditor,
+  type: vscode.TextEditorDecorationType | undefined,
+  highlight: {
+    options: vscode.DecorationOptions[];
+    style: vscode.DecorationRenderOptions;
+  },
+): vscode.TextEditorDecorationType | undefined {
+  if (!type && highlight.options.length > 0) {
+    type = vscode.window.createTextEditorDecorationType(highlight.style);
+  }
+  setDecorations(editor, type, highlight.options);
+  return type;
+}
+
+function setDecorations(
+  editor: vscode.TextEditor,
+  type: vscode.TextEditorDecorationType | undefined,
+  options: vscode.DecorationOptions[],
+): void {
+  if (type) {
+    editor.setDecorations(type, options);
+  }
+}
+
+function decorationTypes(
+  current: EditorDecoration,
+): vscode.TextEditorDecorationType[] {
+  return [
+    current.decorationType,
+    current.cursorDecorationType,
+    current.cursorBackgroundBorderType,
+    current.alternatingDecorationType,
+    current.alternatingBackgroundBorderType,
+    ...current.rowBackgroundDecorationTypes.values(),
+  ].filter((type) => type !== undefined);
+}
+
+function visibleRowBackgrounds(
+  update: EditorDecorationUpdate,
+  ranges: readonly VisibleLineRange[],
+): Map<string, VisibleRowBackground> {
+  const backgrounds = new Map<string, VisibleRowBackground>();
+  forEachVisibleLine(ranges, (line) => {
+    const color = update.rowBackgroundsByLine.get(line);
+    if (!color) {
+      return;
+    }
+    const key = `${color.light}\u0000${color.dark}`;
+    const background = backgrounds.get(key) ?? { color, options: [] };
+    const lineLength = update.lineLengths.get(line) ?? 0;
+    background.options.push({
+      range: new vscode.Range(
+        new vscode.Position(line, 0),
+        new vscode.Position(line, lineLength),
+      ),
+    });
+    backgrounds.set(key, background);
+  });
+  return backgrounds;
 }
 
 function visibleFieldsForRanges(
@@ -340,10 +507,19 @@ function visibleFieldsForRanges(
   ranges: readonly VisibleLineRange[],
 ): FixedWidthDecorationField[] {
   const fields: FixedWidthDecorationField[] = [];
+  forEachVisibleLine(ranges, (line) =>
+    fields.push(...(fieldsByLine.get(line) ?? [])),
+  );
+  return fields;
+}
+
+function forEachVisibleLine(
+  ranges: readonly VisibleLineRange[],
+  visit: (line: number) => void,
+): void {
   for (const range of ranges) {
     for (let line = range.start; line <= range.end; line += 1) {
-      fields.push(...(fieldsByLine.get(line) ?? []));
+      visit(line);
     }
   }
-  return fields;
 }

@@ -11,6 +11,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -87,6 +91,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -158,6 +166,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -194,6 +206,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -219,6 +235,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -295,6 +315,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -376,6 +400,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -412,6 +440,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -437,6 +469,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "mode_rule": "^.{62}([124567])",
           "mode_rule_position": 1,
@@ -535,6 +571,10 @@
         },
         {
           "name": "データ(普通預金・当座預金・貯蓄預金)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "mode": "^[124]",
           "fields": [
@@ -642,6 +682,10 @@
         },
         {
           "name": "データ(通知預金・定期預金・積立定期預金)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "mode": "^[567]",
           "fields": [
@@ -809,6 +853,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -860,6 +908,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -895,6 +947,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -961,6 +1017,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -1062,6 +1122,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -1083,6 +1147,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -1113,6 +1181,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -1184,6 +1256,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -1260,6 +1336,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -1286,6 +1366,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -1311,6 +1395,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -1382,6 +1470,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -1458,6 +1550,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -1484,6 +1580,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -1509,6 +1609,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -1580,6 +1684,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -1656,6 +1764,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -1682,6 +1794,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -1707,6 +1823,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -1778,6 +1898,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -1854,6 +1978,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -1880,6 +2008,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -1906,6 +2038,10 @@
         {
           "name": "ヘッダー",
           "condition": "^1",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "fields": [
             {
               "name": "データ区分",
@@ -1976,6 +2112,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2.{111} ",
           "fields": [
             {
@@ -2062,6 +2202,10 @@
         },
         {
           "name": "データ(EDI)",
+          "backgroundColor": {
+            "light": "#A887DD40",
+            "dark": "#46365E40"
+          },
           "condition": "^2.{111}Y",
           "fields": [
             {
@@ -2144,6 +2288,10 @@
         {
           "name": "トレーラ",
           "condition": "^8",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "fields": [
             {
               "name": "デー夕区分",
@@ -2170,6 +2318,10 @@
         {
           "name": "エンド",
           "condition": "^9",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "fields": [
             {
               "name": "データ区分",
@@ -2194,6 +2346,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -2265,6 +2421,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -2336,6 +2496,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -2362,6 +2526,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -2387,6 +2555,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -2458,6 +2630,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -2529,6 +2705,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -2555,6 +2735,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -2580,6 +2764,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -2651,6 +2839,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -2722,6 +2914,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -2748,6 +2944,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -2773,6 +2973,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -2844,6 +3048,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -2915,6 +3123,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -2941,6 +3153,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -2966,6 +3182,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -3037,6 +3257,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -3128,6 +3352,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -3149,6 +3377,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -3174,6 +3406,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -3245,6 +3481,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -3336,6 +3576,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -3357,6 +3601,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -3382,6 +3630,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -3453,6 +3705,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -3529,6 +3785,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -3575,6 +3835,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -3600,6 +3864,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -3671,6 +3939,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -3747,6 +4019,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -3793,6 +4069,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -3818,6 +4098,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -3889,6 +4173,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -3955,6 +4243,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -3976,6 +4268,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -4001,6 +4297,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -4052,6 +4352,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -4348,6 +4652,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -4414,6 +4722,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -4439,6 +4751,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -4490,6 +4806,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -4786,6 +5106,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -4852,6 +5176,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -4877,6 +5205,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -4968,6 +5300,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -5214,6 +5550,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -5260,6 +5600,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -5285,6 +5629,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -5376,6 +5724,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -5622,6 +5974,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -5683,6 +6039,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -5708,6 +6068,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -5799,6 +6163,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -6045,6 +6413,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -6106,6 +6478,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -6131,6 +6507,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -6222,6 +6602,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -6468,6 +6852,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -6529,6 +6917,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -6554,6 +6946,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -6635,6 +7031,10 @@
         },
         {
           "name": "データ(手形貸付・証書貸付)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2(10|20)",
           "fields": [
             {
@@ -6766,6 +7166,10 @@
         },
         {
           "name": "データ(商業手形割引〔内訳〕)",
+          "backgroundColor": {
+            "light": "#A887DD40",
+            "dark": "#46365E40"
+          },
           "condition": "^230",
           "fields": [
             {
@@ -6907,6 +7311,10 @@
         },
         {
           "name": "データ(商業手形割引〔合計〕)",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^231",
           "fields": [
             {
@@ -7018,6 +7426,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -7039,6 +7451,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -7064,6 +7480,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -7145,6 +7565,10 @@
         },
         {
           "name": "データ(手形貸付・証書貸付)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2(10|20)",
           "fields": [
             {
@@ -7256,6 +7680,10 @@
         },
         {
           "name": "データ(商業手形割引)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^230",
           "fields": [
             {
@@ -7382,6 +7810,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -7403,6 +7835,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -7428,6 +7864,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -7509,6 +7949,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -7585,6 +8029,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -7606,6 +8054,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -7631,6 +8083,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -7727,6 +8183,10 @@
         },
         {
           "name": "データ(本体情報)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^201",
           "fields": [
             {
@@ -7818,6 +8278,10 @@
         },
         {
           "name": "データ(輸出手形買取)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^211",
           "fields": [
             {
@@ -8064,6 +8528,10 @@
         },
         {
           "name": "データ(輸出手形買取内訳)",
+          "backgroundColor": {
+            "light": "#A887DD40",
+            "dark": "#46365E40"
+          },
           "condition": "^221",
           "fields": [
             {
@@ -8260,6 +8728,10 @@
         },
         {
           "name": "データ(輸入手形決済)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^212",
           "fields": [
             {
@@ -8486,6 +8958,10 @@
         },
         {
           "name": "データ(輸入手形決済内訳)",
+          "backgroundColor": {
+            "light": "#A887DD40",
+            "dark": "#46365E40"
+          },
           "condition": "^222",
           "fields": [
             {
@@ -8682,6 +9158,10 @@
         },
         {
           "name": "データ(輸出手形取立支払)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^213",
           "fields": [
             {
@@ -8928,6 +9408,10 @@
         },
         {
           "name": "データ(輸出手形取立支払内訳)",
+          "backgroundColor": {
+            "light": "#A887DD40",
+            "dark": "#46365E40"
+          },
           "condition": "^223",
           "fields": [
             {
@@ -9124,6 +9608,10 @@
         },
         {
           "name": "データ(仕向送金取組)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^214",
           "fields": [
             {
@@ -9355,6 +9843,10 @@
         },
         {
           "name": "データ(仕向送金取組内訳)",
+          "backgroundColor": {
+            "light": "#A887DD40",
+            "dark": "#46365E40"
+          },
           "condition": "^224",
           "fields": [
             {
@@ -9551,6 +10043,10 @@
         },
         {
           "name": "データ(被仕向送金支払)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^215",
           "fields": [
             {
@@ -9777,6 +10273,10 @@
         },
         {
           "name": "データ(被仕向送金支払内訳)",
+          "backgroundColor": {
+            "light": "#A887DD40",
+            "dark": "#46365E40"
+          },
           "condition": "^225",
           "fields": [
             {
@@ -9973,6 +10473,10 @@
         },
         {
           "name": "データ(利息・手数料情報（都度請求）)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^291",
           "fields": [
             {
@@ -10124,6 +10628,10 @@
         },
         {
           "name": "データ(利息・手数料)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^292",
           "fields": [
             {
@@ -10405,6 +10913,10 @@
         },
         {
           "name": "データ(利息・手数料一括請求（合計）)",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^293",
           "fields": [
             {
@@ -10491,6 +11003,10 @@
         },
         {
           "name": "データ(利息・手数料一括請求（内訳）)",
+          "backgroundColor": {
+            "light": "#A887DD40",
+            "dark": "#46365E40"
+          },
           "condition": "^294",
           "fields": [
             {
@@ -10622,6 +11138,10 @@
         },
         {
           "name": "データ(為替予約（先物予約締結）)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^251",
           "fields": [
             {
@@ -10763,6 +11283,10 @@
         },
         {
           "name": "データ(為替予約（先物予約履行）)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^252",
           "fields": [
             {
@@ -10914,6 +11438,10 @@
         },
         {
           "name": "データ(為替予約（先物予約残高明細）)",
+          "backgroundColor": {
+            "light": "#A887DD40",
+            "dark": "#46365E40"
+          },
           "condition": "^253",
           "fields": [
             {
@@ -11070,6 +11598,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -11091,6 +11623,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -11121,6 +11657,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -11217,6 +11757,10 @@
         },
         {
           "name": "データ(輸出信用状到着案内（固定レコード）)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^202",
           "fields": [
             {
@@ -11358,6 +11902,10 @@
         },
         {
           "name": "データ(輸出信用状到着案内（可変レコード）)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^262",
           "fields": [
             {
@@ -11398,6 +11946,10 @@
         },
         {
           "name": "データ(輸入船積書類到着案内（固定レコード）)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^203",
           "fields": [
             {
@@ -11544,6 +12096,10 @@
         },
         {
           "name": "データ(輸入船積書類到着案内（可変レコード）)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^263",
           "fields": [
             {
@@ -11584,6 +12140,10 @@
         },
         {
           "name": "データ(被仕向送金到着案内（固定レコード）)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^206",
           "fields": [
             {
@@ -11665,6 +12225,10 @@
         },
         {
           "name": "データ(被仕向送金到着案内（可変レコード）)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^266",
           "fields": [
             {
@@ -11705,6 +12269,10 @@
         },
         {
           "name": "データ(輸出手形経過情報（固定レコード）)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^207",
           "fields": [
             {
@@ -11886,6 +12454,10 @@
         },
         {
           "name": "データ(輸出手形経過情報（可変レコード）)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^267",
           "fields": [
             {
@@ -11926,6 +12498,10 @@
         },
         {
           "name": "データ(利息・手数料)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^292",
           "fields": [
             {
@@ -12207,6 +12783,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -12228,6 +12808,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -12258,6 +12842,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -12354,6 +12942,10 @@
         },
         {
           "name": "データ",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
@@ -12560,6 +13152,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -12581,6 +13177,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -12611,6 +13211,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -12672,6 +13276,10 @@
         },
         {
           "name": "データ(本体情報)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^201",
           "fields": [
             {
@@ -12768,6 +13376,10 @@
         },
         {
           "name": "データ(会計処理内訳)",
+          "backgroundColor": {
+            "light": "#A887DD40",
+            "dark": "#46365E40"
+          },
           "condition": "^202",
           "fields": [
             {
@@ -12874,6 +13486,10 @@
         },
         {
           "name": "データ(送金指図内訳（可変レコード）)",
+          "backgroundColor": {
+            "light": "#A887DD40",
+            "dark": "#46365E40"
+          },
           "condition": "^203",
           "fields": [
             {
@@ -12914,6 +13530,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -12940,6 +13560,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -12965,6 +13589,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "fields": [
             {
@@ -13036,6 +13664,10 @@
         },
         {
           "name": "データ(本体情報(1))",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^211",
           "mode_rule": "^.{7}(01|02)",
           "mode_rule_position": 1,
@@ -13124,6 +13756,10 @@
         },
         {
           "name": "データ(本体情報(2))",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^212",
           "fields": [
             {
@@ -13170,6 +13806,10 @@
         },
         {
           "name": "データ(本体情報(3))",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^213",
           "fields": [
             {
@@ -13211,6 +13851,10 @@
         },
         {
           "name": "データ(取引情報(1))",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^221",
           "mode": "^01",
           "fields": [
@@ -13378,6 +14022,10 @@
         },
         {
           "name": "データ(取引情報(2))",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^222",
           "mode": "^01",
           "fields": [
@@ -13475,6 +14123,10 @@
         },
         {
           "name": "データ(取引情報(3))",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^223",
           "mode": "^01",
           "fields": [
@@ -13552,6 +14204,10 @@
         },
         {
           "name": "データ(取引情報(4))",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^224",
           "mode": "^01",
           "fields": [
@@ -13624,6 +14280,10 @@
         },
         {
           "name": "データ(取引情報(5))",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^225",
           "mode": "^01",
           "fields": [
@@ -13696,6 +14356,10 @@
         },
         {
           "name": "データ(取引情報(6))",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^226",
           "mode": "^01",
           "fields": [
@@ -13788,6 +14452,10 @@
         },
         {
           "name": "データ(取引情報(7))",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^227",
           "mode": "^01",
           "fields": [
@@ -13825,6 +14493,10 @@
         },
         {
           "name": "データ(取引情報(1))",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^221",
           "mode": "^02",
           "fields": [
@@ -13992,6 +14664,10 @@
         },
         {
           "name": "データ(取引情報(2))",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^222",
           "mode": "^02",
           "fields": [
@@ -14089,6 +14765,10 @@
         },
         {
           "name": "データ(内訳情報)",
+          "backgroundColor": {
+            "light": "#A887DD40",
+            "dark": "#46365E40"
+          },
           "condition": "^230",
           "fields": [
             {
@@ -14129,6 +14809,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -14165,6 +14849,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {
@@ -14190,6 +14878,10 @@
       "rows": [
         {
           "name": "ヘッダー",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
           "condition": "^1",
           "mode_rule": "^.{93}([124567])",
           "mode_rule_position": 1,
@@ -14308,6 +15000,10 @@
         },
         {
           "name": "データ(本体情報(1)：普通預金･当座預金･貯蓄預金の場合)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^201",
           "mode": "^[124]",
           "fields": [
@@ -14390,6 +15086,10 @@
         },
         {
           "name": "データ(本体情報(2)：通知預金･定期預金･積立定期預金の場合)",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^201",
           "mode": "^[567]",
           "fields": [
@@ -14542,6 +15242,10 @@
         },
         {
           "name": "データ(内訳情報)",
+          "backgroundColor": {
+            "light": "#A887DD40",
+            "dark": "#46365E40"
+          },
           "condition": "^220",
           "fields": [
             {
@@ -14768,6 +15472,10 @@
         },
         {
           "name": "トレーラ",
+          "backgroundColor": {
+            "light": "#64BC8040",
+            "dark": "#285B3D40"
+          },
           "condition": "^8",
           "fields": [
             {
@@ -14849,6 +15557,10 @@
         },
         {
           "name": "エンド",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
           "condition": "^9",
           "fields": [
             {

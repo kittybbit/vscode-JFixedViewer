@@ -76,7 +76,6 @@
   "scripts": {
     "vscode:prepublish": "npm run package",
     "clean": "rimraf out dist",
-    "precompile": "npm-run-all qlty",
     "compile": "webpack",
     "watch": "webpack --watch",
     "prepackage": "npm-run-all clean qlty",

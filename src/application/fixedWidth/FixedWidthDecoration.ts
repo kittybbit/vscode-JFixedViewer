@@ -58,8 +58,14 @@ export type FixedWidthIssue =
 
 export type FixedWidthAnalysis = {
   fields: FixedWidthDecorationField[];
+  rowBackgrounds: FixedWidthDecorationRowBackground[];
   issues: FixedWidthIssue[];
   failure?: TextEncodingFailureCode;
+};
+
+export type FixedWidthDecorationRowBackground = {
+  line: number;
+  backgroundColor: NonNullable<FixedWidthProjection["backgroundColor"]>;
 };
 
 export type FixedWidthAnalysisRequest = {
@@ -78,6 +84,7 @@ type FixedWidthAnalysisState = {
   validationEnabled: boolean;
   mode: string | undefined;
   fields: FixedWidthDecorationField[];
+  rowBackgrounds: FixedWidthDecorationRowBackground[];
   issues: FixedWidthIssue[];
   truncatedLine: FixedWidthLine | undefined;
 };
@@ -226,6 +233,7 @@ class FixedWidthDecoration implements FixedWidthDecorationPort {
       validationEnabled: request.validationEnabled,
       mode: undefined,
       fields: [],
+      rowBackgrounds: [],
       issues: [],
       truncatedLine: undefined,
     };
@@ -240,6 +248,12 @@ class FixedWidthDecoration implements FixedWidthDecorationPort {
       });
       state.mode = projected.mode;
       state.fields.push(...projected.fields);
+      if (projected.projection.backgroundColor) {
+        state.rowBackgrounds.push({
+          line: line.line,
+          backgroundColor: projected.projection.backgroundColor,
+        });
+      }
       this.appendValidation({
         line,
         projection: projected.projection,
@@ -247,7 +261,11 @@ class FixedWidthDecoration implements FixedWidthDecorationPort {
         state,
       });
     }
-    return { fields: state.fields, issues: addLimitIssue(state) };
+    return {
+      fields: state.fields,
+      rowBackgrounds: state.rowBackgrounds,
+      issues: addLimitIssue(state),
+    };
   }
 
   private projectLine(request: ProjectLineRequest): ProjectedLine {
@@ -277,7 +295,7 @@ class FixedWidthDecoration implements FixedWidthDecorationPort {
 }
 
 function emptyAnalysis(failure?: TextEncodingFailureCode): FixedWidthAnalysis {
-  return { fields: [], issues: [], failure };
+  return { fields: [], rowBackgrounds: [], issues: [], failure };
 }
 
 function classifyEncodingResult(

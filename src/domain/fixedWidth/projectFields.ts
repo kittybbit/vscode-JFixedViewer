@@ -1,10 +1,16 @@
 export type FixedWidthRowRule = {
   name: string;
   condition: RegExp;
+  backgroundColor?: FixedWidthBackgroundColor;
   modeRule?: RegExp;
   modeRulePosition?: number;
   mode?: RegExp;
   fields?: readonly FixedWidthFieldDefinition[];
+};
+
+export type FixedWidthBackgroundColor = {
+  light: string;
+  dark: string;
 };
 
 export type FixedWidthFieldDefinition = {
@@ -37,6 +43,7 @@ export type FixedWidthField = {
 
 export type FixedWidthProjection = {
   rowName?: string;
+  backgroundColor?: FixedWidthBackgroundColor;
   fields: FixedWidthField[];
   mode: string | undefined;
   lengthUnit: FixedWidthLengthUnit;
@@ -115,6 +122,7 @@ export function projectFields({
   }
   return {
     rowName: row.name,
+    backgroundColor: row.backgroundColor,
     fields: fieldsForRow(row, lengthUnit),
     mode: updateMode(row, lineText, currentMode),
     lengthUnit,

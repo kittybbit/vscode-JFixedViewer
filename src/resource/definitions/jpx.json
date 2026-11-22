@@ -11,6 +11,10 @@
       "rows": [
         {
           "name": "レコード",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
           "condition": "^2",
           "fields": [
             {
