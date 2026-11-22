@@ -31,8 +31,10 @@ src/
 sample/
 
 # その他
+.cache/
 .browserslistrc
 .eslintrc.js
+eslint.config.mjs
 .gitattributes
 .gitignore
 .ncurc.json
