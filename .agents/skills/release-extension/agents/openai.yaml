@@ -1,0 +1,5 @@
+---
+interface:
+  display_name: "JFixedViewer の公開"
+  short_description: "JFixedViewer の VSIX 検証と Marketplace 公開"
+  default_prompt: "$release-extension で JFixedViewer の公開を準備してください。"

@@ -18,6 +18,7 @@ antlr/
 # 開発と SDD
 .agent.md
 AGENTS.md
+.agents/
 .codex/
 .github/
 .serena/
