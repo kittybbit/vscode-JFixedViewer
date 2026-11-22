@@ -37,11 +37,14 @@ fatal streaming decode から実在する文字境界を作ります。途中の
 
 Presentation では `FileTypeSelection` が quick pick と同じ URI の再読込を管理し、
 `DocumentRenderSession` が URI ごとの形式・文書版・encoding・世代・解析状態を所有します。
-`EditorDecorations` は editor ごとの装飾ハンドルと表示範囲を保持します。
-`DocumentRenderSession` は URI ごとに全文解析、診断、行別項目索引を共有します。
-表示範囲変更時は `visibleRanges` の各範囲と前後20行から対象項目を索引で取得し、
-その editor にだけ装飾します。スクロールでは全文の項目配列を再走査せず、同じ URI の分割表示は
-解析と診断を共有しながら異なる表示範囲に応じて描画します。`diagnostics.ts` は診断 DTO の VS Code 表示と collection の寿命を扱います。
+アプリケーション層の解析結果には、項目と診断に加えて行番号と背景色の組を持つ行背景 DTO が含まれます。
+色はドメイン層が最初に一致した行定義から取得します。
+`DocumentRenderSession` は URI ごとに全文解析、診断、行別の項目と背景色の索引を共有します。
+`EditorDecorations` は `visibleRanges` の各範囲と前後20行を索引で参照し、エディターごとに装飾します。
+背景色の組ごとに `isWholeLine` とテーマ別の `light`、`dark` を指定した装飾ハンドルを保持します。
+形式切替や解除、非表示、破棄では行背景の装飾も消去または破棄します。
+同じ URI の分割表示は解析と診断を共有し、各表示範囲に応じて描画します。
+`diagnostics.ts` は診断 DTO の VS Code 表示と collection の寿命を扱います。
 文書の encoding が形式と異なる場合の再読込は VS Code の標準 API を使い、未保存の変更を
 上書きしません。古い非同期結果は世代・版・encoding の照合を通過しない限り表示へ適用しません。
 
