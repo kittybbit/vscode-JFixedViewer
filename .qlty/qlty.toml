@@ -43,21 +43,6 @@ exclude_patterns = [
   "**/vendor/**",
 ]
 
-[sources.default]
-repository = "https://github.com/kittybbit/vscode-JFixedViewer.git"
-branch = "main"
-
-test_patterns = [
-  "**/test/**",
-  "**/spec/**",
-  "**/*.test.*",
-  "**/*.spec.*",
-  "**/*_test.*",
-  "**/*_spec.*",
-  "**/test_*.*",
-  "**/spec_*.*",
-]
-
 [smells]
 mode = "comment"
 
@@ -84,10 +69,6 @@ enabled = true
 [smells.function_complexity]
 threshold = 5
 enabled = true
-
-[smells.duplication]
-enabled = true
-threshold = 20
 
 [[source]]
 name = "default"
