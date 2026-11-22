@@ -34,6 +34,7 @@ sample/
 .cache/
 .browserslistrc
 .eslintrc.js
+eslint.config.mjs
 .gitattributes
 .gitignore
 .ncurc.json
