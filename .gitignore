@@ -444,4 +444,7 @@ gradle-app.setting
 .vscode-test
 .vscode-test-web
 
+# Serena local project settings
+/.serena/
+
 # End of https://www.toptal.com/developers/gitignore/api/node,linux,macos,gradle,eclipse,windows,intellij,visualstudiocode
