@@ -9,6 +9,8 @@ import type { CharacterizationHost } from "./characterizationHost";
 import {
   docomoFixtureRows,
   docomoFormatSpecs,
+  type DocomoFormat,
+  type DocomoFormatSpec,
   type DocomoFixtureRow,
 } from "./docomoFixtures";
 import type { DecorationOption, FakeEditor } from "./fakeVscodeTypes";
@@ -41,22 +43,27 @@ function verify(condition: boolean, message: string): void {
   }
 }
 
-/** Desktop と Web の実ホストで M/F の Shift_JIS 読込と描画を確認する。 */
+/** Desktop と Web の実ホストで全形式の Shift_JIS 読込と描画を確認する。 */
 export async function verifyDocomoBillingSmoke(): Promise<void> {
-  await verifyDocomoFormatSmoke("M");
-  await verifyDocomoFormatSmoke("F");
+  await Object.keys(docomoFormatSpecs).reduce<Promise<void>>(
+    async (previous, format) => {
+      await previous;
+      await verifyDocomoFormatSmoke(format as DocomoFormat);
+    },
+    Promise.resolve(),
+  );
 }
 
 export async function verifyDocomoS1Characterization(
   input: DocomoCharacterizationInput,
 ): Promise<void> {
   const definitions = loadBuiltInDefinitions();
-  const formats = Object.values(docomoFormatSpecs);
+  const formats = [docomoFormatSpecs.M, docomoFormatSpecs.F];
   input.assert.deepStrictEqual(
     definitions
       .filter(({ fileType }) => fileType.endsWith("@docomo"))
       .map(({ fileType }) => fileType),
-    formats.map(({ fileType }) => fileType),
+    Object.values(docomoFormatSpecs).map(({ fileType }) => fileType),
   );
   await formats.reduce<Promise<void>>(async (previous, format) => {
     await previous;
@@ -68,10 +75,287 @@ export async function verifyDocomoS1Characterization(
   await verifyDocomoLineLengthAndBoundaryCases(input);
 }
 
+export async function verifyDocomoS2Characterization(
+  input: DocomoCharacterizationInput,
+): Promise<void> {
+  const definitions = loadBuiltInDefinitions();
+  const formats = [
+    docomoFormatSpecs.A,
+    docomoFormatSpecs.W,
+    docomoFormatSpecs.J,
+    docomoFormatSpecs.G,
+    docomoFormatSpecs.E,
+  ];
+  input.assert.deepStrictEqual(
+    definitions
+      .filter(({ fileType }) => fileType.endsWith("@docomo"))
+      .map(({ fileType }) => fileType),
+    Object.values(docomoFormatSpecs).map(({ fileType }) => fileType),
+  );
+  await formats.reduce<Promise<void>>(async (previous, format) => {
+    await previous;
+    verifyDocomoDefinition(input, definitions, format);
+    await verifyDocomoRenderedRows(input, format);
+  }, Promise.resolve());
+  await verifyDocomoS2IdentifierCollisions(input, formats);
+  await verifyDocomoS2InvalidRecordCases(input, formats);
+  await verifyDocomoS2AcceptedValueCases(input, formats);
+  await verifyDocomoS2LineLengthAndBoundaryCases(input, formats);
+}
+
+async function verifyDocomoS2IdentifierCollisions(
+  input: DocomoCharacterizationInput,
+  formats: readonly DocomoFormatSpec[],
+): Promise<void> {
+  const cases = formats
+    .filter(({ format }) => format !== "E")
+    .flatMap((format) => {
+      const fixture = findDocomoDetailFixture(format);
+      const start = 11;
+      return ["01", "91"].map((code) => ({ format, fixture, start, code }));
+    });
+  await cases.reduce<Promise<void>>(
+    (previous, collision) =>
+      previous.then(async () => {
+        const line = replaceLine({
+          line: collision.fixture.line,
+          start: collision.start,
+          end: collision.start + 2,
+          replacement: collision.code,
+        });
+        const editor = await openDocomoLines({
+          host: input.host,
+          name: collision.format.name,
+          fileName: `docomo-${collision.format.format}-phone-${collision.code}.cla`,
+          lines: [line],
+        });
+        input.assert.deepStrictEqual(
+          [...new Set(input.rowNames(editor, 0))],
+          [collision.fixture.rowName],
+          collision.format.format + " の識別位置が01/91でも明細を分類します。",
+        );
+        input.assert.deepStrictEqual(
+          input.host.diagnosticsFor(editor) ?? [],
+          [],
+          collision.format.format + " の通常文字列に診断がありません。",
+        );
+      }),
+    Promise.resolve(),
+  );
+}
+
+async function verifyDocomoS2InvalidRecordCases(
+  input: DocomoCharacterizationInput,
+  formats: readonly DocomoFormatSpec[],
+): Promise<void> {
+  const cases = formats.flatMap((format) => {
+    const fixture = findDocomoDetailFixture(format);
+    const typeStart = fixtureFieldStart(fixture, "データ種類");
+    const recordNumber = fixture.fields.find(
+      ({ name }) => name === "レコードNo",
+    );
+    if (!recordNumber) {
+      throw new Error(
+        `${format.format} の明細にレコードNo fixture がありません。`,
+      );
+    }
+    const recordNumberStart = fixtureFieldStart(fixture, "レコードNo");
+    return [
+      createIssueCase({
+        format,
+        suffix: "invalid-n",
+        line: replaceLine({
+          line: fixture.line,
+          start: recordNumberStart,
+          end: recordNumberStart + recordNumber.length,
+          replacement: "X00001",
+        }),
+        expectedCode: "INVALID_TYPE",
+      }),
+      createIssueCase({
+        format,
+        suffix: "unknown-code",
+        line: replaceLine({
+          line: fixture.line,
+          start: typeStart,
+          end: typeStart + 2,
+          replacement: "99",
+        }),
+        expectedCode: "UNKNOWN_RECORD",
+      }),
+    ];
+  });
+  await cases.reduce<Promise<void>>(
+    (previous, issueCase) =>
+      previous.then(() => verifyDocomoIssueCase(input, issueCase)),
+    Promise.resolve(),
+  );
+}
+
+async function verifyDocomoS2AcceptedValueCases(
+  input: DocomoCharacterizationInput,
+  formats: readonly DocomoFormatSpec[],
+): Promise<void> {
+  await verifyDocomoS2SignedFeeCases(input, formats);
+  await verifyDocomoS2BlankNumberCases(input, formats);
+}
+
+async function verifyDocomoS2SignedFeeCases(
+  input: DocomoCharacterizationInput,
+  formats: readonly DocomoFormatSpec[],
+): Promise<void> {
+  const signedFeeCases = formats.map((format) => {
+    const fixture = findDocomoDetailFixture(format);
+    const fieldName = format.format === "W" ? "通信料金" : "通信料";
+    const expected = requireDocomoExpectedField({
+      fixture,
+      fieldName,
+      format: format.format,
+      type: "C",
+    });
+    return {
+      format,
+      suffix: "signed-fee",
+      line: replaceLine({
+        line: fixture.line,
+        start: expected.displayStart,
+        end: expected.displayEnd,
+        replacement: `-${"0".repeat(expected.width - 1)}`,
+      }),
+      expectedCodes: [],
+    };
+  });
+  await signedFeeCases.reduce(
+    (previous, lengthCase) =>
+      previous.then(() => verifyDocomoLengthCase(input, lengthCase)),
+    Promise.resolve(),
+  );
+}
+
+async function verifyDocomoS2BlankNumberCases(
+  input: DocomoCharacterizationInput,
+  formats: readonly DocomoFormatSpec[],
+): Promise<void> {
+  const blankNumberCases = formats.map((format) => {
+    const fixture = findDocomoDetailFixture(format);
+    const expected = requireDocomoExpectedField({
+      fixture,
+      fieldName: "レコードNo",
+      format: format.format,
+      type: "N",
+    });
+    return {
+      format,
+      suffix: "blank-n",
+      line: replaceLine({
+        line: fixture.line,
+        start: expected.displayStart,
+        end: expected.displayEnd,
+        replacement: " ".repeat(expected.width),
+      }),
+      expectedCodes: [],
+    };
+  });
+  await blankNumberCases.reduce(
+    (previous, lengthCase) =>
+      previous.then(() => verifyDocomoLengthCase(input, lengthCase)),
+    Promise.resolve(),
+  );
+}
+
+async function verifyDocomoS2LineLengthAndBoundaryCases(
+  input: DocomoCharacterizationInput,
+  formats: readonly DocomoFormatSpec[],
+): Promise<void> {
+  const lengthCases = formats.flatMap((format) => {
+    const fixture = findDocomoDetailFixture(format);
+    return [
+      {
+        format,
+        suffix: "short",
+        line: fixture.line.slice(0, -1),
+        expectedCodes: ["INVALID_LENGTH"],
+      },
+      {
+        format,
+        suffix: "long",
+        line: `${fixture.line} `,
+        expectedCodes: ["INVALID_LENGTH"],
+      },
+      { format, suffix: "blank", line: "", expectedCodes: [] },
+    ];
+  });
+  await lengthCases.reduce<Promise<void>>(
+    (previous, lengthCase) =>
+      previous.then(() => verifyDocomoLengthCase(input, lengthCase)),
+    Promise.resolve(),
+  );
+  const eDetail = findDocomoDetailFixture(docomoFormatSpecs.E);
+  const boundary = fixtureFieldStart(eDetail, "通信年月日");
+  await verifyDocomoLengthCase(input, {
+    format: docomoFormatSpecs.E,
+    suffix: "split-boundary",
+    line: replaceLine({
+      line: eDetail.line,
+      start: boundary - 1,
+      end: boundary + 1,
+      replacement: "あ",
+    }),
+    expectedCodes: ["INVALID_BYTE_BOUNDARY", "INVALID_BYTE_BOUNDARY"],
+  });
+}
+
+function findDocomoDetailFixture(format: DocomoFormatSpec): DocomoFixtureRow {
+  const fixture = docomoFixtureRows.find(
+    (candidate) =>
+      candidate.fileType === format.fileType &&
+      candidate.fields.some(
+        ({ name, value }) => name === "データ種類" && value === "11",
+      ),
+  );
+  if (!fixture) {
+    throw new Error(`${format.format} の明細 fixture がありません。`);
+  }
+  return { ...fixture, line: fixture.line.replaceAll("－", "あ") };
+}
+
+function requireDocomoExpectedField(input: {
+  fixture: DocomoFixtureRow;
+  fieldName: string;
+  format: string;
+  type: "C" | "N";
+}): DocomoFixtureRow["expectedFields"][number] {
+  const expected = input.fixture.expectedFields.find(
+    ({ fieldName }) => fieldName === input.fieldName,
+  );
+  if (!expected || expected.type !== input.type) {
+    throw new Error(
+      `${input.format} の${input.fieldName} fixture が期待型 ${input.type} ではありません。`,
+    );
+  }
+  return expected;
+}
+
+function fixtureFieldStart(
+  fixture: DocomoFixtureRow,
+  fieldName: string,
+): number {
+  let start = 0;
+  for (const fixtureField of fixture.fields) {
+    if (fixtureField.name === fieldName) {
+      return start;
+    }
+    start += fixtureField.length;
+  }
+  throw new Error(
+    `${fixture.format} ${fixture.rowName} に ${fieldName} がありません。`,
+  );
+}
+
 function verifyDocomoDefinition(
   input: DocomoCharacterizationInput,
   definitions: ReturnType<typeof loadBuiltInDefinitions>,
-  format: (typeof docomoFormatSpecs)[keyof typeof docomoFormatSpecs],
+  format: DocomoFormatSpec,
 ): void {
   const fixtures = docomoFixtureRows.filter(
     (fixture) => fixture.fileType === format.fileType,
@@ -139,7 +423,7 @@ function verifyDocomoDefinitionRow(args: {
 
 async function verifyDocomoRenderedRows(
   input: DocomoCharacterizationInput,
-  format: (typeof docomoFormatSpecs)[keyof typeof docomoFormatSpecs],
+  format: DocomoFormatSpec,
 ): Promise<void> {
   const fixtures = docomoFixtureRows.filter(
     (fixture) => fixture.fileType === format.fileType,
@@ -147,11 +431,12 @@ async function verifyDocomoRenderedRows(
   const firstFixture = fixtures[0];
   const assert: DocomoAssertions = input.assert;
   assert.ok(firstFixture);
+  const lines = fixtures.map((fixture) => fixture.line.replaceAll("－", "あ"));
   const editor = await openDocomoLines({
     host: input.host,
     name: format.name,
     fileName: firstFixture.fileName,
-    lines: fixtures.map(({ line }) => line),
+    lines,
   });
   input.assert.strictEqual(editor.document.encoding, "shiftjis");
   input.assert.strictEqual(editor.document.isDirty, false);
@@ -163,7 +448,7 @@ async function verifyDocomoRenderedRows(
 
 function verifyDocomoRenderedFixture(args: {
   input: DocomoCharacterizationInput;
-  format: (typeof docomoFormatSpecs)[keyof typeof docomoFormatSpecs];
+  format: DocomoFormatSpec;
   editor: FakeEditor;
   fixture: DocomoFixtureRow;
   line: number;
@@ -387,28 +672,30 @@ async function verifyDocomoIssueCase(
 async function verifyDocomoLineLengthAndBoundaryCases(
   input: DocomoCharacterizationInput,
 ): Promise<void> {
-  const lengthCases = Object.values(docomoFormatSpecs).flatMap((format) => {
-    const rowName =
-      format.format === "M"
-        ? "電話番号別内訳レコード"
-        : "電話番号別通話明細レコード";
-    const fixture = findDocomoFixture(format.fileType, rowName);
-    return [
-      {
-        format,
-        suffix: "short",
-        line: fixture.line.slice(0, -1),
-        expectedCodes: ["INVALID_LENGTH"],
-      },
-      {
-        format,
-        suffix: "long",
-        line: `${fixture.line} `,
-        expectedCodes: ["INVALID_LENGTH"],
-      },
-      { format, suffix: "blank", line: "", expectedCodes: [] },
-    ];
-  });
+  const lengthCases = [docomoFormatSpecs.M, docomoFormatSpecs.F].flatMap(
+    (format) => {
+      const rowName =
+        format.format === "M"
+          ? "電話番号別内訳レコード"
+          : "電話番号別通話明細レコード";
+      const fixture = findDocomoFixture(format.fileType, rowName);
+      return [
+        {
+          format,
+          suffix: "short",
+          line: fixture.line.slice(0, -1),
+          expectedCodes: ["INVALID_LENGTH"],
+        },
+        {
+          format,
+          suffix: "long",
+          line: `${fixture.line} `,
+          expectedCodes: ["INVALID_LENGTH"],
+        },
+        { format, suffix: "blank", line: "", expectedCodes: [] },
+      ];
+    },
+  );
   await lengthCases.reduce<Promise<void>>(
     (previous, lengthCase) =>
       previous.then(() => verifyDocomoLengthCase(input, lengthCase)),
@@ -495,21 +782,22 @@ async function openDocomoLines(input: {
   return editor;
 }
 
-async function verifyDocomoFormatSmoke(format: "M" | "F"): Promise<void> {
+async function verifyDocomoFormatSmoke(format: DocomoFormat): Promise<void> {
   const { fixtures, firstFixture } = docomoFixturesFor(format);
   const lines = fixtures.map((fixture) => fixture.line);
-  const content = `${lines.join("\r\n")}\r\n`;
+  const content = lines.join("\r\n") + "\r\n";
   const bytes = await vscode.workspace.encode(content, {
     encoding: "shiftjis",
   });
-  const scheme = `jfixedviewerdocomo${format.toLowerCase()}${Date.now()}`;
+  await verifyDocomoEncodedFullWidthMinus(format, fixtures);
+  const scheme = "jfixedviewerdocomo" + format.toLowerCase() + Date.now();
   const provider = createReadOnlyDocomoProvider(firstFixture.fileName, bytes);
   const registration = vscode.workspace.registerFileSystemProvider(
     scheme,
     provider.fileSystem,
     { isCaseSensitive: true },
   );
-  const uri = vscode.Uri.parse(`${scheme}:/${firstFixture.fileName}`);
+  const uri = vscode.Uri.parse(scheme + ":/" + firstFixture.fileName);
   requireDocomoDefinition(firstFixture.fileType, format);
 
   const editorDecorations = new EditorDecorations();
@@ -523,101 +811,24 @@ async function verifyDocomoFormatSmoke(format: "M" | "F"): Promise<void> {
     const opened = await vscode.workspace.openTextDocument(uri);
     const document = await reloadDocomoDocument(opened, format);
     const originalText = document.getText();
-    verify(
-      document.encoding === "shiftjis",
-      `NTTドコモ ${format} 文書の encoding が Shift_JIS ではありません。`,
-    );
-    verify(
-      document.eol === vscode.EndOfLine.CRLF,
-      `NTTドコモ ${format} の CRLF が実ホストで認識されません。`,
-    );
-    verify(
-      document.lineCount === fixtures.length + 1 &&
-        document.lineAt(fixtures.length).text === "" &&
-        fixtures.every(
-          (fixture, index) => document.lineAt(index).text === fixture.line,
-        ),
-      `NTTドコモ ${format} の合成行・末尾 CRLF が Shift_JIS 再読込後に一致しません。`,
-    );
-    verify(
-      document.getText() === content,
-      `NTTドコモ ${format} の末尾 CRLF を含む文書内容が一致しません。`,
-    );
-
-    const analysis = await decoration.analyze({
-      fileType: firstFixture.fileType,
-      lines: lines.map((text, line) => ({
-        line,
-        text,
-        isEmptyOrWhitespace: /^\s*$/u.test(text),
-      })),
-      validationEnabled: true,
-      currentEncoding: document.encoding,
+    verifyDocomoDocumentContent({ document, fixtures, format, content });
+    await verifyDocomoFormatAnalysis({
+      decoration,
+      document,
+      firstFixture,
+      fixtures,
+      format,
+      lines,
     });
-    const expectedFields = fixtures.flatMap((fixture, line) =>
-      fixture.expectedFields.map((field) => ({
-        line,
-        name: fixture.rowName,
-        fieldName: field.fieldName,
-        fieldNumber: field.fieldNumber,
-        start: field.start,
-        end: field.end,
-        width: field.width,
-        type: field.type,
-        displayStart: field.displayStart,
-        displayEnd: field.displayEnd,
-        lengthUnit: "byte",
-      })),
-    );
-    const actualFields = analysis.fields.map((field) => ({
-      line: field.line,
-      name: field.name,
-      fieldName: field.fieldName,
-      fieldNumber: field.fieldNumber,
-      start: field.start,
-      end: field.end,
-      width: field.width,
-      type: field.type,
-      displayStart: field.displayStart,
-      displayEnd: field.displayEnd,
-      lengthUnit: field.lengthUnit,
-    }));
-    verify(
-      analysis.failure === undefined &&
-        analysis.issues.length === 0 &&
-        JSON.stringify(actualFields) === JSON.stringify(expectedFields),
-      `NTTドコモ ${format} の行種別、項目範囲、文字表示境界または診断が期待値と一致しません。`,
-    );
-
-    editor = await vscode.window.showTextDocument(document, { preview: false });
-    const request = session.beginSelection(document, firstFixture.fileType);
-    verify(
-      session.activateSelection(request),
-      `NTTドコモ ${format} を実ホストのレンダーセッションへ適用できません。`,
-    );
-    verify(
-      (await session.render(request)) === true,
-      `NTTドコモ ${format} の実ホスト描画が完了しません。`,
-    );
-    verify(
-      editorDecorations.has(editor) &&
-        session.getSelectedFileType(uri.toString()) === firstFixture.fileType,
-      `NTTドコモ ${format} の項目装飾が実ホストに適用されません。`,
-    );
-    verify(
-      vscode.languages
-        .getDiagnostics(document.uri)
-        .filter((diagnostic) => diagnostic.source === "JFixedViewer").length ===
-        0,
-      `正常な NTTドコモ ${format} 合成レコードに診断が発生しました。`,
-    );
-    verify(
-      !document.isDirty &&
-        document.getText() === originalText &&
-        provider.stats.readCount >= 2 &&
-        provider.stats.writeCount === 0,
-      `NTTドコモ ${format} の読込と描画で文書変更または書込みが発生しました。`,
-    );
+    editor = await verifyDocomoFormatRendering({
+      document,
+      editorDecorations,
+      firstFixture,
+      format,
+      session,
+      uri,
+    });
+    verifyDocomoDocumentReadOnly({ document, originalText, provider, format });
   } finally {
     session.dispose();
     editorDecorations.dispose();
@@ -631,7 +842,207 @@ async function verifyDocomoFormatSmoke(format: "M" | "F"): Promise<void> {
   }
 }
 
-function docomoFixturesFor(format: "M" | "F"): {
+function docomoFullWidthMinus(format: DocomoFormat):
+  | {
+      fieldName: string;
+      width: number;
+    }
+  | undefined {
+  const specs: Partial<
+    Record<DocomoFormat, { fieldName: string; width: number }>
+  > = {
+    G: { fieldName: "接続会社（国名）", width: 30 },
+    E: { fieldName: "区分", width: 16 },
+  };
+  return specs[format];
+}
+
+async function verifyDocomoEncodedFullWidthMinus(
+  format: DocomoFormat,
+  fixtures: readonly DocomoFixtureRow[],
+): Promise<void> {
+  const marker = docomoFullWidthMinus(format);
+  if (!marker) {
+    return;
+  }
+  const markerLine = fixtures.findIndex((fixture) =>
+    fixture.fields.some(
+      ({ name, value }) => name === marker.fieldName && value.includes("－"),
+    ),
+  );
+  const encodedMinus = await vscode.workspace.encode("－", {
+    encoding: "shiftjis",
+  });
+  verify(
+    markerLine >= 0 &&
+      encodedMinus.length === 2 &&
+      encodedMinus[0] === 0x81 &&
+      encodedMinus[1] === 0x7c,
+    "NTTドコモ " + format + " の U+FF0D が CP932 の 81 7C になりません。",
+  );
+}
+
+function verifyDocomoDocumentContent(input: {
+  document: vscode.TextDocument;
+  fixtures: readonly DocomoFixtureRow[];
+  format: DocomoFormat;
+  content: string;
+}): void {
+  const { document, fixtures, format, content } = input;
+  verify(
+    document.encoding === "shiftjis",
+    "NTTドコモ " + format + " 文書の encoding が Shift_JIS ではありません。",
+  );
+  verify(
+    document.eol === vscode.EndOfLine.CRLF,
+    "NTTドコモ " + format + " の CRLF が実ホストで認識されません。",
+  );
+  verify(
+    document.lineCount === fixtures.length + 1 &&
+      document.lineAt(fixtures.length).text === "",
+    "NTTドコモ " + format + " の末尾 CRLF を再読込後に保持できません。",
+  );
+  verify(
+    fixtures.every(
+      (fixture, index) => document.lineAt(index).text === fixture.line,
+    ),
+    "NTTドコモ " + format + " の合成行が Shift_JIS 再読込後に一致しません。",
+  );
+  const marker = docomoFullWidthMinus(format);
+  if (marker) {
+    const markerLine = fixtures.findIndex((fixture) =>
+      fixture.fields.some(
+        ({ name, value }) => name === marker.fieldName && value.includes("－"),
+      ),
+    );
+    const markerFixture = fixtures[markerLine];
+    verify(
+      markerLine >= 0 &&
+        document.lineAt(markerLine).text.includes("－") &&
+        markerFixture?.expectedFields.some(
+          ({ fieldName, width }) =>
+            fieldName === marker.fieldName && width === marker.width,
+        ),
+      "NTTドコモ " + format + " の U+FF0D が2バイト幅の項目で復号されません。",
+    );
+  }
+  verify(
+    document.getText() === content,
+    "NTTドコモ " + format + " の末尾 CRLF を含む文書内容が一致しません。",
+  );
+}
+
+async function verifyDocomoFormatAnalysis(input: {
+  decoration: ReturnType<typeof createFixedWidthDecoration>;
+  document: vscode.TextDocument;
+  firstFixture: DocomoFixtureRow;
+  fixtures: readonly DocomoFixtureRow[];
+  format: DocomoFormat;
+  lines: readonly string[];
+}): Promise<void> {
+  const { decoration, document, firstFixture, fixtures, format, lines } = input;
+  const analysis = await decoration.analyze({
+    fileType: firstFixture.fileType,
+    lines: lines.map((text, line) => ({
+      line,
+      text,
+      isEmptyOrWhitespace: /^\s*$/u.test(text),
+    })),
+    validationEnabled: true,
+    currentEncoding: document.encoding,
+  });
+  const expectedFields = fixtures.flatMap((fixture, line) =>
+    fixture.expectedFields.map((field) => ({
+      line,
+      name: fixture.rowName,
+      fieldName: field.fieldName,
+      fieldNumber: field.fieldNumber,
+      start: field.start,
+      end: field.end,
+      width: field.width,
+      type: field.type,
+      displayStart: field.displayStart,
+      displayEnd: field.displayEnd,
+      lengthUnit: "byte",
+    })),
+  );
+  const actualFields = analysis.fields.map((field) => ({
+    line: field.line,
+    name: field.name,
+    fieldName: field.fieldName,
+    fieldNumber: field.fieldNumber,
+    start: field.start,
+    end: field.end,
+    width: field.width,
+    type: field.type,
+    displayStart: field.displayStart,
+    displayEnd: field.displayEnd,
+    lengthUnit: field.lengthUnit,
+  }));
+  verify(
+    analysis.failure === undefined &&
+      analysis.issues.length === 0 &&
+      JSON.stringify(actualFields) === JSON.stringify(expectedFields),
+    "NTTドコモ " + format + " の項目範囲、表示境界または診断が一致しません。",
+  );
+}
+
+async function verifyDocomoFormatRendering(input: {
+  document: vscode.TextDocument;
+  editorDecorations: EditorDecorations;
+  firstFixture: DocomoFixtureRow;
+  format: DocomoFormat;
+  session: DocumentRenderSession;
+  uri: vscode.Uri;
+}): Promise<vscode.TextEditor> {
+  const { document, editorDecorations, firstFixture, format, session, uri } =
+    input;
+  const editor = await vscode.window.showTextDocument(document, {
+    preview: false,
+  });
+  const request = session.beginSelection(document, firstFixture.fileType);
+  verify(
+    session.activateSelection(request),
+    "NTTドコモ " + format + " を実ホストのレンダーセッションへ適用できません。",
+  );
+  verify(
+    (await session.render(request)) === true,
+    "NTTドコモ " + format + " の実ホスト描画が完了しません。",
+  );
+  verify(
+    editorDecorations.has(editor) &&
+      session.getSelectedFileType(uri.toString()) === firstFixture.fileType,
+    "NTTドコモ " + format + " の項目装飾が実ホストに適用されません。",
+  );
+  verify(
+    vscode.languages
+      .getDiagnostics(document.uri)
+      .filter((diagnostic) => diagnostic.source === "JFixedViewer").length ===
+      0,
+    "正常な NTTドコモ " + format + " 合成レコードに診断が発生しました。",
+  );
+  return editor;
+}
+
+function verifyDocomoDocumentReadOnly(input: {
+  document: vscode.TextDocument;
+  originalText: string;
+  provider: ReturnType<typeof createReadOnlyDocomoProvider>;
+  format: DocomoFormat;
+}): void {
+  const { document, originalText, provider, format } = input;
+  verify(
+    !document.isDirty &&
+      document.getText() === originalText &&
+      provider.stats.readCount >= 2 &&
+      provider.stats.writeCount === 0,
+    "NTTドコモ " +
+      format +
+      " の読込と描画で文書変更または書込みが発生しました。",
+  );
+}
+
+function docomoFixturesFor(format: DocomoFormat): {
   fixtures: DocomoFixtureRow[];
   firstFixture: DocomoFixtureRow;
 } {
@@ -645,7 +1056,7 @@ function docomoFixturesFor(format: "M" | "F"): {
   return { fixtures, firstFixture };
 }
 
-function requireDocomoDefinition(fileType: string, format: "M" | "F"): void {
+function requireDocomoDefinition(fileType: string, format: DocomoFormat): void {
   if (
     !loadBuiltInDefinitions().some(
       (definition) => definition.fileType === fileType,
@@ -657,7 +1068,7 @@ function requireDocomoDefinition(fileType: string, format: "M" | "F"): void {
 
 async function reloadDocomoDocument(
   document: vscode.TextDocument,
-  format: "M" | "F",
+  format: DocomoFormat,
 ): Promise<vscode.TextDocument> {
   const result = await ensureDocumentEncoding(document, "shiftjis");
   if (!result.ok) {
