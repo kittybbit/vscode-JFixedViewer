@@ -76,7 +76,7 @@
   "scripts": {
     "vscode:prepublish": "npm run package",
     "clean": "rimraf out dist",
-    "compile": "webpack",
+    "compile": "webpack --infrastructure-logging-level warn",
     "watch": "webpack --watch",
     "prepackage": "npm-run-all clean qlty",
     "package": "webpack --mode production --devtool false",

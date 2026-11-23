@@ -247,6 +247,1211 @@
           ]
         }
       ]
+    },
+    {
+      "file_type": "A",
+      "name": "データ通信・パケット通信明細データ",
+      "finame_pattern": "^[0-9]{6}_A_[0-9]{10}_[0-9]{2}\\.cla$",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
+      "rows": [
+        {
+          "name": "管理レコード",
+          "backgroundColor": { "light": "#5CA5EA40", "dark": "#284B7140" },
+          "condition": "^ {11}01",
+          "fields": [
+            {
+              "name": "空白",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "年月群",
+              "length": 7,
+              "type": "C"
+            },
+            {
+              "name": "媒体通番",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "センターコード",
+              "length": 3,
+              "type": "N"
+            },
+            {
+              "name": "空白",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "発出元企業コード",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 112,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "電話番号別通信明細レコード",
+          "backgroundColor": { "light": "#E8B05C40", "dark": "#694F2740" },
+          "condition": "^[\\x20-\\x7E]{14}11",
+          "fields": [
+            {
+              "name": "電話番号",
+              "length": 14,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "レコードNo",
+              "length": 6,
+              "type": "N"
+            },
+            {
+              "name": "通信年月日",
+              "length": 8,
+              "type": "N"
+            },
+            {
+              "name": "集計開始時刻",
+              "length": 6,
+              "type": "N"
+            },
+            {
+              "name": "接続時間帯",
+              "length": 6,
+              "type": "N"
+            },
+            {
+              "name": "接続先",
+              "length": 40,
+              "type": "C"
+            },
+            {
+              "name": "通信データ量（メール）",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "通信データ量（サイト）",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "通信データ量（その他）",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "通信料",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "通信サービス",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "分計先",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 19,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "電話番号別合計レコード",
+          "backgroundColor": { "light": "#64BC8040", "dark": "#285B3D40" },
+          "condition": "^[\\x20-\\x7E]{14}51",
+          "fields": [
+            {
+              "name": "電話番号",
+              "length": 14,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "レコード件数",
+              "length": 6,
+              "type": "N"
+            },
+            {
+              "name": "一括請求サービス代表番号",
+              "length": 14,
+              "type": "C"
+            },
+            {
+              "name": "利用期間（自）",
+              "length": 4,
+              "type": "N"
+            },
+            {
+              "name": "利用期間（至）",
+              "length": 4,
+              "type": "N"
+            },
+            {
+              "name": "空白",
+              "length": 49,
+              "type": "C"
+            },
+            {
+              "name": "データ量合計（Kバイト）",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "データ量合計（バイト）",
+              "length": 14,
+              "type": "N"
+            },
+            {
+              "name": "データ量合計（パケット）",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "通信料合計",
+              "length": 12,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 13,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "終了レコード",
+          "backgroundColor": { "light": "#96969640", "dark": "#55555540" },
+          "condition": "^ {11}91",
+          "fields": [
+            {
+              "name": "空白",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "継続区分",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "発出元企業コード",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 123,
+              "type": "C"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file_type": "W",
+      "name": "WORLD CALL通信明細データ",
+      "finame_pattern": "^[0-9]{6}_W_[0-9]{10}_[0-9]{2}\\.cla$",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
+      "rows": [
+        {
+          "name": "管理レコード",
+          "backgroundColor": { "light": "#5CA5EA40", "dark": "#284B7140" },
+          "condition": "^ {11}01",
+          "fields": [
+            {
+              "name": "空白",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "年月群",
+              "length": 7,
+              "type": "C"
+            },
+            {
+              "name": "媒体通番",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "センターコード",
+              "length": 3,
+              "type": "N"
+            },
+            {
+              "name": "空白",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "発出元企業コード",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 84,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "電話番号別通話明細レコード",
+          "backgroundColor": { "light": "#E8B05C40", "dark": "#694F2740" },
+          "condition": "^[\\x20-\\x7E]{14}11",
+          "fields": [
+            {
+              "name": "電話番号",
+              "length": 14,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "レコードNo",
+              "length": 6,
+              "type": "N"
+            },
+            {
+              "name": "通信年月日",
+              "length": 8,
+              "type": "N"
+            },
+            {
+              "name": "通信開始時刻",
+              "length": 6,
+              "type": "N"
+            },
+            {
+              "name": "着信先電話番号",
+              "length": 26,
+              "type": "C"
+            },
+            {
+              "name": "通信先",
+              "length": 20,
+              "type": "C"
+            },
+            {
+              "name": "通信時間",
+              "length": 7,
+              "type": "N"
+            },
+            {
+              "name": "通信料金",
+              "length": 11,
+              "type": "C"
+            },
+            {
+              "name": "時間区分",
+              "length": 6,
+              "type": "C"
+            },
+            {
+              "name": "通信種類1",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "割引種別",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "分計先",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 12,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "電話番号別合計レコード",
+          "backgroundColor": { "light": "#64BC8040", "dark": "#285B3D40" },
+          "condition": "^[\\x20-\\x7E]{14}51",
+          "fields": [
+            {
+              "name": "電話番号",
+              "length": 14,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "レコード件数",
+              "length": 6,
+              "type": "N"
+            },
+            {
+              "name": "一括請求サービス代表番号",
+              "length": 14,
+              "type": "C"
+            },
+            {
+              "name": "利用期間（自）",
+              "length": 4,
+              "type": "N"
+            },
+            {
+              "name": "利用期間（至）",
+              "length": 4,
+              "type": "N"
+            },
+            {
+              "name": "空白",
+              "length": 48,
+              "type": "C"
+            },
+            {
+              "name": "通信料合計",
+              "length": 11,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 25,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "終了レコード",
+          "backgroundColor": { "light": "#96969640", "dark": "#55555540" },
+          "condition": "^ {11}91",
+          "fields": [
+            {
+              "name": "空白",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "継続区分",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "発出元企業コード",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 95,
+              "type": "C"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file_type": "J",
+      "name": "WORLD WING通信明細データ",
+      "finame_pattern": "^[0-9]{6}_J_[0-9]{10}_[0-9]{2}\\.cla$",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
+      "rows": [
+        {
+          "name": "管理レコード",
+          "backgroundColor": { "light": "#5CA5EA40", "dark": "#284B7140" },
+          "condition": "^ {11}01",
+          "fields": [
+            {
+              "name": "空白",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "年月群",
+              "length": 7,
+              "type": "C"
+            },
+            {
+              "name": "媒体通番",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "センターコード",
+              "length": 3,
+              "type": "N"
+            },
+            {
+              "name": "空白",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "発出元企業コード",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 82,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "電話番号別通信明細レコード",
+          "backgroundColor": { "light": "#E8B05C40", "dark": "#694F2740" },
+          "condition": "^[\\x20-\\x7E]{14}11",
+          "fields": [
+            {
+              "name": "電話番号",
+              "length": 14,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "レコードNo",
+              "length": 6,
+              "type": "N"
+            },
+            {
+              "name": "通信年月日",
+              "length": 8,
+              "type": "N"
+            },
+            {
+              "name": "通信開始時刻",
+              "length": 6,
+              "type": "N"
+            },
+            {
+              "name": "通信時間",
+              "length": 7,
+              "type": "N"
+            },
+            {
+              "name": "接続会社（国名）",
+              "length": 20,
+              "type": "C"
+            },
+            {
+              "name": "通信先電話番号",
+              "length": 26,
+              "type": "C"
+            },
+            {
+              "name": "通信料",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "発着信",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "区分",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "分計先",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 12,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "電話番号別合計レコード",
+          "backgroundColor": { "light": "#64BC8040", "dark": "#285B3D40" },
+          "condition": "^[\\x20-\\x7E]{14}51",
+          "fields": [
+            {
+              "name": "電話番号",
+              "length": 14,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "レコード件数",
+              "length": 6,
+              "type": "N"
+            },
+            {
+              "name": "一括請求サービス代表番号",
+              "length": 14,
+              "type": "C"
+            },
+            {
+              "name": "利用期間（自）",
+              "length": 4,
+              "type": "N"
+            },
+            {
+              "name": "利用期間（至）",
+              "length": 4,
+              "type": "N"
+            },
+            {
+              "name": "空白",
+              "length": 48,
+              "type": "C"
+            },
+            {
+              "name": "通信料合計",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 24,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "終了レコード",
+          "backgroundColor": { "light": "#96969640", "dark": "#55555540" },
+          "condition": "^ {11}91",
+          "fields": [
+            {
+              "name": "空白",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "継続区分",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "発出元企業コード",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 93,
+              "type": "C"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file_type": "G",
+      "name": "WORLD WINGパケット通信明細データ",
+      "finame_pattern": "^[0-9]{6}_G_[0-9]{10}_[0-9]{2}\\.cla$",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
+      "rows": [
+        {
+          "name": "管理レコード",
+          "backgroundColor": { "light": "#5CA5EA40", "dark": "#284B7140" },
+          "condition": "^ {11}01",
+          "fields": [
+            {
+              "name": "空白",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "年月群",
+              "length": 7,
+              "type": "C"
+            },
+            {
+              "name": "媒体通番",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "センターコード",
+              "length": 3,
+              "type": "N"
+            },
+            {
+              "name": "空白",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "発出元企業コード",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 112,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "電話番号別通信明細レコード",
+          "backgroundColor": { "light": "#E8B05C40", "dark": "#694F2740" },
+          "condition": "^[\\x20-\\x7E]{14}11",
+          "fields": [
+            {
+              "name": "電話番号",
+              "length": 14,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "レコードNo",
+              "length": 6,
+              "type": "N"
+            },
+            {
+              "name": "通信年月日",
+              "length": 8,
+              "type": "N"
+            },
+            {
+              "name": "接続開始時刻",
+              "length": 7,
+              "type": "N"
+            },
+            {
+              "name": "接続時間",
+              "length": 7,
+              "type": "N"
+            },
+            {
+              "name": "接続先",
+              "length": 20,
+              "type": "C"
+            },
+            {
+              "name": "通信データ量（メール）",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "通信データ量（サイト）",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "通信データ量（その他）",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "通信料",
+              "length": 11,
+              "type": "C"
+            },
+            {
+              "name": "接続会社（国名）",
+              "length": 30,
+              "type": "C"
+            },
+            {
+              "name": "分計先",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 14,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "電話番号別合計レコード",
+          "backgroundColor": { "light": "#64BC8040", "dark": "#285B3D40" },
+          "condition": "^[\\x20-\\x7E]{14}51",
+          "fields": [
+            {
+              "name": "電話番号",
+              "length": 14,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "レコード件数",
+              "length": 6,
+              "type": "N"
+            },
+            {
+              "name": "一括請求サービス代表番号",
+              "length": 14,
+              "type": "C"
+            },
+            {
+              "name": "利用期間（自）",
+              "length": 4,
+              "type": "N"
+            },
+            {
+              "name": "利用期間（至）",
+              "length": 4,
+              "type": "N"
+            },
+            {
+              "name": "空白",
+              "length": 59,
+              "type": "C"
+            },
+            {
+              "name": "通信料合計",
+              "length": 11,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 42,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "終了レコード",
+          "backgroundColor": { "light": "#96969640", "dark": "#55555540" },
+          "condition": "^ {11}91",
+          "fields": [
+            {
+              "name": "空白",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "継続区分",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "発出元企業コード",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 123,
+              "type": "C"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file_type": "E",
+      "name": "docomo Wi-Fi通信明細データ",
+      "finame_pattern": "^[0-9]{6}_E_[0-9]{10}_[0-9]{2}\\.cla$",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
+      "rows": [
+        {
+          "name": "管理レコード",
+          "backgroundColor": { "light": "#5CA5EA40", "dark": "#284B7140" },
+          "condition": "^ {11}01",
+          "fields": [
+            {
+              "name": "空白",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "年月群",
+              "length": 7,
+              "type": "C"
+            },
+            {
+              "name": "媒体通番",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "センターコード",
+              "length": 3,
+              "type": "N"
+            },
+            {
+              "name": "空白",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "発出元企業コード",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 80,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "電話番号別通信明細レコード",
+          "backgroundColor": { "light": "#E8B05C40", "dark": "#694F2740" },
+          "condition": "^[\\x20-\\x7E]{11}11",
+          "fields": [
+            {
+              "name": "電話番号",
+              "length": 11,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "レコードNo",
+              "length": 6,
+              "type": "N"
+            },
+            {
+              "name": "通信年月日",
+              "length": 8,
+              "type": "N"
+            },
+            {
+              "name": "課金開始時刻",
+              "length": 6,
+              "type": "N"
+            },
+            {
+              "name": "接続先",
+              "length": 40,
+              "type": "C"
+            },
+            {
+              "name": "課金時間",
+              "length": 7,
+              "type": "N"
+            },
+            {
+              "name": "通信料",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "適用",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "区分",
+              "length": 16,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 12,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "電話番号別合計レコード",
+          "backgroundColor": { "light": "#64BC8040", "dark": "#285B3D40" },
+          "condition": "^[\\x20-\\x7E]{11}51",
+          "fields": [
+            {
+              "name": "電話番号",
+              "length": 11,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "レコード件数",
+              "length": 6,
+              "type": "N"
+            },
+            {
+              "name": "一括請求サービス代表番号",
+              "length": 11,
+              "type": "C"
+            },
+            {
+              "name": "利用期間（自）",
+              "length": 4,
+              "type": "N"
+            },
+            {
+              "name": "利用期間（至）",
+              "length": 4,
+              "type": "N"
+            },
+            {
+              "name": "空白",
+              "length": 48,
+              "type": "C"
+            },
+            {
+              "name": "通信料合計",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 28,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "終了レコード",
+          "backgroundColor": { "light": "#96969640", "dark": "#55555540" },
+          "condition": "^ {11}91",
+          "fields": [
+            {
+              "name": "空白",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "継続区分",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "発出元企業コード",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "空白",
+              "length": 91,
+              "type": "C"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

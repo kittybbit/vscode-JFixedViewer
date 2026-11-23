@@ -7,7 +7,10 @@ import {
   createLeasedLineSmokeLines,
   createTelephoneSmokeLines,
 } from "./support/nttSmoke";
-import { verifyDocomoS1Characterization } from "./support/docomoSmoke";
+import {
+  verifyDocomoS1Characterization,
+  verifyDocomoS2Characterization,
+} from "./support/docomoSmoke";
 import {
   FakePosition,
   FakeRange,
@@ -1145,6 +1148,15 @@ suite("固定長表示の現行挙動", () => {
 
   test("ドコモ M/F の定義、境界、診断を確認する", async () => {
     await verifyDocomoS1Characterization({
+      assert,
+      host,
+      optionsForLine,
+      rowNames,
+    });
+  });
+
+  test("ドコモ A/W/J/G/E の定義、境界、診断を確認する", async () => {
+    await verifyDocomoS2Characterization({
       assert,
       host,
       optionsForLine,

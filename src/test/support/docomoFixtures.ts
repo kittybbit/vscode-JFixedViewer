@@ -3,6 +3,7 @@ export type DocomoFixtureField = {
   length: number;
   type: "C" | "N";
   value: string;
+  align?: "left" | "right";
 };
 
 export type DocomoExpectedField = {
@@ -17,8 +18,8 @@ export type DocomoExpectedField = {
 };
 
 export type DocomoFixtureRow = {
-  format: "M" | "F";
-  fileType: "M@docomo" | "F@docomo";
+  format: DocomoFormat;
+  fileType: (typeof docomoFormatSpecs)[DocomoFormat]["fileType"];
   fileTypeName: string;
   fileName: string;
   rowName: string;
@@ -26,6 +27,22 @@ export type DocomoFixtureRow = {
   expectedFields: readonly DocomoExpectedField[];
   line: string;
 };
+
+const docomoRoleColors = {
+  detail: { light: "#E8B05C40", dark: "#694F2740" },
+  total: { light: "#64BC8040", dark: "#285B3D40" },
+  management: { light: "#5CA5EA40", dark: "#284B7140" },
+  end: { light: "#96969640", dark: "#55555540" },
+} as const;
+
+function docomoFormatColors(detailName: string) {
+  return {
+    [detailName]: docomoRoleColors.detail,
+    電話番号別合計レコード: docomoRoleColors.total,
+    管理レコード: docomoRoleColors.management,
+    終了レコード: docomoRoleColors.end,
+  };
+}
 
 export const docomoFormatSpecs = {
   M: {
@@ -62,11 +79,51 @@ export const docomoFormatSpecs = {
       終了レコード: { light: "#96969640", dark: "#55555540" },
     },
   },
+  A: {
+    format: "A",
+    fileType: "A@docomo",
+    name: "NTTドコモ/データ通信・パケット通信明細データ",
+    rowWidth: 156,
+    colors: docomoFormatColors("電話番号別通信明細レコード"),
+  },
+  W: {
+    format: "W",
+    fileType: "W@docomo",
+    name: "NTTドコモ/WORLD CALL通信明細データ",
+    rowWidth: 128,
+    colors: docomoFormatColors("電話番号別通話明細レコード"),
+  },
+  J: {
+    format: "J",
+    fileType: "J@docomo",
+    name: "NTTドコモ/WORLD WING通信明細データ",
+    rowWidth: 126,
+    colors: docomoFormatColors("電話番号別通信明細レコード"),
+  },
+  G: {
+    format: "G",
+    fileType: "G@docomo",
+    name: "NTTドコモ/WORLD WINGパケット通信明細データ",
+    rowWidth: 156,
+    colors: docomoFormatColors("電話番号別通信明細レコード"),
+  },
+  E: {
+    format: "E",
+    fileType: "E@docomo",
+    name: "NTTドコモ/docomo Wi-Fi通信明細データ",
+    rowWidth: 124,
+    colors: docomoFormatColors("電話番号別通信明細レコード"),
+  },
 } as const;
+
+export type DocomoFormat = keyof typeof docomoFormatSpecs;
+export type DocomoFormatSpec =
+  (typeof docomoFormatSpecs)[keyof typeof docomoFormatSpecs];
 
 type DocomoFieldOptions = {
   value?: string;
   type?: "C" | "N";
+  align?: "left" | "right";
 };
 
 function field(
@@ -86,7 +143,11 @@ function blank(length: number, name = "空白"): DocomoFixtureField {
 }
 
 function shiftJisCharacterByteLength(character: string): number {
-  const specialWidths: Readonly<Record<string, number>> = { あ: 2, ｱ: 1 };
+  const specialWidths: Readonly<Record<string, number>> = {
+    あ: 2,
+    ｱ: 1,
+    "－": 2,
+  };
   const knownWidth = specialWidths[character];
   if (knownWidth !== undefined) {
     return knownWidth;
@@ -154,7 +215,10 @@ function expectedFixtureFields(
 function renderFixtureField(fixtureField: DocomoFixtureField): string {
   const valueBytes = shiftJisByteLength(fixtureField.value);
   verifyFixtureFieldWidth(fixtureField, valueBytes);
-  return `${fixtureField.value}${" ".repeat(fixtureField.length - valueBytes)}`;
+  const padding = " ".repeat(fixtureField.length - valueBytes);
+  return fixtureField.align === "right"
+    ? `${padding}${fixtureField.value}`
+    : `${fixtureField.value}${padding}`;
 }
 
 function renderFixtureLine(fields: readonly DocomoFixtureField[]): string {
@@ -162,7 +226,7 @@ function renderFixtureLine(fields: readonly DocomoFixtureField[]): string {
 }
 
 function verifyFixtureRecordLength(input: {
-  format: "M" | "F";
+  format: DocomoFormat;
   rowName: string;
   fields: readonly DocomoFixtureField[];
   line: string;
@@ -183,7 +247,7 @@ function verifyFixtureRecordLength(input: {
 }
 
 function makeFixtureRow(
-  format: "M" | "F",
+  format: DocomoFormat,
   rowName: string,
   fields: readonly DocomoFixtureField[],
 ): DocomoFixtureRow {
@@ -382,6 +446,254 @@ const fEnd = makeFixtureRow("F", "終了レコード", [
   blank(105),
 ]);
 
+function docomoS2ManagementFields(
+  trailingSpaces: number,
+): DocomoFixtureField[] {
+  return [
+    blank(9),
+    blank(2),
+    field("データ種類", 2, "01"),
+    blank(1),
+    field("年月群", 7, "202611A"),
+    field("媒体通番", 2, { value: "01", type: "N" }),
+    field("センターコード", 3, { value: "701", type: "N" }),
+    blank(9),
+    field("発出元企業コード", 9, "000000001"),
+    blank(trailingSpaces),
+  ];
+}
+
+type DocomoS2TotalOptions = {
+  phoneNumberLength: number;
+  totalFeeLength: number;
+  trailingSpaces: number;
+  middleSpaces: number;
+  extraFields?: readonly DocomoFixtureField[];
+};
+
+function docomoS2TotalFields({
+  phoneNumberLength,
+  totalFeeLength,
+  trailingSpaces,
+  middleSpaces,
+  extraFields = [],
+}: DocomoS2TotalOptions): DocomoFixtureField[] {
+  return [
+    field("電話番号", phoneNumberLength, "0312345678"),
+    field("データ種類", 2, "51"),
+    field("レコード件数", 6, { value: "000001", type: "N" }),
+    field("一括請求サービス代表番号", phoneNumberLength, "0312345678"),
+    field("利用期間（自）", 4, { value: "1101", type: "N" }),
+    field("利用期間（至）", 4, { value: "1130", type: "N" }),
+    blank(middleSpaces),
+    ...extraFields,
+    field("通信料合計", totalFeeLength, "0000012345"),
+    blank(trailingSpaces),
+  ];
+}
+
+function docomoS2EndFields(trailingSpaces: number): DocomoFixtureField[] {
+  return [
+    blank(9),
+    blank(2),
+    field("データ種類", 2, "91"),
+    blank(1),
+    field("継続区分", 1, "0"),
+    blank(9),
+    field("発出元企業コード", 9, "000000001"),
+    blank(trailingSpaces),
+  ];
+}
+
+const aManagement = makeFixtureRow(
+  "A",
+  "管理レコード",
+  docomoS2ManagementFields(112),
+);
+
+const aCommunication = makeFixtureRow("A", "電話番号別通信明細レコード", [
+  field("電話番号", 14, "03-1234-5678"),
+  field("データ種類", 2, "11"),
+  field("レコードNo", 6, { value: "000001", type: "N" }),
+  field("通信年月日", 8, { value: "20261122", type: "N" }),
+  field("集計開始時刻", 6, { value: "123456", type: "N" }),
+  field("接続時間帯", 6, { value: "120000", type: "N" }),
+  field("接続先", 40, { value: "m.example", align: "right" }),
+  field("通信データ量（メール）", 12, { value: "000000000123", type: "N" }),
+  field("通信データ量（サイト）", 12, { value: "000000000456", type: "N" }),
+  field("通信データ量（その他）", 12, { value: "000000000789", type: "N" }),
+  field("通信料", 10, "0000012345"),
+  field("通信サービス", 8, "FOMA"),
+  field("分計先", 1, "J"),
+  blank(19),
+]);
+
+const aTotal = makeFixtureRow(
+  "A",
+  "電話番号別合計レコード",
+  docomoS2TotalFields({
+    phoneNumberLength: 14,
+    totalFeeLength: 12,
+    trailingSpaces: 13,
+    middleSpaces: 49,
+    extraFields: [
+      field("データ量合計（Kバイト）", 12, {
+        value: "000000000123",
+        type: "N",
+      }),
+      field("データ量合計（バイト）", 14, {
+        value: "00000000000123",
+        type: "N",
+      }),
+      field("データ量合計（パケット）", 12, {
+        value: "000000000045",
+        type: "N",
+      }),
+    ],
+  }),
+);
+const aEnd = makeFixtureRow("A", "終了レコード", docomoS2EndFields(123));
+
+const wManagement = makeFixtureRow(
+  "W",
+  "管理レコード",
+  docomoS2ManagementFields(84),
+);
+const wCall = makeFixtureRow("W", "電話番号別通話明細レコード", [
+  field("電話番号", 14, "03-1234-5678"),
+  field("データ種類", 2, "11"),
+  field("レコードNo", 6, { value: "000001", type: "N" }),
+  field("通信年月日", 8, { value: "20261122", type: "N" }),
+  field("通信開始時刻", 6, { value: "123456", type: "N" }),
+  field("着信先電話番号", 26, {
+    value: "03-9876-5432",
+    align: "right",
+  }),
+  field("通信先", 20, "ああ"),
+  field("通信時間", 7, { value: "0001234", type: "N" }),
+  field("通信料金", 11, "00000123456"),
+  field("時間区分", 6, "ああ"),
+  field("通信種類1", 8, "ああああ"),
+  field("割引種別", 1, "U"),
+  field("分計先", 1, "J"),
+  blank(12),
+]);
+const wTotal = makeFixtureRow(
+  "W",
+  "電話番号別合計レコード",
+  docomoS2TotalFields({
+    phoneNumberLength: 14,
+    totalFeeLength: 11,
+    trailingSpaces: 25,
+    middleSpaces: 48,
+  }),
+);
+const wEnd = makeFixtureRow("W", "終了レコード", docomoS2EndFields(95));
+
+const jManagement = makeFixtureRow(
+  "J",
+  "管理レコード",
+  docomoS2ManagementFields(82),
+);
+const jCommunication = makeFixtureRow("J", "電話番号別通信明細レコード", [
+  field("電話番号", 14, "03-1234-5678"),
+  field("データ種類", 2, "11"),
+  field("レコードNo", 6, { value: "000001", type: "N" }),
+  field("通信年月日", 8, { value: "20261122", type: "N" }),
+  field("通信開始時刻", 6, { value: "123456", type: "N" }),
+  field("通信時間", 7, { value: "0001234", type: "N" }),
+  field("接続会社（国名）", 20, "TOKYO TEL"),
+  field("通信先電話番号", 26, {
+    value: "03-9876-5432",
+    align: "right",
+  }),
+  field("通信料", 10, "0000012345"),
+  field("発着信", 4, "ああ"),
+  field("区分", 10, "FOMA"),
+  field("分計先", 1, "J"),
+  blank(12),
+]);
+const jTotal = makeFixtureRow(
+  "J",
+  "電話番号別合計レコード",
+  docomoS2TotalFields({
+    phoneNumberLength: 14,
+    totalFeeLength: 10,
+    trailingSpaces: 24,
+    middleSpaces: 48,
+  }),
+);
+const jEnd = makeFixtureRow("J", "終了レコード", docomoS2EndFields(93));
+
+const gManagement = makeFixtureRow(
+  "G",
+  "管理レコード",
+  docomoS2ManagementFields(112),
+);
+const gCommunication = makeFixtureRow("G", "電話番号別通信明細レコード", [
+  field("電話番号", 14, "03-1234-5678"),
+  field("データ種類", 2, "11"),
+  field("レコードNo", 6, { value: "000001", type: "N" }),
+  field("通信年月日", 8, { value: "20261122", type: "N" }),
+  field("接続開始時刻", 7, { value: "1234567", type: "N" }),
+  field("接続時間", 7, { value: "0001234", type: "N" }),
+  field("接続先", 20, { value: "3G.NET", align: "right" }),
+  field("通信データ量（メール）", 12, { value: "000000000123", type: "N" }),
+  field("通信データ量（サイト）", 12, { value: "000000000456", type: "N" }),
+  field("通信データ量（その他）", 12, { value: "000000000789", type: "N" }),
+  field("通信料", 11, "00000012345"),
+  field("接続会社（国名）", 30, {
+    value: "JP－NETWORK",
+    align: "right",
+  }),
+  field("分計先", 1, "K"),
+  blank(14),
+]);
+const gTotal = makeFixtureRow(
+  "G",
+  "電話番号別合計レコード",
+  docomoS2TotalFields({
+    phoneNumberLength: 14,
+    totalFeeLength: 11,
+    trailingSpaces: 42,
+    middleSpaces: 59,
+  }),
+);
+const gEnd = makeFixtureRow("G", "終了レコード", docomoS2EndFields(123));
+
+const eManagement = makeFixtureRow(
+  "E",
+  "管理レコード",
+  docomoS2ManagementFields(80),
+);
+const eCommunication = makeFixtureRow("E", "電話番号別通信明細レコード", [
+  field("電話番号", 11, "0312345678"),
+  field("データ種類", 2, "11"),
+  field("レコードNo", 6, { value: "000001", type: "N" }),
+  field("通信年月日", 8, { value: "20261122", type: "N" }),
+  field("課金開始時刻", 6, { value: "123456", type: "N" }),
+  field("接続先", 40, {
+    value: "03-1234-5678",
+    align: "right",
+  }),
+  field("課金時間", 7, { value: "0001234", type: "N" }),
+  field("通信料", 8, "00001234"),
+  field("適用", 8, "ああ"),
+  field("区分", 16, "あ－あ"),
+  blank(12),
+]);
+const eTotal = makeFixtureRow(
+  "E",
+  "電話番号別合計レコード",
+  docomoS2TotalFields({
+    phoneNumberLength: 11,
+    totalFeeLength: 10,
+    trailingSpaces: 28,
+    middleSpaces: 48,
+  }),
+);
+const eEnd = makeFixtureRow("E", "終了レコード", docomoS2EndFields(91));
+
 export const docomoFixtureRows: readonly DocomoFixtureRow[] = [
   mManagement,
   mBreakdown,
@@ -392,4 +704,24 @@ export const docomoFixtureRows: readonly DocomoFixtureRow[] = [
   fCallDetail,
   fTotal,
   fEnd,
+  aCommunication,
+  aTotal,
+  aManagement,
+  aEnd,
+  wCall,
+  wTotal,
+  wManagement,
+  wEnd,
+  jCommunication,
+  jTotal,
+  jManagement,
+  jEnd,
+  gCommunication,
+  gTotal,
+  gManagement,
+  gEnd,
+  eCommunication,
+  eTotal,
+  eManagement,
+  eEnd,
 ];

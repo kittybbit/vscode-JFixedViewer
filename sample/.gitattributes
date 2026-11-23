@@ -4,3 +4,4 @@ ntt/M000000000001_202609 -text whitespace=-blank-at-eol
 ntt/K000000000001_202609 -text whitespace=-blank-at-eol
 ntt/N0000000001_202609 -text whitespace=-blank-at-eol
 ntt/S0000000001_202609 -text whitespace=-blank-at-eol
+docomo/*.cla -text whitespace=-blank-at-eol
