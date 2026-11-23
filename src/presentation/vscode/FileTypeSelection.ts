@@ -234,9 +234,14 @@ export class FileTypeSelection implements vscode.Disposable {
     encoding: string,
   ): Promise<DocumentEncodingResult | undefined> {
     const previous = this.reloadTailByUri.get(request.uri) ?? Promise.resolve();
-    const operation = previous.then(() =>
-      this.performReload(request, requestId, encoding),
-    );
+    const operation = previous.then(async () => {
+      const reload = this.renderSession.beginSelectionReload(request, encoding);
+      try {
+        return await this.performReload(request, requestId, encoding);
+      } finally {
+        this.renderSession.endSelectionReload(reload);
+      }
+    });
     const tail = operation.then(
       () => undefined,
       () => undefined,

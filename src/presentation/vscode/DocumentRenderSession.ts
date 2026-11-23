@@ -55,6 +55,13 @@ type InFlightRender = {
   promise: Promise<boolean | undefined>;
 };
 
+type SelectionReload = {
+  uri: string;
+  document: vscode.TextDocument;
+  generation: number;
+  encoding: string;
+};
+
 export class DocumentRenderSession implements vscode.Disposable {
   private readonly fileTypeByDocument = new Map<string, string>();
   private readonly currentDocumentByUri = new Map<
@@ -63,6 +70,7 @@ export class DocumentRenderSession implements vscode.Disposable {
   >();
   private readonly lastEncodingByUri = new Map<string, string>();
   private readonly renderGenerationByUri = new Map<string, number>();
+  private readonly selectionReloadByUri = new Map<string, SelectionReload>();
   private readonly renderedByUri = new Map<string, RenderedDocument>();
   private readonly inFlightByUri = new Map<string, InFlightRender>();
   private readonly pendingRenderByDocument = new Map<string, PendingRender>();
@@ -98,6 +106,26 @@ export class DocumentRenderSession implements vscode.Disposable {
       fileType: request.fileType,
       generation: request.generation,
     });
+  }
+
+  public beginSelectionReload(
+    request: RenderRequest,
+    encoding: string,
+  ): SelectionReload {
+    const reload = {
+      uri: request.uri,
+      document: request.document,
+      generation: request.generation,
+      encoding,
+    };
+    this.selectionReloadByUri.set(request.uri, reload);
+    return reload;
+  }
+
+  public endSelectionReload(reload: SelectionReload): void {
+    if (this.selectionReloadByUri.get(reload.uri) === reload) {
+      this.selectionReloadByUri.delete(reload.uri);
+    }
   }
 
   public isCurrentRequest(request: RenderRequest): boolean {
@@ -150,6 +178,9 @@ export class DocumentRenderSession implements vscode.Disposable {
     document: vscode.TextDocument,
     hasContentChanges: boolean,
   ): void {
+    if (this.isSelectionReloadChange(document)) {
+      return;
+    }
     if (this.handleEncodingMismatch(document)) {
       return;
     }
@@ -176,8 +207,32 @@ export class DocumentRenderSession implements vscode.Disposable {
     return true;
   }
 
+  private isSelectionReloadChange(document: vscode.TextDocument): boolean {
+    const uri = document.uri.toString();
+    const reload = this.selectionReloadByUri.get(uri);
+    if (!reload || reload.document !== document) {
+      return false;
+    }
+    return (
+      this.isSelectionReloadGenerationRelevant(reload) &&
+      reload.encoding === document.encoding &&
+      !document.isDirty &&
+      this.isOpenDocument(document)
+    );
+  }
+
+  private isSelectionReloadGenerationRelevant(
+    reload: SelectionReload,
+  ): boolean {
+    const currentGeneration = this.renderGenerationByUri.get(reload.uri);
+    return (
+      currentGeneration !== undefined && reload.generation <= currentGeneration
+    );
+  }
+
   public closeDocument(document: vscode.TextDocument): void {
     const uri = document.uri.toString();
+    this.selectionReloadByUri.delete(uri);
     this.invalidateRendering(uri);
     this.cancelPendingRender(document);
     this.currentDocumentByUri.delete(uri);
@@ -626,6 +681,7 @@ export class DocumentRenderSession implements vscode.Disposable {
     this.currentDocumentByUri.clear();
     this.lastEncodingByUri.clear();
     this.renderedByUri.clear();
+    this.selectionReloadByUri.clear();
     this.inFlightByUri.clear();
     this.renderGenerationByUri.clear();
   }

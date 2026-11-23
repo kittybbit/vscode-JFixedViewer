@@ -14,6 +14,85 @@ const omittedByteFormatName = "試験/省略";
 const omittedByteFormatType = "omitted_test@zengin";
 
 suite("文字コード再読込競合", () => {
+  test("保存済み文書の再読込通知では初回選択を失効させない", async () => {
+    const host = new CharacterizationHost({ zengin: byteDefinition() });
+    try {
+      host.start();
+      const editor = host.createEditor("clean-reload.txt", ["AあZ"]);
+      host.setActiveEditor(editor);
+      host.openTextDocumentHook = async (uri, encoding, previous) => {
+        previous.encoding = encoding;
+        host.documentChangeEmitter.fire({
+          document: previous,
+          contentChanges: [],
+        });
+        previous.lines = ["A12Z"];
+        previous.version += 1;
+        host.documentChangeEmitter.fire({
+          document: previous,
+          contentChanges: [{}],
+        });
+        const reloaded = new CharacterizedDocument({
+          fileName: previous.fileName,
+          lines: previous.lines,
+          uri,
+          encoding,
+        });
+        reloaded.version = previous.version;
+        return reloaded;
+      };
+
+      await host.chooseFileType(byteFormatName);
+
+      assert.strictEqual(editor.document.encoding, "shiftjis");
+      assert.strictEqual(editor.document.version, 2);
+      assert.deepStrictEqual(editor.document.lines, ["A12Z"]);
+      assert.deepStrictEqual(host.diagnosticsFor(editor) ?? [], []);
+      assert.strictEqual(
+        editor.decorationCalls.some(({ options }) =>
+          options.some((option) => option.hoverMessage !== undefined),
+        ),
+        true,
+      );
+      assert.deepStrictEqual(host.windowMessages, []);
+    } finally {
+      host.dispose();
+    }
+  });
+
+  test("再読込中の実際の編集では選択要求を失効させる", async () => {
+    const host = new CharacterizationHost({ zengin: byteDefinition() });
+    try {
+      host.start();
+      const editor = host.createEditor("dirty-reload.txt", ["AあZ"]);
+      host.setActiveEditor(editor);
+      host.openTextDocumentHook = async (uri, encoding, previous) => {
+        previous.encoding = encoding;
+        host.documentChangeEmitter.fire({
+          document: previous,
+          contentChanges: [],
+        });
+        host.changeDocument(editor, ["A34Z"]);
+        return previous;
+      };
+
+      await host.chooseFileType(byteFormatName);
+
+      assert.strictEqual(editor.document.encoding, "shiftjis");
+      assert.strictEqual(editor.document.isDirty, true);
+      assert.strictEqual(editor.document.version, 2);
+      assert.deepStrictEqual(editor.document.lines, ["A34Z"]);
+      assert.strictEqual(
+        editor.decorationCalls.some(({ options }) =>
+          options.some((option) => option.hoverMessage !== undefined),
+        ),
+        false,
+      );
+    } finally {
+      host.dispose();
+    }
+  });
+
   test("再読込待ちの後続選択は最新文書を使って直列化する", async () => {
     for (const followup of ["utf8", "omitted"] as const) {
       const host = new CharacterizationHost({
@@ -40,13 +119,25 @@ suite("文字コード再読込競合", () => {
           if (reloadCount === 1) {
             notifyReloadStarted?.();
             await reloadGate;
+            previous.encoding = encoding;
+            host.documentChangeEmitter.fire({
+              document: previous,
+              contentChanges: [],
+            });
+            previous.version += 1;
+            host.documentChangeEmitter.fire({
+              document: previous,
+              contentChanges: [{}],
+            });
           }
-          return new CharacterizedDocument({
+          const reloaded = new CharacterizedDocument({
             fileName: previous.fileName,
             lines: previous.lines,
             uri,
             encoding,
           });
+          reloaded.version = previous.version;
+          return reloaded;
         };
 
         staleSelection = host.chooseFileType(byteFormatName);
