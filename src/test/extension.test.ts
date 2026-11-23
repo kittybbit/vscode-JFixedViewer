@@ -7,6 +7,7 @@ import {
   createLeasedLineSmokeLines,
   createTelephoneSmokeLines,
 } from "./support/nttSmoke";
+import { verifyDocomoS1Characterization } from "./support/docomoSmoke";
 import {
   FakePosition,
   FakeRange,
@@ -1140,6 +1141,15 @@ suite("固定長表示の現行挙動", () => {
       rowColor("telephone_2026@ntt", "総合計レコード"),
       end,
     );
+  });
+
+  test("ドコモ M/F の定義、境界、診断を確認する", async () => {
+    await verifyDocomoS1Characterization({
+      assert,
+      host,
+      optionsForLine,
+      rowNames,
+    });
   });
 
   test("定義色ペアは両方有効な時だけ先頭一致行に適用する", async () => {

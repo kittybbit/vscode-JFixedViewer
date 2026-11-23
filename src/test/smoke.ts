@@ -4,6 +4,7 @@ import {
   toDiagnostics,
 } from "../presentation/vscode/diagnostics";
 import { verifyTextEncodingApi } from "./support/encodingSmoke";
+import { verifyDocomoBillingSmoke } from "./support/docomoSmoke";
 import { verifyNttDialSmoke } from "./support/nttSmoke";
 import { verifyVisibleRangeRendering } from "./support/visibleRangeSmoke";
 
@@ -15,6 +16,7 @@ export async function run(): Promise<void> {
   await verifyExtensionCommand();
   await verifyTextEncodingApi();
   await verifyNttDialSmoke();
+  await verifyDocomoBillingSmoke();
   verifyDefaultSettings();
   const diagnostics = verifyDiagnosticConversion();
   await verifyDiagnosticCollection(diagnostics);

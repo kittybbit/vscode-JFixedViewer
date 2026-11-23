@@ -1,0 +1,252 @@
+{
+  "type": "docomo",
+  "name": "NTTドコモ",
+  "files": [
+    {
+      "file_type": "M",
+      "name": "ご利用内訳明細データ",
+      "finame_pattern": "^[0-9]{6}_M_[0-9]{10}_[0-9]{2}\\.cla$",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
+      "rows": [
+        {
+          "name": "電話番号別内訳レコード",
+          "backgroundColor": { "light": "#E8B05C40", "dark": "#694F2740" },
+          "condition": "^[\\x20-\\x7E]{15}11",
+          "fields": [
+            { "name": "電話番号", "length": 14, "type": "C" },
+            { "name": "分割区分", "length": 1, "type": "C" },
+            { "name": "データ種類", "length": 2, "type": "C" },
+            { "name": "レコードNo", "length": 2, "type": "N" },
+            { "name": "レコード数", "length": 2, "type": "N" },
+            { "name": "一括請求サービス代表番号", "length": 14, "type": "C" },
+            { "name": "空白", "length": 5, "type": "C" },
+            { "name": "未請求マーク", "length": 1, "type": "C" },
+            { "name": "空白", "length": 13, "type": "C" },
+            { "name": "定額料開始", "length": 4, "type": "N" },
+            { "name": "定額料締切", "length": 4, "type": "N" },
+            { "name": "後払料開始", "length": 4, "type": "N" },
+            { "name": "後払料締切", "length": 4, "type": "N" },
+            { "name": "検針日前回", "length": 4, "type": "N" },
+            { "name": "検針日今回", "length": 4, "type": "N" },
+            { "name": "通話料前月分", "length": 10, "type": "C" },
+            { "name": "通話料今月分", "length": 10, "type": "C" },
+            { "name": "空白", "length": 5, "type": "C" },
+            { "name": "ご利用内訳", "length": 10, "type": "C" },
+            { "name": "空白", "length": 5, "type": "C" },
+            { "name": "内訳コード1", "length": 3, "type": "C" },
+            { "name": "内訳額1", "length": 10, "type": "C" },
+            { "name": "空白1", "length": 3, "type": "C" },
+            { "name": "内訳コード2", "length": 3, "type": "C" },
+            { "name": "内訳額2", "length": 10, "type": "C" },
+            { "name": "空白2", "length": 3, "type": "C" },
+            { "name": "内訳コード3", "length": 3, "type": "C" },
+            { "name": "内訳額3", "length": 10, "type": "C" },
+            { "name": "空白3", "length": 3, "type": "C" },
+            { "name": "内訳コード4", "length": 3, "type": "C" },
+            { "name": "内訳額4", "length": 10, "type": "C" },
+            { "name": "空白4", "length": 3, "type": "C" },
+            { "name": "内訳コード5", "length": 3, "type": "C" },
+            { "name": "内訳額5", "length": 10, "type": "C" },
+            { "name": "空白5", "length": 3, "type": "C" },
+            { "name": "内訳コード6", "length": 3, "type": "C" },
+            { "name": "内訳額6", "length": 10, "type": "C" },
+            { "name": "空白6", "length": 3, "type": "C" },
+            { "name": "内訳コード7", "length": 3, "type": "C" },
+            { "name": "内訳額7", "length": 10, "type": "C" },
+            { "name": "空白7", "length": 3, "type": "C" },
+            { "name": "内訳コード8", "length": 3, "type": "C" },
+            { "name": "内訳額8", "length": 10, "type": "C" },
+            { "name": "空白8", "length": 3, "type": "C" },
+            { "name": "内訳コード9", "length": 3, "type": "C" },
+            { "name": "内訳額9", "length": 10, "type": "C" },
+            { "name": "空白9", "length": 3, "type": "C" }
+          ]
+        },
+        {
+          "name": "請求書作成番号レコード（初回）",
+          "backgroundColor": { "light": "#A887DD40", "dark": "#46365E40" },
+          "condition": "^[\\x20-\\x7E]{15}5101",
+          "fields": [
+            { "name": "電話番号", "length": 14, "type": "C" },
+            { "name": "空白", "length": 1, "type": "C" },
+            { "name": "データ種類", "length": 2, "type": "C" },
+            { "name": "レコードNo", "length": 2, "type": "N" },
+            { "name": "レコード数", "length": 2, "type": "N" },
+            { "name": "空白", "length": 30, "type": "C" },
+            { "name": "定額料開始", "length": 4, "type": "N" },
+            { "name": "定額料締切", "length": 4, "type": "N" },
+            { "name": "後払料開始", "length": 4, "type": "N" },
+            { "name": "後払料締切", "length": 4, "type": "N" },
+            { "name": "検針日前回", "length": 4, "type": "N" },
+            { "name": "検針日今回", "length": 4, "type": "N" },
+            { "name": "ダイヤル通話料前月分", "length": 10, "type": "C" },
+            { "name": "ダイヤル通話料今月分", "length": 10, "type": "C" },
+            { "name": "空白", "length": 5, "type": "C" },
+            { "name": "ご利用内訳合計", "length": 10, "type": "C" },
+            { "name": "件数", "length": 5, "type": "N" },
+            { "name": "金融機関コード", "length": 7, "type": "C" },
+            { "name": "口座種別", "length": 1, "type": "C" },
+            { "name": "口座番号", "length": 7, "type": "C" },
+            { "name": "口座名義", "length": 40, "type": "C" },
+            { "name": "空白", "length": 5, "type": "C" },
+            { "name": "氏名", "length": 40, "type": "C" },
+            { "name": "空白", "length": 47, "type": "C" }
+          ]
+        },
+        {
+          "name": "請求書作成番号レコード（継続）",
+          "backgroundColor": { "light": "#A887DD40", "dark": "#46365E40" },
+          "condition": "^[\\x20-\\x7E]{15}51(?:0[2-9]|[1-9][0-9])",
+          "fields": [
+            { "name": "電話番号", "length": 14, "type": "C" },
+            { "name": "空白", "length": 1, "type": "C" },
+            { "name": "データ種類", "length": 2, "type": "C" },
+            { "name": "レコードNo", "length": 2, "type": "N" },
+            { "name": "レコード数", "length": 2, "type": "N" },
+            { "name": "空白", "length": 97, "type": "C" },
+            { "name": "内訳コード1", "length": 3, "type": "C" },
+            { "name": "内訳額1", "length": 10, "type": "C" },
+            { "name": "空白1", "length": 3, "type": "C" },
+            { "name": "内訳コード2", "length": 3, "type": "C" },
+            { "name": "内訳額2", "length": 10, "type": "C" },
+            { "name": "空白2", "length": 3, "type": "C" },
+            { "name": "内訳コード3", "length": 3, "type": "C" },
+            { "name": "内訳額3", "length": 10, "type": "C" },
+            { "name": "空白3", "length": 3, "type": "C" },
+            { "name": "内訳コード4", "length": 3, "type": "C" },
+            { "name": "内訳額4", "length": 10, "type": "C" },
+            { "name": "空白4", "length": 3, "type": "C" },
+            { "name": "内訳コード5", "length": 3, "type": "C" },
+            { "name": "内訳額5", "length": 10, "type": "C" },
+            { "name": "空白5", "length": 3, "type": "C" },
+            { "name": "内訳コード6", "length": 3, "type": "C" },
+            { "name": "内訳額6", "length": 10, "type": "C" },
+            { "name": "空白6", "length": 3, "type": "C" },
+            { "name": "内訳コード7", "length": 3, "type": "C" },
+            { "name": "内訳額7", "length": 10, "type": "C" },
+            { "name": "空白7", "length": 3, "type": "C" },
+            { "name": "内訳コード8", "length": 3, "type": "C" },
+            { "name": "内訳額8", "length": 10, "type": "C" },
+            { "name": "空白8", "length": 3, "type": "C" },
+            { "name": "内訳コード9", "length": 3, "type": "C" },
+            { "name": "内訳額9", "length": 10, "type": "C" },
+            { "name": "空白9", "length": 3, "type": "C" }
+          ]
+        },
+        {
+          "name": "管理レコード",
+          "backgroundColor": { "light": "#5CA5EA40", "dark": "#284B7140" },
+          "condition": "^ {12}01 {4}",
+          "fields": [
+            { "name": "空白", "length": 9, "type": "C" },
+            { "name": "空白", "length": 3, "type": "C" },
+            { "name": "データ種類", "length": 2, "type": "C" },
+            { "name": "空白", "length": 4, "type": "C" },
+            { "name": "年月群", "length": 7, "type": "C" },
+            { "name": "媒体通番", "length": 2, "type": "N" },
+            { "name": "センターコード", "length": 3, "type": "N" },
+            { "name": "空白", "length": 9, "type": "C" },
+            { "name": "発出元企業コード", "length": 9, "type": "C" },
+            { "name": "空白", "length": 214, "type": "C" }
+          ]
+        },
+        {
+          "name": "合計レコード",
+          "backgroundColor": { "light": "#96969640", "dark": "#55555540" },
+          "condition": "^ {12}91 {4}",
+          "fields": [
+            { "name": "空白", "length": 9, "type": "C" },
+            { "name": "空白", "length": 3, "type": "C" },
+            { "name": "データ種類", "length": 2, "type": "C" },
+            { "name": "空白", "length": 4, "type": "C" },
+            { "name": "ご利用内訳合計", "length": 10, "type": "C" },
+            { "name": "件数", "length": 5, "type": "N" },
+            { "name": "空白", "length": 9, "type": "C" },
+            { "name": "空白", "length": 220, "type": "C" }
+          ]
+        }
+      ]
+    },
+    {
+      "file_type": "F",
+      "name": "通話・通信・ドコモ光電話通信明細データ",
+      "finame_pattern": "^[0-9]{6}_F_[0-9]{10}_[0-9]{2}\\.cla$",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
+      "rows": [
+        {
+          "name": "電話番号別通話明細レコード",
+          "backgroundColor": { "light": "#E8B05C40", "dark": "#694F2740" },
+          "condition": "^[\\x20-\\x7E]{14}11",
+          "fields": [
+            { "name": "電話番号", "length": 14, "type": "C" },
+            { "name": "データ種類", "length": 2, "type": "C" },
+            { "name": "レコードNo", "length": 6, "type": "N" },
+            { "name": "通話年月日", "length": 8, "type": "N" },
+            { "name": "通話開始時刻", "length": 6, "type": "N" },
+            { "name": "着信先電話番号", "length": 26, "type": "C" },
+            { "name": "通話先", "length": 6, "type": "C" },
+            { "name": "通話時間", "length": 7, "type": "N" },
+            { "name": "通話料金", "length": 11, "type": "C" },
+            { "name": "時間区分", "length": 6, "type": "C" },
+            { "name": "割引種別", "length": 2, "type": "C" },
+            { "name": "通話種類1", "length": 10, "type": "C" },
+            { "name": "通話種類2", "length": 10, "type": "C" },
+            { "name": "通話種類3", "length": 10, "type": "C" },
+            { "name": "分計先", "length": 1, "type": "C" },
+            { "name": "空白", "length": 13, "type": "C" }
+          ]
+        },
+        {
+          "name": "電話番号別合計レコード",
+          "backgroundColor": { "light": "#64BC8040", "dark": "#285B3D40" },
+          "condition": "^[\\x20-\\x7E]{14}51",
+          "fields": [
+            { "name": "電話番号", "length": 14, "type": "C" },
+            { "name": "データ種類", "length": 2, "type": "C" },
+            { "name": "レコード件数", "length": 6, "type": "N" },
+            { "name": "一括請求サービス代表番号", "length": 14, "type": "C" },
+            { "name": "利用期間（自）", "length": 4, "type": "N" },
+            { "name": "利用期間（至）", "length": 4, "type": "N" },
+            { "name": "空白", "length": 21, "type": "C" },
+            { "name": "通話料合計", "length": 11, "type": "C" },
+            { "name": "空白", "length": 62, "type": "C" }
+          ]
+        },
+        {
+          "name": "管理レコード",
+          "backgroundColor": { "light": "#5CA5EA40", "dark": "#284B7140" },
+          "condition": "^ {11}01",
+          "fields": [
+            { "name": "空白", "length": 9, "type": "C" },
+            { "name": "空白", "length": 2, "type": "C" },
+            { "name": "データ種類", "length": 2, "type": "C" },
+            { "name": "空白", "length": 1, "type": "C" },
+            { "name": "年月群", "length": 7, "type": "C" },
+            { "name": "媒体通番", "length": 2, "type": "N" },
+            { "name": "センターコード", "length": 3, "type": "N" },
+            { "name": "空白", "length": 9, "type": "C" },
+            { "name": "発出元企業コード", "length": 9, "type": "C" },
+            { "name": "空白", "length": 94, "type": "C" }
+          ]
+        },
+        {
+          "name": "終了レコード",
+          "backgroundColor": { "light": "#96969640", "dark": "#55555540" },
+          "condition": "^ {11}91",
+          "fields": [
+            { "name": "空白", "length": 9, "type": "C" },
+            { "name": "空白", "length": 2, "type": "C" },
+            { "name": "データ種類", "length": 2, "type": "C" },
+            { "name": "空白", "length": 1, "type": "C" },
+            { "name": "継続区分", "length": 1, "type": "C" },
+            { "name": "空白", "length": 9, "type": "C" },
+            { "name": "発出元企業コード", "length": 9, "type": "C" },
+            { "name": "空白", "length": 105, "type": "C" }
+          ]
+        }
+      ]
+    }
+  ]
+}
