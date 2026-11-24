@@ -9,13 +9,12 @@
 
 ## 現在の状態
 
-- S1 は `SLICE_COMMITTED`。PR #37 に公開済み。最新ヘッド
-  `ec394993ea823dacf305d6a69812dd58bb07f2e5` の Verify は Failed。
-  公開後修正は `SLICE_APPROVED`。独立再レビューと完了承認を確認した。
-  S2〜S3 は未着手。
-  S1〜S3 の独立計画レビューと利用者の計画承認を確認した。
-  機能ブランチ `codex/ntt-docomo-business-billing-station`。
-  ベースは `main` の `493110c313f4427afd83b5cb5ea182782c7f03dd`。
+- S1 は `SLICE_COMMITTED`。PR #37 のヘッド
+  `c0ce381af07b356f7aaf27706039c69590e47b0e` で必須チェックを通過した。
+- S2 は `SLICE_APPROVED`。独立再レビューと S2 の完了承認を確認した。
+  S2 ブランチは `codex/ntt-docomo-business-billing-station-s2`。S3 は未着手。
+- S1〜S3 の独立計画レビューと利用者の計画承認を確認した。
+  機能全体のベースは `main` の `493110c313f4427afd83b5cb5ea182782c7f03dd`。
 - S1 の承認範囲、実装、検証と公開後修正は下記「S1 実装証跡」に記録する。
 
 [ライフサイクル状態](../../README.md#ライフサイクル状態)に従う。
@@ -142,11 +141,11 @@
 
 <!-- markdownlint-disable MD013 -->
 
-| 順序 | 層  | PR のベース | 正確なベース                                  | ヘッド・PR                                                                                                     |
-| ---- | --- | ----------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| 1    | S1  | `main`      | `493110c313f4427afd83b5cb5ea182782c7f03dd`    | [PR #37](https://github.com/kittybbit/vscode-JFixedViewer/pull/37)、`ec394993ea823dacf305d6a69812dd58bb07f2e5` |
-| 2    | S2  | S1 ブランチ | S1 の必須チェック通過済みヘッドを記録して確定 | 未作成                                                                                                         |
-| 3    | S3  | S2 ブランチ | S2 の必須チェック通過済みヘッドを記録して確定 | 未作成                                                                                                         |
+| 順序 | 層  | PR のベース                                 | 正確なベース                                  | ヘッド・PR                                                                                                     |
+| ---- | --- | ------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| 1    | S1  | `main`                                      | `493110c313f4427afd83b5cb5ea182782c7f03dd`    | [PR #37](https://github.com/kittybbit/vscode-JFixedViewer/pull/37)、`c0ce381af07b356f7aaf27706039c69590e47b0e` |
+| 2    | S2  | `codex/ntt-docomo-business-billing-station` | `c0ce381af07b356f7aaf27706039c69590e47b0e`    | 未公開                                                                                                         |
+| 3    | S3  | S2 ブランチ                                 | S2 の必須チェック通過済みヘッドを記録して確定 | 未作成                                                                                                         |
 
 <!-- markdownlint-enable MD013 -->
 
@@ -159,14 +158,15 @@ CodeQL の解析対象 SHA と先行ヘッドとの対応、該当するリポ�
 
 <!-- markdownlint-disable MD013 -->
 
-| 段階        | 状態       | 対象                                                                   | レビュー・コミット         |
-| ----------- | ---------- | ---------------------------------------------------------------------- | -------------------------- |
-| 計画        | `Approved` | S1〜S3、各スライス記載の実装パス                                       | 再レビュー `b35d36`        |
-| S1 完了     | `Approved` | 旧ヘッド `ec394993ea823dacf305d6a69812dd58bb07f2e5` のレビュー済み差分 | 下記の S1 独立実装レビュー |
-| S1 修正     | `Approved` | レビュー記録を含む文書2件の差分                                        | 独立再レビュー Ready       |
-| S2・S3 完了 | `Pending`  | スライスごとに正確な差分を特定して承認                                 | 未記録                     |
-| 終了        | `Pending`  | 終了判定時に最上位層の差分とパスを特定                                 | 未記録                     |
-| マージ      | `Pending`  | 取り込み順と対象、ベース、ヘッド、最新チェックを PR で特定             | 未記録                     |
+| 段階    | 状態       | 対象                                                                   | レビュー・コミット         |
+| ------- | ---------- | ---------------------------------------------------------------------- | -------------------------- |
+| 計画    | `Approved` | S1〜S3、各スライス記載の実装パス                                       | 再レビュー `b35d36`        |
+| S1 完了 | `Approved` | 旧ヘッド `ec394993ea823dacf305d6a69812dd58bb07f2e5` のレビュー済み差分 | 下記の S1 独立実装レビュー |
+| S1 修正 | `Approved` | レビュー記録を含む文書2件の差分                                        | 独立再レビュー Ready       |
+| S2 完了 | `Approved` | S2 の独立再レビュー済み差分                                            | 下記の S2 独立実装レビュー |
+| S3 完了 | `Pending`  | 正確な差分を特定して承認                                               | 未記録                     |
+| 終了    | `Pending`  | 終了判定時に最上位層の差分とパスを特定                                 | 未記録                     |
+| マージ  | `Pending`  | 取り込み順と対象、ベース、ヘッド、最新チェックを PR で特定             | 未記録                     |
 
 <!-- markdownlint-enable MD013 -->
 
@@ -294,3 +294,129 @@ Main が記録し、この承認記録を含む計画文書をコミットする
   CI と同じ5文書の Markdown lint も指摘0件。
 - 2026年11月24日、利用者がこのレビュー記録を含めた2文書の修正を承認した。
   Main が記録し、修正コミットを作成する。
+
+## S2 着手前に確認した S1 の公開証跡
+
+- 2026年11月24日、PR #37 の公開ヘッド
+  `c0ce381af07b356f7aaf27706039c69590e47b0e` を確認した。
+  承認済みの文書修正を含む同コミットを S2 のベースとする。
+- [Verify](https://github.com/kittybbit/vscode-JFixedViewer/actions/runs/45402752993/job/138475335063)
+  は Pass。デスクトップ安定版、VS Code 1.100.0 と Web 安定版も Pass。
+- CodeQL は Pass。
+  [CodeQL の結果](https://github.com/kittybbit/vscode-JFixedViewer/runs/138475658330)
+  解析 API は `refs/pull/37/head` の上記 SHA に対し、actions と javascript-typescript
+  の両方でエラーなし。main の Ruleset 4182060 の code scanning 条件を確認した。
+- 同ヘッドの check runs と commit statuses に Qlty Cloud は見つからなかった。
+  他に必須のステータスチェックは確認されなかった。
+
+## S2 実装証跡
+
+- 担当 `implementer`。開始状態は `PLAN_COMMITTED`、実装開始 HEAD は
+  `c0ce381af07b356f7aaf27706039c69590e47b0e`。計画コミットは
+  `3fe358dabb50a4a4d6c780bfa9b6c91556877b8f`。先行 S1 の PR #37 が同 HEAD で
+  必須チェックを通過したことを上記の証跡で確認してから着手した。
+- 2026年11月24日の S1〜S3 計画と列挙パスへの利用者承認を適用した。
+  S2 完了承認と独立レビューは未実施。コミット、公開、S3 の作業は行わない。
+- 実装した受け入れ条件:
+  - `statement_r@billingStation`、形式名「番号別明細内訳書（R始まり）」、`N00000`、
+    Shift_JIS、バイト単位を登録し、管理・OCN初回/継続・請求初回/継続・会社合計の
+    6行を各512バイトで定義した。
+  - `11` と `51` のレコード番号 `01`、`02`〜`99` を分岐し、予約値、未知の種別、
+    `00` は誤った定義に一致しないことをテストした。`5012345678`、`N123456789`、
+    `R001234567` の公式例を含む。
+  - 17組を越える18件の内訳、未使用組、負の金額をサンプルに置き、初回と継続の組を
+    確認した。公式コード表の税区分 `0A`、`0B`、`0C` を受け入れるため、表示用の
+    文字型とした。会社コード `00`、内訳コード `a000`〜`a00H` を使った。
+  - `N00000` は7レコード、各512バイト、ASCIIデータと CRLF。明細は108、-10000、
+    10000、1を15件とし、OCN・請求書・会社の合計123と一致する。OCNは初回17組と
+    継続1組、請求書は初回、継続17組、継続1組で、レコード数は `03`。
+  - 独立期待値テストで全行の名前、条件、項目名、位置、長さ、型、色、ホバー、
+    ファイル名、診断、未変更を確認する。無効な行・コード、最終レコード番号 `99`、
+    2種の正規 OCN 例、サンプルの18組と512バイトも確認した。
+- S1 のテスト支援内に固定値の期待行と入力文字列生成を置いた。サンプル読込と Node
+  依存は `extension.test.ts` に置き、共通 smoke は定義・入力を引数で受け取る。
+  本番のパーサー、Domain、DI、ホストの契約は変更していない。TRACEABILITY.md は存在せず、
+  計画の要件対応と検証方法に変更がないため新規作成しなかった。
+- S2 の変更対象は承認済みの8パスと本節。
+  - `src/resource/definitions/billingStation.json`
+  - `src/test/extension.test.ts`
+  - `src/test/support/billingStationFixtures.ts`
+  - `src/test/support/billingStationSmoke.ts`
+  - `sample/billingStation/N00000`
+  - `README.md`、`sample/README.md`、`CHANGELOG.md`
+  - `docs/specs/features/ntt-docomo-business-billing-station/TASKS.md` の本節
+    別の `SPECS.md` は変更していない。
+- 最終検証:
+  - `npm run compile` — Pass。デスクトップと Web の bundle を生成。
+  - `npm run test:prepare` — Pass。拡張、テスト、デスクトップ/Web 共通 smoke を生成。
+  - `npm run test:architecture` — Pass、7/7。
+  - Desktop 実ホストテスト — Pass、64件。
+
+    ```sh
+    vscode_app='/Applications/Visual Studio Code.app'
+    VSCODE_TEST_EXECUTABLE="${vscode_app}/Contents/MacOS/Code" \
+      npm run test:desktop
+    ```
+
+    VS Code 実ホストで S1 と S2 の smoke を実施。
+
+  - `npm run test:web` — Pass、終了0。Web 実ホストで同じ smoke を実施。
+    開発用 built-in extension の404ログは出たが、拡張が有効化されテストは成功した。
+  - `markdownlint-cli2` 0.22.0 — Pass、変更 Markdown 4件。ローカルリンク54件と
+    見出しアンカー — Pass。`git diff --check` と一時 index の全差分検査 — Pass。
+  - `npm run qlty` — Pass。`qlty check --all --sarif --no-fix` と
+    `qlty smells --all --sarif --no-snippets` — 基準・最終とも SARIF 2.1.0、指摘0件。
+    基準・最終の `qlty metrics --all` は同じ43パスを解析した。
+  - 未追跡サンプルを指定した `qlty check --sarif --no-fix` — Pass、指摘0件。
+    サンプル実バイト確認 — 7行、各512バイト、CRLF、ASCII。OCN・請求内訳の合計と
+    請求合計・会社合計はすべて123。
+
+- コマンドログ、SARIF、metrics、解析パス一覧、差分検査ログは
+  `/tmp/jfixedviewer-billing-s2-impl-20261124/` に保存した。
+  `baseline/` は開始 HEAD の別 worktree、`final/` は S2 作業ツリー。
+  compile、test prepare、architecture、Desktop、Web、markdownlint のログは
+  `final/compile.log`、`final/test-prepare.log`、
+  `final/test-architecture.log`、`final/test-desktop.log`、
+  `final/test-web.log`、`final/markdownlint.log`。
+  基準・最終の生 SARIF は各フォルダーの `check.sarif` と `smells.sarif`。
+  `final/untracked-sample-check.sarif` は未追跡サンプルの結果。
+  `baseline/analysis.paths` と `final/analysis.paths` は一致する。
+  Qlty 0.645.0、設定 SHA-256 は
+  `0937a3a158d2b24c474a07b5ee271196190192df6be3458b3c960d0ec99bd77e`。
+  一時 index は `final/s2.index`、実 index は空。
+- 準備状態は `IMPLEMENTED`。独立実装レビューと人の完了承認を Main が行い、
+  確認後に Main が承認済みコミットと PR 公開を行う。S3 は S2 の最新ヘッドと
+  必須チェック確認後に着手する。未公開のため S2 の PR 必須チェックは未実施。
+- リスクは、金額・日付・請求整合性・コード表全件の業務診断を行わない計画上の境界。
+  正常サンプルの日本語項目値は仕様にないため、S1 共通のマルチバイト境界検証を再利用し、
+  本サンプルの日本語表示には依存させない。Web の built-in extension 警告はテスト結果に影響しない。
+
+## S2 実装レビュー指摘への局所修正
+
+- 2026年11月24日、独立実装レビューで P2 が1件報告された。Word §5(2) の項番21
+  「ご請求金額」は「文字」10桁だが、定義と独立期待値が `N` になっていた。
+  英字等を含む仕様上の文字値に誤った型診断を出すため、承認済みパス内で修正する。
+- `src/resource/definitions/billingStation.json` と
+  `src/test/support/billingStationFixtures.ts` の当該1項目だけを `C` に変更した。
+  サンプル値、項目境界、他の型、行判定と表示色は変更していない。
+- 既存の独立期待値比較が全項目の型を照合し、正常行の診断なしと描画を確認する。
+  修正後の Desktop 64件、Web 実ホスト、ビルド、テスト準備は Pass。
+  各ログは `final/p2-compile.log`、`final/p2-test-prepare.log`、
+  `final/p2-test-desktop.log`、`final/p2-test-web.log`。
+- CI と同じ Markdownlint-cli2 0.22.0 は変更4文書で Pass。
+  `npm run qlty`、最終 `qlty check` と `qlty smells` も Pass。
+  最終 SARIF 2.1.0 の指摘は両方0件、metrics は基準と同じ43パス。
+  結果は `final/p2-markdownlint.log`、`final/p2-npm-qlty.log`、
+  `final/p2-check.sarif`、`final/p2-smells.sarif`、`final/p2-metrics.txt`。
+- この局所修正は新しい製品挙動や範囲判断を加えず、S2 の承認済み項目型を仕様に合わせる。
+  修正を含む全差分の独立再レビューと完了承認は Main が行う。
+
+## S2 独立実装レビュー
+
+- 2026年11月24日、`implementation-reviewer` が修正後の全差分を Ready と判定した。
+  公式 Word で文字属性の「ご請求金額」を C とし、最初のレビューでの指摘を解消した。
+- 再レビュー済み差分の SHA-256
+  - 製品8パス `4e9de958eb4986e98547e4a3dfc2078ccbafdcb88e7c845b79a93fc9fc6ee52b`
+  - S2 作業記録込み `86f44f60fe4f1587e2095423f26a683a09e06bf1c4af89eab5e171188aa85cb1`
+- 2026年11月25日、利用者がレビュー済みの S2 差分とこのレビュー記録を承認した。
+  Main が記録し、S1 ブランチをベースとするスタック PR に公開する。

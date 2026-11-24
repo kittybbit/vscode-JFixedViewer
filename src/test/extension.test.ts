@@ -21,6 +21,7 @@ import {
   fixtureValueAtByte,
   leasedLineNumber,
   leasedLineSummaryMatches,
+  verifyBillingStationRCharacterization,
 } from "./support/billingStationFixtures";
 import {
   FakePosition,
@@ -1152,7 +1153,7 @@ suite("固定長表示の現行挙動", () => {
     );
     assert.deepStrictEqual(
       billingDefinitions.map(({ fileType }) => fileType),
-      [expectedFileType],
+      [expectedFileType, "statement_r@billingStation"],
     );
     const definition = billingDefinitions[0];
     assert.ok(definition);
@@ -1436,6 +1437,24 @@ suite("固定長表示の現行挙動", () => {
     );
     assert.strictEqual(boundaryEditor.document.getText(), splitHeader);
     assert.strictEqual(boundaryEditor.document.isDirty, false);
+  });
+
+  test("ビリングステーション番号別明細の定義と17組継続を確認する", async () => {
+    const definition = loadBuiltInDefinitions().find(
+      ({ fileType }) => fileType === "statement_r@billingStation",
+    );
+    assert.ok(definition);
+    const samplePath = path.resolve(
+      __dirname,
+      "../../sample/billingStation/N00000",
+    );
+    await verifyBillingStationRCharacterization({
+      host,
+      helpers: { optionsForLine, rowNames },
+      definition,
+      sampleText: readFileSync(samplePath).toString("latin1"),
+      assertions: assert,
+    });
   });
 
   test("定義色ペアは両方有効な時だけ先頭一致行に適用する", async () => {
