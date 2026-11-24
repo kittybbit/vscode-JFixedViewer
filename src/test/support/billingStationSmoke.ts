@@ -12,6 +12,8 @@ import {
   billingStationRExpectedRows,
   createBillingStationFixtureRows,
   createBillingStationRFixtureRows,
+  createBillingStationVoipFixtureRows,
+  billingStationVoipExpectedRows,
   type BillingStationRExpectedRow,
 } from "./billingStationFixtures";
 
@@ -115,6 +117,55 @@ export async function verifyBillingStationSmoke(): Promise<void> {
           displayStart: 168,
           displayEnd: 178,
           width: 10,
+          lengthUnit: "byte",
+        },
+      },
+    ],
+  });
+  await verifyBillingStationHostSmoke({
+    fileType: "dial_voip@billingStation",
+    fileName: "R00000",
+    label: "ダイヤル通話明細内訳書（VoIP）",
+    lines: createBillingStationVoipFixtureRows().map(({ line }) => line),
+    expectedRows: billingStationVoipExpectedRows.map((row) => ({
+      name: row.name,
+      fields: row.fields,
+      condition: row.condition,
+    })),
+    probes: [
+      {
+        line: 0,
+        fieldName: "媒体通番",
+        position: {
+          start: 20,
+          end: 22,
+          displayStart: 20,
+          displayEnd: 22,
+          width: 2,
+          lengthUnit: "byte",
+        },
+      },
+      {
+        line: 2,
+        fieldName: "通話料金１",
+        position: {
+          start: 78,
+          end: 88,
+          displayStart: 78,
+          displayEnd: 88,
+          width: 10,
+          lengthUnit: "byte",
+        },
+      },
+      {
+        line: 5,
+        fieldName: "総出力レコード数",
+        position: {
+          start: 3,
+          end: 12,
+          displayStart: 3,
+          displayEnd: 12,
+          width: 9,
           lengthUnit: "byte",
         },
       },

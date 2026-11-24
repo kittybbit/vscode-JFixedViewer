@@ -11,8 +11,10 @@
 
 - S1 は `SLICE_COMMITTED`。PR #37 のヘッド
   `c0ce381af07b356f7aaf27706039c69590e47b0e` で必須チェックを通過した。
-- S2 は `SLICE_APPROVED`。独立再レビューと S2 の完了承認を確認した。
-  S2 ブランチは `codex/ntt-docomo-business-billing-station-s2`。S3 は未着手。
+- S2 は `SLICE_COMMITTED`。PR #38 をネイティブスタック #39 の第2層に公開した。
+  公開ヘッドの Verify と CodeQL が通過した。
+  S2 ブランチは `codex/ntt-docomo-business-billing-station-s2`。
+- S3 は `SLICE_APPROVED`。独立実装レビューと S3 の完了承認を確認した。
 - S1〜S3 の独立計画レビューと利用者の計画承認を確認した。
   機能全体のベースは `main` の `493110c313f4427afd83b5cb5ea182782c7f03dd`。
 - S1 の承認範囲、実装、検証と公開後修正は下記「S1 実装証跡」に記録する。
@@ -141,11 +143,11 @@
 
 <!-- markdownlint-disable MD013 -->
 
-| 順序 | 層  | PR のベース                                 | 正確なベース                                  | ヘッド・PR                                                                                                     |
-| ---- | --- | ------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| 1    | S1  | `main`                                      | `493110c313f4427afd83b5cb5ea182782c7f03dd`    | [PR #37](https://github.com/kittybbit/vscode-JFixedViewer/pull/37)、`c0ce381af07b356f7aaf27706039c69590e47b0e` |
-| 2    | S2  | `codex/ntt-docomo-business-billing-station` | `c0ce381af07b356f7aaf27706039c69590e47b0e`    | 未公開                                                                                                         |
-| 3    | S3  | S2 ブランチ                                 | S2 の必須チェック通過済みヘッドを記録して確定 | 未作成                                                                                                         |
+| 順序 | 層  | PR のベース                                    | 正確なベース                               | ヘッド・PR                                                                                                     |
+| ---- | --- | ---------------------------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| 1    | S1  | `main`                                         | `493110c313f4427afd83b5cb5ea182782c7f03dd` | [PR #37](https://github.com/kittybbit/vscode-JFixedViewer/pull/37)、`c0ce381af07b356f7aaf27706039c69590e47b0e` |
+| 2    | S2  | `codex/ntt-docomo-business-billing-station`    | `c0ce381af07b356f7aaf27706039c69590e47b0e` | [PR #38](https://github.com/kittybbit/vscode-JFixedViewer/pull/38)、`f86a7b5ab036e6046fbba4ba134ce75004b453bc` |
+| 3    | S3  | `codex/ntt-docomo-business-billing-station-s2` | `f86a7b5ab036e6046fbba4ba134ce75004b453bc` | 未公開                                                                                                         |
 
 <!-- markdownlint-enable MD013 -->
 
@@ -164,7 +166,7 @@ CodeQL の解析対象 SHA と先行ヘッドとの対応、該当するリポ�
 | S1 完了 | `Approved` | 旧ヘッド `ec394993ea823dacf305d6a69812dd58bb07f2e5` のレビュー済み差分 | 下記の S1 独立実装レビュー |
 | S1 修正 | `Approved` | レビュー記録を含む文書2件の差分                                        | 独立再レビュー Ready       |
 | S2 完了 | `Approved` | S2 の独立再レビュー済み差分                                            | 下記の S2 独立実装レビュー |
-| S3 完了 | `Pending`  | 正確な差分を特定して承認                                               | 未記録                     |
+| S3 完了 | `Approved` | S3 のレビュー済み差分                                                  | 下記の S3 独立実装レビュー |
 | 終了    | `Pending`  | 終了判定時に最上位層の差分とパスを特定                                 | 未記録                     |
 | マージ  | `Pending`  | 取り込み順と対象、ベース、ヘッド、最新チェックを PR で特定             | 未記録                     |
 
@@ -307,6 +309,57 @@ Main が記録し、この承認記録を含む計画文書をコミットする
   解析 API は `refs/pull/37/head` の上記 SHA に対し、actions と javascript-typescript
   の両方でエラーなし。main の Ruleset 4182060 の code scanning 条件を確認した。
 - 同ヘッドの check runs と commit statuses に Qlty Cloud は見つからなかった。
+
+## S3 実装証跡
+
+- 担当 `implementer`。開始状態は `PLAN_COMMITTED`、開始 HEAD と S2 PR #38 の確認済み最新ヘッドは
+  `f86a7b5ab036e6046fbba4ba134ce75004b453bc`。計画コミットは
+  `3fe358dabb50a4a4d6c780bfa9b6c91556877b8f`。PR #38 の Verify と CodeQL は同ヘッドで Pass。
+  CodeQL の解析 SHA も一致し、先行条件を満たしてから着手した。
+- 2026年11月24日に承認された S1〜S3 の計画とパスを適用した。S3 完了承認、独立実装レビュー、
+  コミット、公開は未実施。開始ベースは S2 ブランチの上記 HEAD。
+- 受け入れ条件の実装:
+  - `dial_voip@billingStation`、表示名「ダイヤル通話明細内訳書（VoIP）」、固定名 `R00000`、
+    Shift_JIS、バイト単位を定義した。共通管理、電番管理、通話明細、電番合計、終了の5種を
+    先頭 `1`/`2`/`3`/`5`/`9` で判定し、各行の項目名、位置、幅、型、色を独立期待値と照合する。
+  - 公式項目表では媒体通番だけが属性「数字」のため `N` とし、他の全項目は属性「文字」に従い `C`。
+    `N` の半角数字・全空白の受理、文字・混在空白・符号の拒否を確認する。
+  - 作成日付 `251201`・料金月 `2512` の和暦例をサンプルに置き、西暦下2桁 `191201`・`1912` は
+    別の実ホストテスト値にした。変換せず文字列を保持し、6桁・4桁のバイト境界を確認する。
+  - コード表のサービス区分 `Bf`、一般通話 `0`、番号案内 `b`、昼間 `1` と地域コード `00` を照合した。
+    通常通話の通話料金 `0000012345` は1,234.5円の例、番号案内の `0000000030` は3回の例。
+    番号案内を電番管理の呼数、電番合計の金額・請求額から除外したサンプル値にした。
+  - `R00000` は6レコード、各128バイト、ASCII、Shift_JIS と CRLF。レコードは1/2/3/3/5/9。
+    電番管理は1呼、合計・請求額は1,234円、終了の総レコード数は6。固定指定の集計欄と電話番号も
+    公式例に合わせた。サンプルを含む表示・診断テストは元文書の内容を変更しないことを確認する。
+  - 不明識別子、行長不一致、`N` の不正値、各項目のホバー位置とパターンの正負をテストした。
+    `R00000` は一般ダイヤル形式と名前が衝突するため、既存の形式選択で VoIP を指定する。
+- 変更対象は S3 の承認済み8パスと本節だけ。
+  - `src/resource/definitions/billingStation.json`
+  - `src/test/extension.test.ts`
+  - `src/test/support/billingStationFixtures.ts`
+  - `src/test/support/billingStationSmoke.ts`
+  - `sample/billingStation/R00000`
+  - `README.md`、`sample/README.md`、`CHANGELOG.md`
+- `TRACEABILITY.md` は存在しない。SPECS の受け入れ条件と検証方法は計画どおりで、要件対応や結果に
+  変更がないため新設・更新しない。共通パーサー、ホスト境界、アーキテクチャ、テレメトリは変更していない。
+- 検証:
+  - `npm run compile`、`npm run test:prepare`、`npm run test:architecture` は Pass（7/7）。
+  - Desktop 実ホストは Pass、65件。環境変数 `VSCODE_TEST_EXECUTABLE` に
+    `/Applications/Visual Studio Code.app/Contents/MacOS/Code` を指定した。
+    S1〜S3 と既存ドコモ7形式・NTT東西4形式を含む。
+  - `npm run test:web` は Pass、実ホストで S1〜S3 の Shift_JIS/CRLF 表示、装飾、診断と非変更を確認した。
+  - markdownlint-cli2 0.22.0 は変更4文書で Pass。相対リンク55件、`git diff --check` も Pass。
+  - Qlty 0.645.0 と設定 SHA-256 `0937a3a158d2b24c474a07b5ee271196190192df6be3458b3c960d0ec99bd77e`。
+    `qlty check --all --sarif --no-fix` は基準・最終とも SARIF 2.1.0、結果0件。
+    `qlty smells --all --sarif --no-snippets` も基準・最終とも SARIF 2.1.0、結果0件。
+    `qlty metrics --all` は同じ43パスを解析した。
+    `npm run qlty` と未追跡サンプルを指定した Qlty check も Pass（0件）。
+- 検証ログは `/tmp/jfixedviewer-billing-s3-impl-20261125/` に保存した。
+  基準・最終の SARIF、生の出力、metrics、解析対象一覧、サンプル結果を同フォルダーに保存した。
+- 準備状態は `IMPLEMENTED`。独立実装レビューと S3 完了承認後に、Main が承認済み差分をコミットし、
+  S2 をベースとするスタック PR に公開する。重要な仕様リスクはなく、料金計算・日付変換・コード表検索・
+  業務整合性診断を行わない境界は計画どおり。
   他に必須のステータスチェックは確認されなかった。
 
 ## S2 実装証跡
@@ -420,3 +473,27 @@ Main が記録し、この承認記録を含む計画文書をコミットする
   - S2 作業記録込み `86f44f60fe4f1587e2095423f26a683a09e06bf1c4af89eab5e171188aa85cb1`
 - 2026年11月25日、利用者がレビュー済みの S2 差分とこのレビュー記録を承認した。
   Main が記録し、S1 ブランチをベースとするスタック PR に公開する。
+
+## S2 の公開とチェック
+
+- 2026年11月25日、承認済み S2 を PR #38 に公開した。
+  ネイティブスタック #39 の順序は PR #37、PR #38。取り込み先は `main`。
+- S2 のヘッドは `f86a7b5ab036e6046fbba4ba134ce75004b453bc`。
+  GitHub の PR は1コミット、S2 の9パスを含む。
+- Verify は Pass。
+  [Verify の結果](https://github.com/kittybbit/vscode-JFixedViewer/actions/runs/45503314491)
+- CodeQL は Pass。
+  [CodeQL の結果](https://github.com/kittybbit/vscode-JFixedViewer/runs/138833183540)
+  Actions と JavaScript/TypeScript の解析 API で、`refs/pull/38/head` の
+  コミットが公開ヘッドと一致し、両方の解析にエラーがないことを確認した。
+- 同ヘッドの check runs と commit statuses に Qlty Cloud は見つからなかった。
+
+## S3 独立実装レビュー
+
+- 2026年11月25日、`implementation-reviewer` が全差分を Ready と判定した。
+  公式仕様の項目、サンプルの集計、S1 と S2 の互換性、検証証跡を照合した。
+- レビュー済み差分の SHA-256
+  - 製品8パス `67de799932110c51cae16b9b767521ba43ba6f3ed5e4d08b493ff844880e0ff8`
+  - S3 作業記録込み `f0a8f9ccbc50e3028865798092f4df1527e325750b8408211b777af631fbf5fd`
+- 2026年11月25日、利用者がレビュー済みの S3 差分とこのレビュー記録を承認した。
+  Main が記録し、S2 ブランチをベースとするスタック PR に公開する。

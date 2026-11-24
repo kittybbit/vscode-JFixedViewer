@@ -984,21 +984,13 @@ async function verifyBillingStationRPresentation(input: {
     lines: input.lines,
   });
   input.assertions.deepStrictEqual(input.host.diagnosticsFor(editor) ?? [], []);
-  input.lines.forEach((line, index) => {
-    const expectedRow = billingStationRExpectedRows.find(({ condition }) =>
-      new RegExp(condition, "u").test(line),
-    );
-    if (!expectedRow) {
-      throw new Error("R始まり明細に対応する期待行がありません。");
-    }
-    input.assertions.deepStrictEqual(
-      [...new Set(input.helpers.rowNames(editor, index))],
-      [expectedRow.name],
-    );
-    input.assertions.strictEqual(
-      input.helpers.optionsForLine(editor, index).length,
-      expectedRow.fields.length,
-    );
+  verifyBillingStationRows({
+    editor,
+    lines: input.lines,
+    expectedRows: billingStationRExpectedRows,
+    helpers: input.helpers,
+    assertions: input.assertions,
+    label: "R始まり明細",
   });
   input.assertions.ok(
     input.helpers
@@ -1015,6 +1007,35 @@ async function verifyBillingStationRPresentation(input: {
     input.lines.join("\n"),
   );
   input.assertions.strictEqual(editor.document.isDirty, false);
+}
+
+function verifyBillingStationRows(input: {
+  editor: FakeEditor;
+  lines: string[];
+  expectedRows: readonly Pick<
+    BillingStationRExpectedRow,
+    "name" | "condition" | "fields"
+  >[];
+  helpers: BillingStationRCharacterizationHelpers;
+  assertions: BillingStationRAssertions;
+  label: string;
+}): void {
+  input.lines.forEach((line, index) => {
+    const expectedRow = input.expectedRows.find(({ condition }) =>
+      new RegExp(condition, "u").test(line),
+    );
+    if (!expectedRow) {
+      throw new Error(input.label + "に対応する期待行がありません。");
+    }
+    input.assertions.deepStrictEqual(
+      [...new Set(input.helpers.rowNames(input.editor, index))],
+      [expectedRow.name],
+    );
+    input.assertions.strictEqual(
+      input.helpers.optionsForLine(input.editor, index).length,
+      expectedRow.fields.length,
+    );
+  });
 }
 
 async function verifyBillingStationRInvalidRows(input: {
@@ -1108,4 +1129,474 @@ async function verifyBillingStationRAlternateOcn(input: {
     lines: [line],
   });
   input.assertions.deepStrictEqual(input.host.diagnosticsFor(editor) ?? [], []);
+}
+
+export type BillingStationVoipCode = "1" | "2" | "3" | "5" | "9";
+
+export type BillingStationVoipExpectedRow = {
+  code: BillingStationVoipCode;
+  name: string;
+  color: { light: string; dark: string };
+  condition: string;
+  fields: readonly BillingStationExpectedField[];
+};
+
+export type BillingStationVoipFixtureRow = BillingStationVoipExpectedRow & {
+  line: string;
+};
+
+const billingStationVoipManagementColor = {
+  light: "#5CA5EA40",
+  dark: "#284B7140",
+};
+const billingStationVoipDetailColor = {
+  light: "#E8B05C40",
+  dark: "#694F2740",
+};
+const billingStationVoipEndColor = { light: "#96969640", dark: "#55555540" };
+
+/** 公式仕様書の項目表から独立して作成した VoIP の期待値。 */
+export const billingStationVoipExpectedRows: readonly BillingStationVoipExpectedRow[] =
+  [
+    {
+      code: "1",
+      name: "共通管理レコード",
+      color: billingStationVoipManagementColor,
+      condition: "^1",
+      fields: [
+        field("レコード識別", 1),
+        field("媒体識別", 2),
+        field("予備１", 6),
+        field("ファイル作成日付", 6),
+        field("料金月", 4),
+        field("料金群", 1),
+        field("媒体通番", 2, "N"),
+        field("明細送付代表番号", 12),
+        field("予備２", 2),
+        field("請求回数", 1),
+        field("詳細群", 1),
+        field("予備３", 90),
+      ],
+    },
+    {
+      code: "2",
+      name: "電番管理レコード",
+      color: billingStationVoipManagementColor,
+      condition: "^2",
+      fields: [
+        field("レコード識別", 1),
+        field("明細送付代表番号", 12),
+        field("予備１", 2),
+        field("子電話番号", 13),
+        field("予備２", 1),
+        field("サービス区分", 2),
+        field("予備３", 2),
+        field("送付明細呼数", 7),
+        field("利用月日初日", 6),
+        field("利用月日末日", 6),
+        field("各種サービス番号", 11),
+        field("契約者回線番号", 13),
+        field("グループセキュリティ", 6),
+        field("出力形式", 1),
+        field("利用内訳コード", 2),
+        field("お客様番号", 13),
+        field("ロケーションコード", 16),
+        field("ソートパターン", 1),
+        field("予備４", 13),
+      ],
+    },
+    {
+      code: "3",
+      name: "通話明細レコード",
+      color: billingStationVoipDetailColor,
+      condition: "^3",
+      fields: [
+        field("レコード識別", 1),
+        field("明細送付代表番号", 12),
+        field("予備１", 2),
+        field("子電話番号", 13),
+        field("サービス区分", 2),
+        field("予備２", 2),
+        field("通信元電話番号", 13),
+        field("通話月日", 4),
+        field("通話開始時刻", 6),
+        field("着信電話番号", 13),
+        field("県名コード", 2),
+        field("通話時間", 8),
+        field("通話料金１", 10),
+        field("通話料金２", 10),
+        field("通話料金３", 10),
+        field("発信県名コード", 2),
+        field("通話種別コード", 3),
+        field("昼夜別コード", 3),
+        field("フリーダイヤルサービス種別", 1),
+        field("地域コード", 3),
+        field("予備３", 8),
+      ],
+    },
+    {
+      code: "5",
+      name: "電番合計レコード",
+      color: billingStationVoipEndColor,
+      condition: "^5",
+      fields: [
+        field("レコード識別", 1),
+        field("明細送付代表番号", 12),
+        field("予備１", 2),
+        field("子電話番号", 13),
+        field("サービス区分", 2),
+        field("利用区分", 2),
+        field("予備２", 1),
+        field("合計金額", 9),
+        field("月間加減算金額", 9),
+        field("区域内合計金額", 9),
+        field("非希望時合計金額", 9),
+        field("請求額", 9),
+        field("通話時間", 10),
+        field("予備３", 40),
+      ],
+    },
+    {
+      code: "9",
+      name: "終了レコード",
+      color: billingStationVoipEndColor,
+      condition: "^9",
+      fields: [
+        field("レコード識別", 1),
+        field("ＦＤ枚数", 2),
+        field("総出力レコード数", 9),
+        field("予備", 116),
+      ],
+    },
+  ];
+
+function billingStationVoipLine(
+  row: BillingStationVoipExpectedRow,
+  values: Readonly<Record<number, string>>,
+): string {
+  const line = row.fields
+    .map((definition, index) => {
+      const value = values[index] ?? "";
+      if (value.length > definition.length) {
+        throw new Error(row.name + " の fixture 値が項目長を超えています。");
+      }
+      return value + " ".repeat(definition.length - value.length);
+    })
+    .join("");
+  if (line.length !== 128) {
+    throw new Error(row.name + " の fixture が128バイトではありません。");
+  }
+  return line;
+}
+
+/** 通常通話と番号案内を含む、CRLF 用の ASCII 128 バイト行を作る。 */
+export function createBillingStationVoipFixtureRows(
+  fileDate = "251201",
+  feeMonth = "2512",
+): BillingStationVoipFixtureRow[] {
+  const rowAt = (
+    code: BillingStationVoipCode,
+  ): BillingStationVoipExpectedRow => {
+    const row = billingStationVoipExpectedRows.find(
+      (candidate) => candidate.code === code,
+    );
+    if (!row) {
+      throw new Error("VoIP の期待行が不足しています: " + code);
+    }
+    return row;
+  };
+  const line = (
+    code: BillingStationVoipCode,
+    values: Readonly<Record<number, string>>,
+  ): BillingStationVoipFixtureRow => ({
+    ...rowAt(code),
+    line: billingStationVoipLine(rowAt(code), values),
+  });
+  const sharedCall = {
+    0: "3",
+    1: "N123456789",
+    3: "0312345678",
+    4: "Bf",
+    7: "1201",
+    8: "120000",
+    9: "0312340001",
+    11: "12345560",
+    13: "0000000000",
+    14: "0000000000",
+    17: "1",
+    19: "00",
+  };
+  return [
+    line("1", {
+      0: "1",
+      1: "BS",
+      3: fileDate,
+      4: feeMonth,
+      5: "3",
+      6: "01",
+      7: "N123456789",
+      9: "0",
+      10: "V",
+    }),
+    line("2", {
+      0: "2",
+      1: "N123456789",
+      3: "0312345678",
+      5: "Bf",
+      7: "0000001",
+      14: "03",
+    }),
+    line("3", { ...sharedCall, 12: "0000012345", 16: "0" }),
+    line("3", { ...sharedCall, 12: "0000000030", 16: "b" }),
+    line("5", {
+      0: "5",
+      1: "N123456789",
+      3: "0312345678",
+      4: "Bf",
+      7: "000001234",
+      8: "000000000",
+      9: "000000000",
+      10: "000000000",
+      11: "000001234",
+      12: "0000000000",
+    }),
+    line("9", { 0: "9", 1: "01", 2: "000000006" }),
+  ];
+}
+
+async function selectBillingStationVoipEditor(input: {
+  host: BillingStationRCharacterizationHost;
+  fileName: string;
+  lines: string[];
+}): Promise<FakeEditor> {
+  const editor = input.host.createEditor(
+    input.fileName,
+    input.lines,
+    "billingStation://" + input.fileName,
+  );
+  input.host.setActiveEditor(editor);
+  await input.host.chooseFileType(
+    "NTTドコモビジネス ビリングステーション/ダイヤル通話明細内訳書（VoIP）",
+  );
+  await input.host.waitForAnalysis();
+  return editor;
+}
+
+/** VoIP の全レコード、日付表記、N 型境界と番号案内を実ホスト入口で確認する。 */
+export async function verifyBillingStationVoipCharacterization(input: {
+  host: BillingStationRCharacterizationHost;
+  helpers: BillingStationRCharacterizationHelpers;
+  definition: FixedWidthDefinition;
+  sampleText: string;
+  assertions: BillingStationRAssertions;
+}): Promise<void> {
+  const lines = billingStationVoipSampleLines(input);
+  await verifyBillingStationVoipPresentation({ ...input, lines });
+  await verifyBillingStationVoipNType({ ...input, lines });
+  await verifyBillingStationVoipCalendarVariants(input);
+  await verifyBillingStationVoipUnknownRows({ ...input, lines });
+}
+
+function billingStationVoipSampleLines(input: {
+  definition: FixedWidthDefinition;
+  sampleText: string;
+  assertions: BillingStationRAssertions;
+}): string[] {
+  const { definition, assertions } = input;
+  assertions.strictEqual(
+    definition.name,
+    "NTTドコモビジネス ビリングステーション/ダイヤル通話明細内訳書（VoIP）",
+  );
+  assertions.strictEqual(definition.encoding, "shiftjis");
+  assertions.strictEqual(definition.lengthUnit, "byte");
+  assertions.strictEqual(definition.fileNamePattern.test("R00000"), true);
+  assertions.strictEqual(definition.fileNamePattern.test("R12345"), false);
+  assertions.strictEqual(definition.fileNamePattern.test("R00000.csv"), false);
+  assertions.strictEqual(definition.fileNamePattern.test("R0000"), false);
+  assertions.deepStrictEqual(
+    definition.rows.map(({ name, backgroundColor, condition, fields }) => ({
+      name,
+      color: backgroundColor,
+      condition: condition.source,
+      fields: (fields ?? []).map(({ name: fieldName, length, type }) => ({
+        name: fieldName,
+        length,
+        type,
+      })),
+    })),
+    billingStationVoipExpectedRows.map(
+      ({ name, color, condition, fields }) => ({
+        name,
+        color,
+        condition,
+        fields,
+      }),
+    ),
+  );
+  assertions.deepStrictEqual(
+    billingStationVoipExpectedRows.map(({ fields }) =>
+      fields.reduce((total, item) => total + item.length, 0),
+    ),
+    Array(5).fill(128),
+  );
+
+  const sampleLines = input.sampleText.split("\r\n");
+  assertions.strictEqual(sampleLines.pop(), "");
+  assertions.ok(sampleLines.every((line) => /^[\x20-\x7e]*$/u.test(line)));
+  assertions.deepStrictEqual(
+    sampleLines.map((line) => Buffer.byteLength(line, "latin1")),
+    sampleLines.map(() => 128),
+  );
+  assertions.deepStrictEqual(
+    sampleLines,
+    createBillingStationVoipFixtureRows().map(({ line }) => line),
+  );
+  assertions.deepStrictEqual(
+    sampleLines.map((line) => line.slice(0, 1)),
+    ["1", "2", "3", "3", "5", "9"],
+  );
+  assertions.strictEqual(sampleLines[0]?.slice(9, 15), "251201");
+  assertions.strictEqual(sampleLines[0]?.slice(15, 19), "2512");
+  assertions.strictEqual(sampleLines[1]?.slice(33, 40), "0000001");
+  assertions.strictEqual(sampleLines[2]?.slice(78, 88), "0000012345");
+  assertions.strictEqual(sampleLines[2]?.slice(110, 113), "0  ");
+  assertions.strictEqual(sampleLines[2]?.slice(117, 120), "00 ");
+  assertions.strictEqual(sampleLines[3]?.slice(78, 88), "0000000030");
+  assertions.strictEqual(sampleLines[3]?.slice(110, 113), "b  ");
+  assertions.strictEqual(sampleLines[3]?.slice(117, 120), "00 ");
+  assertions.strictEqual(sampleLines[4]?.slice(33, 42), "000001234");
+  assertions.strictEqual(sampleLines[4]?.slice(69, 78), "000001234");
+  assertions.strictEqual(sampleLines[4]?.slice(78, 88), "0000000000");
+  assertions.strictEqual(sampleLines[5]?.slice(3, 12), "000000006");
+  return sampleLines;
+}
+
+async function verifyBillingStationVoipPresentation(input: {
+  host: BillingStationRCharacterizationHost;
+  helpers: BillingStationRCharacterizationHelpers;
+  lines: string[];
+  assertions: BillingStationRAssertions;
+}): Promise<void> {
+  const editor = await selectBillingStationVoipEditor({
+    host: input.host,
+    fileName: "R00000",
+    lines: input.lines,
+  });
+  input.assertions.deepStrictEqual(input.host.diagnosticsFor(editor) ?? [], []);
+  verifyBillingStationRows({
+    editor,
+    lines: input.lines,
+    expectedRows: billingStationVoipExpectedRows,
+    helpers: input.helpers,
+    assertions: input.assertions,
+    label: "VoIP",
+  });
+  input.assertions.ok(
+    input.helpers
+      .optionsForLine(editor, 0)[6]
+      ?.hoverMessage?.value.includes("位置: 21 - 22 (2バイト)"),
+  );
+  input.assertions.ok(
+    input.helpers
+      .optionsForLine(editor, 2)[12]
+      ?.hoverMessage?.value.includes("位置: 79 - 88 (10バイト)"),
+  );
+  input.assertions.ok(
+    input.helpers
+      .optionsForLine(editor, 5)[2]
+      ?.hoverMessage?.value.includes("位置: 4 - 12 (9バイト)"),
+  );
+  input.assertions.deepStrictEqual(
+    editor.document.getText(),
+    input.lines.join("\n"),
+  );
+  input.assertions.strictEqual(editor.document.isDirty, false);
+}
+
+async function verifyBillingStationVoipNType(input: {
+  host: BillingStationRCharacterizationHost;
+  lines: string[];
+  assertions: BillingStationRAssertions;
+}): Promise<void> {
+  const commonLine = input.lines[0];
+  if (commonLine === undefined) {
+    throw new Error("VoIP の共通管理レコードがありません。");
+  }
+  for (const value of ["08", "  "]) {
+    const line = commonLine.slice(0, 20) + value + commonLine.slice(22);
+    const editor = await selectBillingStationVoipEditor({
+      host: input.host,
+      fileName: "media-sequence-" + (value.trim() || "blank") + ".txt",
+      lines: [line],
+    });
+    input.assertions.deepStrictEqual(
+      input.host.diagnosticsFor(editor) ?? [],
+      [],
+    );
+  }
+  for (const [index, value] of ["0A", "0 ", "+1", "-1"].entries()) {
+    const line = commonLine.slice(0, 20) + value + commonLine.slice(22);
+    const editor = await selectBillingStationVoipEditor({
+      host: input.host,
+      fileName: "invalid-media-sequence-" + index + ".txt",
+      lines: [line],
+    });
+    input.assertions.deepStrictEqual(
+      input.host.diagnosticsFor(editor)?.map(({ code }) => code),
+      ["INVALID_TYPE"],
+    );
+    input.assertions.strictEqual(editor.document.getText(), line);
+    input.assertions.strictEqual(editor.document.isDirty, false);
+  }
+}
+
+async function verifyBillingStationVoipCalendarVariants(input: {
+  host: BillingStationRCharacterizationHost;
+  assertions: BillingStationRAssertions;
+}): Promise<void> {
+  const westernLines = createBillingStationVoipFixtureRows(
+    "191201",
+    "1912",
+  ).map(({ line }) => line);
+  const editor = await selectBillingStationVoipEditor({
+    host: input.host,
+    fileName: "western-year.txt",
+    lines: westernLines,
+  });
+  input.assertions.deepStrictEqual(input.host.diagnosticsFor(editor) ?? [], []);
+  input.assertions.strictEqual(westernLines[0]?.slice(9, 15), "191201");
+  input.assertions.strictEqual(westernLines[0]?.slice(15, 19), "1912");
+  input.assertions.strictEqual(
+    editor.document.getText(),
+    westernLines.join("\n"),
+  );
+  input.assertions.strictEqual(editor.document.isDirty, false);
+}
+
+async function verifyBillingStationVoipUnknownRows(input: {
+  host: BillingStationRCharacterizationHost;
+  lines: string[];
+  assertions: BillingStationRAssertions;
+}): Promise<void> {
+  const commonLine = input.lines[0];
+  if (commonLine === undefined) {
+    throw new Error("VoIP の共通管理レコードがありません。");
+  }
+  const invalidLines = [
+    { line: "4" + commonLine.slice(1), code: "UNKNOWN_RECORD" },
+    { line: commonLine.slice(0, -1), code: "INVALID_LENGTH" },
+  ];
+  for (const [index, invalid] of invalidLines.entries()) {
+    const editor = await selectBillingStationVoipEditor({
+      host: input.host,
+      fileName: "invalid-record-" + index + ".txt",
+      lines: [invalid.line],
+    });
+    input.assertions.deepStrictEqual(
+      input.host.diagnosticsFor(editor)?.map(({ code }) => code),
+      [invalid.code],
+    );
+    input.assertions.strictEqual(editor.document.getText(), invalid.line);
+    input.assertions.strictEqual(editor.document.isDirty, false);
+  }
 }
