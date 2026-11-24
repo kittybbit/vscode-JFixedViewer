@@ -1,4 +1,5 @@
 import clear from "../../resource/definitions/clear.json";
+import billingStation from "../../resource/definitions/billingStation.json";
 import docomo from "../../resource/definitions/docomo.json";
 import jpx from "../../resource/definitions/jpx.json";
 import ntt from "../../resource/definitions/ntt.json";
@@ -70,7 +71,14 @@ function compileRows(rows: readonly RawRow[]): FixedWidthRowRule[] {
 }
 
 export function loadBuiltInDefinitions(): FixedWidthDefinition[] {
-  const rawDefinitions = [clear, zengin, jpx, ntt, docomo] as RawDefinition[];
+  const rawDefinitions = [
+    clear,
+    zengin,
+    jpx,
+    ntt,
+    docomo,
+    billingStation,
+  ] as RawDefinition[];
   return rawDefinitions.flatMap((definition) =>
     definition.files.map((file) => ({
       fileType: `${file.file_type}@${definition.type}`,

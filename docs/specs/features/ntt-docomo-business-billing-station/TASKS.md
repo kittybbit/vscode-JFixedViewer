@@ -9,10 +9,12 @@
 
 ## 現在の状態
 
-- ライフサイクル状態 `PLAN_APPROVED`。S1〜S3 の独立計画レビューと利用者の計画承認を確認した。
+- S1 のライフサイクル状態 `SLICE_APPROVED`。独立再レビューと S1 の完了承認を確認した。
+  S2〜S3 は未着手。
+  S1〜S3 の独立計画レビューと利用者の計画承認を確認した。
 - 機能ブランチ `codex/ntt-docomo-business-billing-station`。
   ベースは `main` の `493110c313f4427afd83b5cb5ea182782c7f03dd`。
-- 計画のコミット後、承認された順序で S1 から着手する。
+- S1 の承認範囲、実装、検証は下記「S1 実装証跡」に記録する。
 
 [ライフサイクル状態](../../README.md#ライフサイクル状態)に従う。
 
@@ -61,7 +63,6 @@
   `sample/.gitattributes` には `billingStation/* -text whitespace=-blank-at-eol` を追加し、
   S1〜S3 のサンプルに適用する。
 - 対象パス
-
   - `src/resource/definitions/billingStation.json`
   - `src/infrastructure/definitions/loadBuiltInDefinitions.ts`
   - `src/test/extension.test.ts`
@@ -87,7 +88,6 @@
   18件以上で継続、空の内訳組、負の金額、OCN 番号の先頭0省略の例を検証する。
 - S1 の最新 PR ヘッドと必須チェックの記録を待つ。S1 で追加したローダーを再利用する。
 - 対象パス
-
   - `src/resource/definitions/billingStation.json`
   - `src/test/extension.test.ts`
   - `src/test/support/billingStationFixtures.ts`
@@ -110,7 +110,6 @@
   合計・終了の識別と診断を確認する。
 - S2 の最新 PR ヘッドと必須チェックの記録を待つ。S1 で追加したローダーを再利用する。
 - 対象パス
-
   - `src/resource/definitions/billingStation.json`
   - `src/test/extension.test.ts`
   - `src/test/support/billingStationFixtures.ts`
@@ -139,11 +138,15 @@
 
 ## GitHub スタック
 
-| 順序 | 層 | PR のベース | 正確なベース | ヘッド・PR |
-| --- | --- | --- | --- | --- |
-| 1 | S1 | `main` | 現時点の対象は上記ベース SHA | 未公開 |
-| 2 | S2 | S1 ブランチ | S1 の必須チェック通過済みヘッドを記録して確定 | 未作成 |
-| 3 | S3 | S2 ブランチ | S2 の必須チェック通過済みヘッドを記録して確定 | 未作成 |
+<!-- markdownlint-disable MD013 -->
+
+| 順序 | 層  | PR のベース | 正確なベース                                  | ヘッド・PR |
+| ---- | --- | ----------- | --------------------------------------------- | ---------- |
+| 1    | S1  | `main`      | 現時点の対象は上記ベース SHA                  | 未公開     |
+| 2    | S2  | S1 ブランチ | S1 の必須チェック通過済みヘッドを記録して確定 | 未作成     |
+| 3    | S3  | S2 ブランチ | S2 の必須チェック通過済みヘッドを記録して確定 | 未作成     |
+
+<!-- markdownlint-enable MD013 -->
 
 各層の実装を承認後にコミットして公開する。後続の作業前に先行の最新ヘッドの Verify、
 CodeQL の解析対象 SHA と先行ヘッドとの対応、該当するリポジトリ必須チェックと Cloud の結果を記録する。
@@ -152,12 +155,17 @@ CodeQL の解析対象 SHA と先行ヘッドとの対応、該当するリポ�
 
 ## 人による承認
 
-| 段階 | 状態 | 対象 | レビュー・コミット |
-| --- | --- | --- | --- |
-| 計画 | `Approved` | S1〜S3、各スライス記載の実装パス | 再レビュー `b35d36` |
-| 完了 | `Pending` | S1、S2、S3 ごとに正確な差分を特定して承認 | 未記録 |
-| 終了 | `Pending` | 終了判定時に最上位層の差分とパスを特定 | 未記録 |
-| マージ | `Pending` | 取り込み順と対象、ベース、ヘッド、最新チェックを PR で特定 | 未記録 |
+<!-- markdownlint-disable MD013 -->
+
+| 段階        | 状態       | 対象                                                       | レビュー・コミット         |
+| ----------- | ---------- | ---------------------------------------------------------- | -------------------------- |
+| 計画        | `Approved` | S1〜S3、各スライス記載の実装パス                           | 再レビュー `b35d36`        |
+| S1 完了     | `Approved` | S1 の独立再レビュー済み差分                                | 下記の S1 独立実装レビュー |
+| S2・S3 完了 | `Pending`  | スライスごとに正確な差分を特定して承認                     | 未記録                     |
+| 終了        | `Pending`  | 終了判定時に最上位層の差分とパスを特定                     | 未記録                     |
+| マージ      | `Pending`  | 取り込み順と対象、ベース、ヘッド、最新チェックを PR で特定 | 未記録                     |
+
+<!-- markdownlint-enable MD013 -->
 
 2026年11月24日に利用者が、独立再レビュー済みの S1〜S3 の計画と列挙された実装パスを承認した。
 Main が記録し、この承認記録を含む計画文書をコミットする。
@@ -173,3 +181,77 @@ Main が記録し、この承認記録を含む計画文書をコミットする
 `docs/specs/features/ntt-docomo-business-billing-station/TASKS.md` の削除も終了差分の対象とする。
 判定、承認、チェック、最終的に取り込まれたコミットを PR に記録する。
 [機能の終了判定](../../README.md#機能の終了判定)に従う。
+
+## S1 実装証跡
+
+- 担当 `implementer`。状態遷移は `PLAN_COMMITTED` → `IMPLEMENTING` → `IMPLEMENTED`。
+  実装開始 HEAD は計画コミット `3fe358dabb50a4a4d6c780bfa9b6c91556877b8f`。
+  先行スライスはなく、ベースは引き続き `493110c313f4427afd83b5cb5ea182782c7f03dd`。
+- 計画承認は2026年11月24日の S1〜S3 と列挙実装パスへの明示承認（上記[人による承認](#人による承認)）。
+  完了承認は未取得。実装差分は未コミットで、独立レビューは `implementation-reviewer` に引き継ぐ。
+- S1 の受け入れ条件は次のとおり実装した。
+  - JSON 定義は `leased_line@billingStation`、形式名「専用線料金内訳書」、Shift_JIS、バイト単位、
+    ファイル名パターン、区分 `01`/`11`/`12`/`21`/`81` と各510バイトの公式項目を含む。
+    §6(5) の第9項は `C` 型、43〜47バイトとした。金額と初期値の `0` は文字型で右詰めにし、
+    数字欄の `N` 型と混同しない。
+  - 通常サンプルは按分割引を含む。統合サンプルは異なる企業等付加コードの2請求グループ、
+    通常の `12` と擬似回線ID `*******01` の一括計上用 `12` を含む。
+    両サンプルは Shift_JIS、CRLF、1行510バイトで、`.gitattributes` による改行変換を無効にした。
+  - 独立レビューの指摘を既存対象内で修正した。通常サンプルの `01`/`11`/`81` は
+    ファイル名と同じ `0000001-00001`、統合サンプルの `01`/`81` は
+    `0000002-79001` とし、`11` の2グループは既存の値を保った。
+    統合サンプルの `21` 合計は12000と2500、回線数は1と1、`81` 合計は14500、回線数は2。
+  - 回帰テストは全行の項目名・位置・長さ・型・色、形式名とファイル名、表示とホバー、
+    符号付き値、任意空白、行長、未知区分、N 型不正値、日本語をまたぐバイト境界を確認する。
+    追加でファイル名と `01`/`11`/`81` の識別コード、2グループの合計と回線数、
+    擬似IDを除外したグループ回線数と請求単位合計を独立期待値で検証する。
+    デスクトップと Web の実ホスト smoke で Shift_JIS/CRLF の読込、描画、診断なし、文書非変更を確認する。
+- 対象パスは S1 の上記12パスと本節を含む `TASKS.md`。
+  同じ作業ツリーにある `SPECS.md` は planner が表の書式のみを整えた別担当の差分。
+  表セル本文と表外の本文が同じことを照合済みで、planner の確認証跡は `54c4a5`、`96e669`、
+  ファイル SHA-256 は `f48d6fc2700201dc3ad04eef1898219b5d19c5a0d28ecdf38ccaf679427d6d88`。
+- `TRACEABILITY.md` はこの機能に存在しない。スライスの要件対応と検証方法は承認済み計画から変えていないため、
+  新規の対応表は追加しなかった。恒久ユースケースの更新要否は機能の終了判定に残す。
+- 検証結果:
+  - `npm run compile` — Pass。
+  - `npm run test:prepare` — Pass。
+  - `npm run test:architecture` — Pass、7件。
+  - Desktop の実ホストテストは次のコマンドで実行した。
+
+    ```sh
+    export VSCODE_TEST_EXECUTABLE='/Applications/Visual Studio Code.app/Contents/MacOS/Code'
+    npm run test:desktop
+    ```
+
+    — Pass、63件。VS Code 1.147.0 のキャッシュには `Electron` 実行ファイルがなく、通常起動は `ENOENT`。
+    `.vscode-test.mjs` が用意する実行ファイル指定でインストール済みの Code を使って検証した。
+
+  - `npm run test:web` — Pass、VS Code Stable の Web 実ホスト。
+  - Markdown lint は最終 `npm run qlty` で Pass、指摘0件。相対リンクと見出しは
+    変更した5文書の56リンクを検査し Pass。
+  - 一時 index に S1 の12製品パスと `TASKS.md` を登録して
+    `git diff --cached --check` を実行し Pass。実インデックスは空。
+
+- Qlty 基準は開始 HEAD の別 worktree で取得した。バージョンは `0.645.0 macos-arm64 (70886ba 2026-09-23)`、
+  `.qlty/qlty.toml` の SHA-256 は `0937a3a158d2b24c474a07b5ee271196190192df6be3458b3c960d0ec99bd77e`。
+  `qlty check --all --sarif --no-fix` は既存の `SPECS.md` と `TASKS.md` の
+  `prettier:fmt` 2件で終了1、
+  `qlty smells --all --sarif --no-snippets` は終了0・結果0件。開始時のコード解析は41パス。
+  最終 `qlty check --all --sarif --no-fix` は終了0・指摘0件、`qlty smells` は終了0・結果0件、
+  `npm run qlty` は終了0。最終 metrics は43コードパスを解析し、新規2つの fixture/smoke TS を含む。
+  未追跡の製品5パスも明示した `qlty check` を実行し、終了0・指摘0件。
+  基準と最終の SARIF、metrics、パス一覧、コマンドログは
+  `/tmp/jfixedviewer-billing-s1-impl-20261124/` に保存した。最終差分の SHA と一覧も Main に引き継ぐ。
+- S1 実装時の準備状況は `IMPLEMENTED`。新しいホスト境界や共通契約は変更していない。
+  実ホスト結果は1.147.0と Stable Web に限る。PR は未公開のため GitHub 必須チェックは未実施。
+
+## S1 独立実装レビュー
+
+- 2026年11月24日、`implementation-reviewer` が修正後の全差分を Ready と判定した。
+  初回に指摘したサンプルの請求識別子、統合請求の合計額と実回線数の不整合は解消済み。
+- 再レビュー済み差分の SHA-256
+  - 製品12パス `e0e02e3a9b47648bd14cefcecdf971def7aa9e8afa5fc2544c4e7d13a6c7c61f`
+  - S1 作業記録込み `88156fb6491215a88fc8af00db0b3d97dfb0a1ac9e9174cc76c0b61e7c0e9926`
+  - `SPECS.md` `f48d6fc2700201dc3ad04eef1898219b5d19c5a0d28ecdf38ccaf679427d6d88`
+- 2026年11月24日、利用者が S1 の完了を承認した。対象は上記のレビュー済み差分、
+  計画文書の書式差分とレビュー記録。Main が記録し、完了コミットを作成する。
