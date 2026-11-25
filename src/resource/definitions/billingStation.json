@@ -555,6 +555,1805 @@
           ]
         }
       ]
+    },
+    {
+      "file_type": "statement_r",
+      "name": "番号別明細内訳書（R始まり）",
+      "finame_pattern": "^N00000$",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
+      "rows": [
+        {
+          "name": "管理レコード",
+          "backgroundColor": {
+            "light": "#5CA5EA40",
+            "dark": "#284B7140"
+          },
+          "condition": "^.{11}01",
+          "fields": [
+            {
+              "name": "会社コード",
+              "length": 5,
+              "type": "C"
+            },
+            {
+              "name": "予備１",
+              "length": 6,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "予備２",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "請求期別・年",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "請求期別・月",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "請求期別・群",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "媒体通番",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "網種別",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "媒体識別",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "請求回数",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "詳細群",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "予備３",
+              "length": 480,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "ＯＣＮ番号別内訳レコード（初回）",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
+          "condition": "^.{11}11(?:01)",
+          "fields": [
+            {
+              "name": "ＯＣＮ番号",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "定期分割区分",
+              "length": 1,
+              "type": "N"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "レコードＮＯ",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "レコード数",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "ご請求番号",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "部課別コード",
+              "length": 6,
+              "type": "N"
+            },
+            {
+              "name": "減算不能区分",
+              "length": 1,
+              "type": "N"
+            },
+            {
+              "name": "ＯＣＮサービス種別",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "分割番号",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "予備１",
+              "length": 9,
+              "type": "C"
+            },
+            {
+              "name": "ご利用期間基本料等初日",
+              "length": 4,
+              "type": "N"
+            },
+            {
+              "name": "ご利用期間基本料等末日",
+              "length": 4,
+              "type": "N"
+            },
+            {
+              "name": "ＯＣＮ通信料等初日",
+              "length": 4,
+              "type": "N"
+            },
+            {
+              "name": "ＯＣＮ通信料等末日",
+              "length": 4,
+              "type": "N"
+            },
+            {
+              "name": "検針日前回",
+              "length": 4,
+              "type": "N"
+            },
+            {
+              "name": "検針日今回",
+              "length": 4,
+              "type": "N"
+            },
+            {
+              "name": "予備２",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "ＯＣＮ通信料・今月分",
+              "length": 10,
+              "type": "N"
+            },
+            {
+              "name": "予備３",
+              "length": 35,
+              "type": "C"
+            },
+            {
+              "name": "ご請求金額",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "予備４",
+              "length": 5,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード２",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード２",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額２",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数２",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分２",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード３",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード３",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額３",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数３",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分３",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード４",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード４",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額４",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数４",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分４",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード５",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード５",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額５",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数５",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分５",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード６",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード６",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額６",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数６",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分６",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード７",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード７",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額７",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数７",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分７",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード８",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード８",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額８",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数８",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分８",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード９",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード９",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額９",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数９",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分９",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１０",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１０",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１０",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１０",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１０",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１１",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１１",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１１",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１１",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１１",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１２",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１２",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１２",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１２",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１２",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１３",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１３",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１３",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１３",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１３",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１４",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１４",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１４",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１４",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１４",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１５",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１５",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１５",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１５",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１５",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１６",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１６",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１６",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１６",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１６",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１７",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１７",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１７",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１７",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１７",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "予備５",
+              "length": 14,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "ＯＣＮ番号別内訳レコード（継続）",
+          "backgroundColor": {
+            "light": "#E8B05C40",
+            "dark": "#694F2740"
+          },
+          "condition": "^.{11}11(?:0[2-9]|[1-9][0-9])",
+          "fields": [
+            {
+              "name": "ＯＣＮ番号",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "定期分割区分",
+              "length": 1,
+              "type": "N"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "レコードＮＯ",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "レコード数",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "ご請求番号",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "部課別コード",
+              "length": 6,
+              "type": "N"
+            },
+            {
+              "name": "予備１",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "ＯＣＮサービス種別",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "分割番号",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "予備２",
+              "length": 103,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード２",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード２",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額２",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数２",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分２",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード３",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード３",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額３",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数３",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分３",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード４",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード４",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額４",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数４",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分４",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード５",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード５",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額５",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数５",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分５",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード６",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード６",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額６",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数６",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分６",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード７",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード７",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額７",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数７",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分７",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード８",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード８",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額８",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数８",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分８",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード９",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード９",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額９",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数９",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分９",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１０",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１０",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１０",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１０",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１０",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１１",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１１",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１１",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１１",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１１",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１２",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１２",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１２",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１２",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１２",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１３",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１３",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１３",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１３",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１３",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１４",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１４",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１４",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１４",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１４",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１５",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１５",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１５",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１５",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１５",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１６",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１６",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１６",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１６",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１６",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１７",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１７",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１７",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１７",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１７",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "予備３",
+              "length": 14,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "請求書作成番号合計レコード（初回）",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
+          "condition": "^.{11}51(?:01)",
+          "fields": [
+            {
+              "name": "ご請求番号",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "予備１",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "レコードＮＯ",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "レコード数",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "分割番号",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "予備２",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "部課別コード",
+              "length": 6,
+              "type": "N"
+            },
+            {
+              "name": "予備３",
+              "length": 14,
+              "type": "C"
+            },
+            {
+              "name": "ご利用期間基本料等初日",
+              "length": 4,
+              "type": "N"
+            },
+            {
+              "name": "ご利用期間基本料等末日",
+              "length": 4,
+              "type": "N"
+            },
+            {
+              "name": "ＯＣＮ通信料等初日",
+              "length": 4,
+              "type": "N"
+            },
+            {
+              "name": "ＯＣＮ通信料等末日",
+              "length": 4,
+              "type": "N"
+            },
+            {
+              "name": "検針日前回",
+              "length": 4,
+              "type": "N"
+            },
+            {
+              "name": "検針日今回",
+              "length": 4,
+              "type": "N"
+            },
+            {
+              "name": "予備４",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "ＯＣＮ通信料・今月分",
+              "length": 10,
+              "type": "N"
+            },
+            {
+              "name": "予備５",
+              "length": 35,
+              "type": "C"
+            },
+            {
+              "name": "請求額合計金額",
+              "length": 10,
+              "type": "N"
+            },
+            {
+              "name": "請求件数",
+              "length": 8,
+              "type": "N"
+            },
+            {
+              "name": "金融機関コード",
+              "length": 7,
+              "type": "C"
+            },
+            {
+              "name": "口座番号",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "口座名義",
+              "length": 40,
+              "type": "C"
+            },
+            {
+              "name": "予備６",
+              "length": 5,
+              "type": "C"
+            },
+            {
+              "name": "送付先名",
+              "length": 40,
+              "type": "C"
+            },
+            {
+              "name": "予備７",
+              "length": 268,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "請求書作成番号合計レコード（継続）",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
+          "condition": "^.{11}51(?:0[2-9]|[1-9][0-9])",
+          "fields": [
+            {
+              "name": "ご請求番号",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "予備１",
+              "length": 1,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "レコードＮＯ",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "レコード数",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "分割番号",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "予備２",
+              "length": 8,
+              "type": "C"
+            },
+            {
+              "name": "部課別コード",
+              "length": 6,
+              "type": "N"
+            },
+            {
+              "name": "予備３",
+              "length": 108,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード２",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード２",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額２",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数２",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分２",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード３",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード３",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額３",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数３",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分３",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード４",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード４",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額４",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数４",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分４",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード５",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード５",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額５",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数５",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分５",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード６",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード６",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額６",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数６",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分６",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード７",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード７",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額７",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数７",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分７",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード８",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード８",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額８",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数８",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分８",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード９",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード９",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額９",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数９",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分９",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１０",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１０",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１０",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１０",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１０",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１１",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１１",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１１",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１１",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１１",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１２",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１２",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１２",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１２",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１２",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１３",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１３",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１３",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１３",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１３",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１４",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１４",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１４",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１４",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１４",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１５",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１５",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１５",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１５",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１５",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１６",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１６",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１６",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１６",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１６",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "利用内訳コード１７",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "請求内訳コード１７",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "内訳金額１７",
+              "length": 10,
+              "type": "C"
+            },
+            {
+              "name": "残回数１７",
+              "length": 3,
+              "type": "C"
+            },
+            {
+              "name": "税区分１７",
+              "length": 2,
+              "type": "C"
+            },
+            {
+              "name": "予備４",
+              "length": 14,
+              "type": "C"
+            }
+          ]
+        },
+        {
+          "name": "会社合計レコード",
+          "backgroundColor": {
+            "light": "#96969640",
+            "dark": "#55555540"
+          },
+          "condition": "^.{11}91",
+          "fields": [
+            {
+              "name": "会社コード",
+              "length": 5,
+              "type": "N"
+            },
+            {
+              "name": "予備１",
+              "length": 6,
+              "type": "C"
+            },
+            {
+              "name": "データ種類",
+              "length": 2,
+              "type": "N"
+            },
+            {
+              "name": "予備２",
+              "length": 4,
+              "type": "C"
+            },
+            {
+              "name": "会社合計請求額",
+              "length": 12,
+              "type": "N"
+            },
+            {
+              "name": "会社合計請求件数",
+              "length": 8,
+              "type": "N"
+            },
+            {
+              "name": "予備３",
+              "length": 475,
+              "type": "C"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

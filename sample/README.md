@@ -61,9 +61,14 @@ JPX の配信名の拡張子は `.csv` で、データ部分は657バイトの�
   - 管理、ヘッダ、データ、エンド、請求単位の各レコードを含みます。データレコードには按分された高額利用割引額を設定しています。
 - [専用線料金内訳書・請求書の統合処理](billingStation/U0000002-79001-001-C.txt)
   - 企業等付加コードが異なる2つの請求グループと、通常回線・高額割引用の擬似回線ID `*******01` を含みます。
-- サンプルは架空のデータです。Shift_JIS と CRLF を使い、各レコードは改行を除いて510バイトです。
+- [番号別明細内訳書（R始まり）](billingStation/N00000)
+  - 管理、OCN番号別内訳の初回・継続、請求書作成番号合計の初回と2件の継続、会社合計を含みます。
+  - OCN番号 `05012345678` の先頭0を省いた値、18件の内訳、負の金額、税区分 `0A` を含みます。
+- サンプルは架空のデータです。通常・統合請求は Shift_JIS と CRLF、各レコード510バイトです。
+  R始まりの番号別明細も Shift_JIS と CRLF で、各レコード512バイトです。内容は ASCII です。
   項目を表示する形式は「NTTドコモビジネス ビリングステーション/専用線料金内訳書」です。
-- 仕様: [専用線料金内訳書仕様書](https://www.ntt.com/content/dam/nttcom/hq/jp/business/services/voice-video/discount-statement/billingstation/pdf/meisai_senyou.pdf)
+- R始まりの形式は「NTTドコモビジネス ビリングステーション/番号別明細内訳書（R始まり）」を選びます。
+- 仕様: [ビリングステーション各種仕様書](https://www.ntt.com/business/services/voice-video/discount-statement/billingstation.html#manual)
 
 ## 全銀協制定形式
 
