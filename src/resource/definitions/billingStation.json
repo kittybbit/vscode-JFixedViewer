@@ -2354,6 +2354,120 @@
           ]
         }
       ]
+    },
+    {
+      "file_type": "dial_voip",
+      "name": "ダイヤル通話明細内訳書（VoIP）",
+      "finame_pattern": "^R00000$",
+      "encoding": "shiftjis",
+      "length_unit": "byte",
+      "rows": [
+        {
+          "name": "共通管理レコード",
+          "backgroundColor": { "light": "#5CA5EA40", "dark": "#284B7140" },
+          "condition": "^1",
+          "fields": [
+            { "name": "レコード識別", "length": 1, "type": "C" },
+            { "name": "媒体識別", "length": 2, "type": "C" },
+            { "name": "予備１", "length": 6, "type": "C" },
+            { "name": "ファイル作成日付", "length": 6, "type": "C" },
+            { "name": "料金月", "length": 4, "type": "C" },
+            { "name": "料金群", "length": 1, "type": "C" },
+            { "name": "媒体通番", "length": 2, "type": "N" },
+            { "name": "明細送付代表番号", "length": 12, "type": "C" },
+            { "name": "予備２", "length": 2, "type": "C" },
+            { "name": "請求回数", "length": 1, "type": "C" },
+            { "name": "詳細群", "length": 1, "type": "C" },
+            { "name": "予備３", "length": 90, "type": "C" }
+          ]
+        },
+        {
+          "name": "電番管理レコード",
+          "backgroundColor": { "light": "#5CA5EA40", "dark": "#284B7140" },
+          "condition": "^2",
+          "fields": [
+            { "name": "レコード識別", "length": 1, "type": "C" },
+            { "name": "明細送付代表番号", "length": 12, "type": "C" },
+            { "name": "予備１", "length": 2, "type": "C" },
+            { "name": "子電話番号", "length": 13, "type": "C" },
+            { "name": "予備２", "length": 1, "type": "C" },
+            { "name": "サービス区分", "length": 2, "type": "C" },
+            { "name": "予備３", "length": 2, "type": "C" },
+            { "name": "送付明細呼数", "length": 7, "type": "C" },
+            { "name": "利用月日初日", "length": 6, "type": "C" },
+            { "name": "利用月日末日", "length": 6, "type": "C" },
+            { "name": "各種サービス番号", "length": 11, "type": "C" },
+            { "name": "契約者回線番号", "length": 13, "type": "C" },
+            { "name": "グループセキュリティ", "length": 6, "type": "C" },
+            { "name": "出力形式", "length": 1, "type": "C" },
+            { "name": "利用内訳コード", "length": 2, "type": "C" },
+            { "name": "お客様番号", "length": 13, "type": "C" },
+            { "name": "ロケーションコード", "length": 16, "type": "C" },
+            { "name": "ソートパターン", "length": 1, "type": "C" },
+            { "name": "予備４", "length": 13, "type": "C" }
+          ]
+        },
+        {
+          "name": "通話明細レコード",
+          "backgroundColor": { "light": "#E8B05C40", "dark": "#694F2740" },
+          "condition": "^3",
+          "fields": [
+            { "name": "レコード識別", "length": 1, "type": "C" },
+            { "name": "明細送付代表番号", "length": 12, "type": "C" },
+            { "name": "予備１", "length": 2, "type": "C" },
+            { "name": "子電話番号", "length": 13, "type": "C" },
+            { "name": "サービス区分", "length": 2, "type": "C" },
+            { "name": "予備２", "length": 2, "type": "C" },
+            { "name": "通信元電話番号", "length": 13, "type": "C" },
+            { "name": "通話月日", "length": 4, "type": "C" },
+            { "name": "通話開始時刻", "length": 6, "type": "C" },
+            { "name": "着信電話番号", "length": 13, "type": "C" },
+            { "name": "県名コード", "length": 2, "type": "C" },
+            { "name": "通話時間", "length": 8, "type": "C" },
+            { "name": "通話料金１", "length": 10, "type": "C" },
+            { "name": "通話料金２", "length": 10, "type": "C" },
+            { "name": "通話料金３", "length": 10, "type": "C" },
+            { "name": "発信県名コード", "length": 2, "type": "C" },
+            { "name": "通話種別コード", "length": 3, "type": "C" },
+            { "name": "昼夜別コード", "length": 3, "type": "C" },
+            { "name": "フリーダイヤルサービス種別", "length": 1, "type": "C" },
+            { "name": "地域コード", "length": 3, "type": "C" },
+            { "name": "予備３", "length": 8, "type": "C" }
+          ]
+        },
+        {
+          "name": "電番合計レコード",
+          "backgroundColor": { "light": "#96969640", "dark": "#55555540" },
+          "condition": "^5",
+          "fields": [
+            { "name": "レコード識別", "length": 1, "type": "C" },
+            { "name": "明細送付代表番号", "length": 12, "type": "C" },
+            { "name": "予備１", "length": 2, "type": "C" },
+            { "name": "子電話番号", "length": 13, "type": "C" },
+            { "name": "サービス区分", "length": 2, "type": "C" },
+            { "name": "利用区分", "length": 2, "type": "C" },
+            { "name": "予備２", "length": 1, "type": "C" },
+            { "name": "合計金額", "length": 9, "type": "C" },
+            { "name": "月間加減算金額", "length": 9, "type": "C" },
+            { "name": "区域内合計金額", "length": 9, "type": "C" },
+            { "name": "非希望時合計金額", "length": 9, "type": "C" },
+            { "name": "請求額", "length": 9, "type": "C" },
+            { "name": "通話時間", "length": 10, "type": "C" },
+            { "name": "予備３", "length": 40, "type": "C" }
+          ]
+        },
+        {
+          "name": "終了レコード",
+          "backgroundColor": { "light": "#96969640", "dark": "#55555540" },
+          "condition": "^9",
+          "fields": [
+            { "name": "レコード識別", "length": 1, "type": "C" },
+            { "name": "ＦＤ枚数", "length": 2, "type": "C" },
+            { "name": "総出力レコード数", "length": 9, "type": "C" },
+            { "name": "予備", "length": 116, "type": "C" }
+          ]
+        }
+      ]
     }
   ]
 }
