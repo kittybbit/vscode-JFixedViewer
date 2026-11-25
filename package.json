@@ -3,7 +3,7 @@
   "name": "vscode-JFixedViewer",
   "displayName": "vscode-J Fixed Viewer",
   "description": "日本で利用される、固定長のファイルを見やすく表示する拡張機能です。",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "license": "MIT",
   "homepage": "https://github.com/kittybbit/vscode-JFixedViewer",
@@ -18,7 +18,11 @@
     "vscode": "^1.100.0"
   },
   "keywords": [
-    "全銀協規定形式(FBデータ)"
+    "全銀協規定形式(FBデータ)",
+    "NTT(固定長明細)",
+    "JPX(四本値・デリバティブ)",
+    "NTTドコモ(ご利用料金管理サービス)",
+    "NTTドコモビジネス(ビリングステーション)"
   ],
   "categories": [
     "Other"
