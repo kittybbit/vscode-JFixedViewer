@@ -55,6 +55,16 @@ JPX の配信名の拡張子は `.csv` で、データ部分は657バイトの�
   - 仕様: [NTT西日本の固定長形式](https://www.ntt-west.co.jp/denwa/2026bill/meisai/charcode/)、
     [NTT東日本の固定長形式](https://flets.com/2026billing/moji_code.html)
 
+## NTTドコモビジネス ビリングステーション
+
+- [専用線料金内訳書・通常請求](billingStation/U0000001-00001-001-C.txt)
+  - 管理、ヘッダ、データ、エンド、請求単位の各レコードを含みます。データレコードには按分された高額利用割引額を設定しています。
+- [専用線料金内訳書・請求書の統合処理](billingStation/U0000002-79001-001-C.txt)
+  - 企業等付加コードが異なる2つの請求グループと、通常回線・高額割引用の擬似回線ID `*******01` を含みます。
+- サンプルは架空のデータです。Shift_JIS と CRLF を使い、各レコードは改行を除いて510バイトです。
+  項目を表示する形式は「NTTドコモビジネス ビリングステーション/専用線料金内訳書」です。
+- 仕様: [専用線料金内訳書仕様書](https://www.ntt.com/content/dam/nttcom/hq/jp/business/services/voice-video/discount-statement/billingstation/pdf/meisai_senyou.pdf)
+
 ## 全銀協制定形式
 
 全銀のサンプルは、全銀協「適用業務およびレコード・フォーマット」AP-I-13 (2026年10月改訂) にある33形式です。

@@ -12,6 +12,17 @@ import {
   verifyDocomoS2Characterization,
 } from "./support/docomoSmoke";
 import {
+  billingStationExpectedRows,
+  billingStationIdentity,
+  billingStationIdentityFromFileName,
+  billingStationSummaryFacts,
+  createBillingStationFixtureRows,
+  displayIndexAtShiftJisByte,
+  fixtureValueAtByte,
+  leasedLineNumber,
+  leasedLineSummaryMatches,
+} from "./support/billingStationFixtures";
+import {
   FakePosition,
   FakeRange,
   type FakeEditor,
@@ -295,43 +306,11 @@ function rowNames(editor: FakeEditor, line: number): string[] {
   });
 }
 
-function leasedLineNumber(line: string, byteOffset: number, byteLength = 12) {
-  return Number(
-    Buffer.from(line, "utf8")
-      .subarray(byteOffset, byteOffset + byteLength)
-      .toString("ascii"),
-  );
-}
-
 function assertLeasedLineSummaryMatches(
   summaryLine: string,
   detailLines: string[],
 ) {
-  const detailTotal = detailLines.reduce(
-    (total, line) => total + leasedLineNumber(line, 532),
-    0,
-  );
-  assert.strictEqual(leasedLineNumber(summaryLine, 2), detailTotal);
-
-  const detailAmountOffsets = Array.from(
-    { length: 13 },
-    (_, index) => 544 + index * 12,
-  );
-  const expectedAmountTotals = detailAmountOffsets.map((offset) =>
-    detailLines.reduce(
-      (total, line) => total + leasedLineNumber(line, offset),
-      0,
-    ),
-  );
-  const summaryAmountOffsets = Array.from(
-    { length: 14 },
-    (_, index) => 14 + index * 12,
-  );
-  assert.deepStrictEqual(
-    summaryAmountOffsets.map((offset) => leasedLineNumber(summaryLine, offset)),
-    [...expectedAmountTotals, 0],
-  );
-  assert.strictEqual(leasedLineNumber(summaryLine, 182, 7), detailLines.length);
+  assert.strictEqual(leasedLineSummaryMatches(summaryLine, detailLines), true);
 }
 
 function hasRow(editor: FakeEditor, line: number, name: string): boolean {
@@ -1162,6 +1141,301 @@ suite("固定長表示の現行挙動", () => {
       optionsForLine,
       rowNames,
     });
+  });
+
+  test("ビリングステーション専用線料金の定義、統合請求、診断を確認する", async () => {
+    const expectedFileType = "leased_line@billingStation";
+    const expectedName =
+      "NTTドコモビジネス ビリングステーション/専用線料金内訳書";
+    const billingDefinitions = loadBuiltInDefinitions().filter(({ fileType }) =>
+      fileType.endsWith("@billingStation"),
+    );
+    assert.deepStrictEqual(
+      billingDefinitions.map(({ fileType }) => fileType),
+      [expectedFileType],
+    );
+    const definition = billingDefinitions[0];
+    assert.ok(definition);
+    assert.strictEqual(definition.name, expectedName);
+    assert.strictEqual(definition.encoding, "shiftjis");
+    assert.strictEqual(definition.lengthUnit, "byte");
+    assert.strictEqual(
+      definition.fileNamePattern.test("U0000001-00001-001-C.txt"),
+      true,
+    );
+    assert.strictEqual(
+      definition.fileNamePattern.test("U0000001-00001-001-X.txt"),
+      false,
+    );
+    assert.deepStrictEqual(
+      definition.rows.map(({ name, backgroundColor, condition, fields }) => ({
+        name,
+        backgroundColor,
+        condition: condition.source,
+        fields: (fields ?? []).map(({ name: fieldName, length, type }) => ({
+          name: fieldName,
+          length,
+          type,
+        })),
+      })),
+      billingStationExpectedRows.map((row) => ({
+        name: row.name,
+        backgroundColor: row.color,
+        condition: "^" + row.code,
+        fields: row.fields,
+      })),
+    );
+
+    const sampleDirectory = path.resolve(
+      __dirname,
+      "../../sample/billingStation",
+    );
+    const sampleRecords = (fileName: string) => {
+      const bytes = readFileSync(path.join(sampleDirectory, fileName));
+      const parts = bytes.toString("latin1").split("\r\n");
+      assert.strictEqual(parts.pop(), "");
+      assert.deepStrictEqual(
+        parts.map((line) => Buffer.byteLength(line, "latin1")),
+        parts.map(() => 510),
+      );
+      return parts;
+    };
+    const regularSample = sampleRecords("U0000001-00001-001-C.txt");
+    const mergedSample = sampleRecords("U0000002-79001-001-C.txt");
+    const regularIdentity = billingStationIdentityFromFileName(
+      "U0000001-00001-001-C.txt",
+    );
+    const mergedIdentity = billingStationIdentityFromFileName(
+      "U0000002-79001-001-C.txt",
+    );
+    assert.deepStrictEqual(
+      [
+        billingStationIdentity(regularSample[0]),
+        billingStationIdentity(regularSample[1], 10),
+        billingStationIdentity(regularSample[4]),
+      ],
+      Array(3).fill(regularIdentity),
+    );
+    assert.deepStrictEqual(
+      [
+        billingStationIdentity(mergedSample[0]),
+        billingStationIdentity(mergedSample[8]),
+      ],
+      Array(2).fill(mergedIdentity),
+    );
+    assert.deepStrictEqual(
+      mergedSample
+        .filter((line) => line.startsWith("11"))
+        .map((line) => billingStationIdentity(line, 10)),
+      ["300000900001", "300000979001"],
+    );
+    assert.deepStrictEqual(
+      regularSample.map((line) => line.slice(0, 2)),
+      ["01", "11", "12", "21", "81"],
+    );
+    assert.deepStrictEqual(
+      mergedSample.map((line) => line.slice(0, 2)),
+      ["01", "11", "12", "21", "11", "12", "12", "21", "81"],
+    );
+    assert.strictEqual(regularSample[2].slice(327, 339), "        -123");
+    assert.strictEqual(regularSample[2].slice(339, 351), "           0");
+    assert.strictEqual(regularSample[3].slice(74, 86), "        -123");
+    assert.strictEqual(regularSample[4].slice(32, 42), "     12345");
+    assert.strictEqual(mergedSample[1].slice(17, 22), "00001");
+    assert.strictEqual(mergedSample[4].slice(17, 22), "79001");
+    assert.strictEqual(mergedSample[6].slice(2, 11), "*******01");
+    assert.strictEqual(mergedSample[6].slice(327, 339), "       -5000");
+    assert.deepStrictEqual(
+      mergedSample
+        .filter((line) => line.startsWith("12"))
+        .map((line) => line.slice(2, 11)),
+      ["000000001", "000000002", "*******01"],
+    );
+    assert.deepStrictEqual(billingStationSummaryFacts(regularSample), {
+      groupAmounts: [12345],
+      groupCircuitCounts: [1],
+      invoiceTotal: 12345,
+      invoiceCircuitCount: 1,
+    });
+    assert.deepStrictEqual(billingStationSummaryFacts(mergedSample), {
+      groupAmounts: [12000, 2500],
+      groupCircuitCounts: [1, 1],
+      invoiceTotal: 14500,
+      invoiceCircuitCount: 2,
+    });
+
+    const regular = createBillingStationFixtureRows();
+    const integratedIdentityOverrides = {
+      "01": { 1: "0000002", 2: "79001" },
+      "11": { 2: "3000009" },
+      "81": { 1: "0000002", 2: "79001" },
+    };
+    const mergedGroupOne = createBillingStationFixtureRows("00001", {
+      ...integratedIdentityOverrides,
+      "21": { 1: "12000" },
+    });
+    const mergedGroupTwo = createBillingStationFixtureRows("79001", {
+      ...integratedIdentityOverrides,
+      "21": { 1: "2500" },
+    });
+    const mergedDiscount = createBillingStationFixtureRows("79001", {
+      ...integratedIdentityOverrides,
+      "12": {
+        1: "*******01",
+        18: "0",
+        19: "0",
+        24: "-5000",
+        33: "-500",
+      },
+      "21": { 1: "2500", 2: "0", 7: "-5000", 16: "-500" },
+      "81": { 7: "14500", 8: "00002" },
+    });
+    const lines = [
+      mergedGroupOne[0].line,
+      mergedGroupOne[1].line,
+      mergedGroupOne[2].line,
+      mergedGroupOne[3].line,
+      mergedGroupTwo[1].line,
+      mergedGroupTwo[2].line,
+      mergedDiscount[2].line,
+      mergedDiscount[3].line,
+      mergedDiscount[4].line,
+    ];
+    assert.strictEqual(mergedDiscount[2].line.slice(2, 11), "*******01");
+    const discountStart = billingStationExpectedRows[2].fields
+      .slice(0, 24)
+      .reduce((total, field) => total + field.length, 0);
+    assert.strictEqual(
+      fixtureValueAtByte(mergedGroupTwo[2].line, discountStart, 12).trimStart(),
+      "-12",
+    );
+    assert.strictEqual(
+      fixtureValueAtByte(mergedDiscount[2].line, discountStart, 12).trimStart(),
+      "-5000",
+    );
+
+    const editor = host.createEditor(
+      "U0000002-79001-001-C.txt",
+      lines,
+      "billingStation://merged",
+    );
+    host.setActiveEditor(editor);
+    await host.chooseFileType(expectedName);
+    await host.waitForAnalysis();
+    assert.deepStrictEqual(host.diagnosticsFor(editor) ?? [], []);
+    const expectedLineNames = [
+      mergedGroupOne[0].name,
+      mergedGroupOne[1].name,
+      mergedGroupOne[2].name,
+      mergedGroupOne[3].name,
+      mergedGroupTwo[1].name,
+      mergedGroupTwo[2].name,
+      mergedDiscount[2].name,
+      mergedDiscount[3].name,
+      mergedDiscount[4].name,
+    ];
+    lines.forEach((_, line) => {
+      assert.deepStrictEqual(
+        [...new Set(rowNames(editor, line))],
+        [expectedLineNames[line]],
+      );
+      const expectedFieldCount = billingStationExpectedRows.find(
+        ({ code }) => code === lines[line].slice(0, 2),
+      )?.fields.length;
+      assert.strictEqual(
+        optionsForLine(editor, line).length,
+        expectedFieldCount,
+      );
+    });
+    assert.ok(
+      optionsForLine(editor, 8)[8]?.hoverMessage?.value.includes(
+        "位置: 43 - 47 (5バイト)",
+      ),
+    );
+    assert.deepStrictEqual(
+      rowBackgroundRows(editor)
+        .sort((left, right) => left.line - right.line)
+        .map(({ line, light, dark }) => ({ line, light, dark })),
+      lines.map((line, index) => {
+        const color = billingStationExpectedRows.find(
+          ({ code }) => code === line.slice(0, 2),
+        )?.color;
+        return {
+          line: index,
+          light: color?.light,
+          dark: color?.dark,
+        };
+      }),
+    );
+
+    const consentNumberStart = 50;
+    const consentNumberEnd = 61;
+    const invalidNStart = displayIndexAtShiftJisByte(
+      regular[2].line,
+      consentNumberStart,
+    );
+    const invalidNEnd = displayIndexAtShiftJisByte(
+      regular[2].line,
+      consentNumberEnd,
+    );
+    const invalidLines = [
+      {
+        fileName: "unknown.txt",
+        line: "99" + " ".repeat(508),
+        code: "UNKNOWN_RECORD",
+      },
+      {
+        fileName: "short.txt",
+        line: regular[2].line.slice(0, -1),
+        code: "INVALID_LENGTH",
+      },
+      {
+        fileName: "invalid-n.txt",
+        line:
+          regular[2].line.slice(0, invalidNStart) +
+          "0000000000X" +
+          regular[2].line.slice(invalidNEnd),
+        code: "INVALID_TYPE",
+      },
+    ];
+    for (const invalid of invalidLines) {
+      const invalidEditor = host.createEditor(
+        invalid.fileName,
+        [invalid.line],
+        "billingStation://" + invalid.fileName,
+      );
+      host.setActiveEditor(invalidEditor);
+      await host.chooseFileType(expectedName);
+      await host.waitForAnalysis();
+      assert.deepStrictEqual(
+        host.diagnosticsFor(invalidEditor)?.map(({ code }) => code),
+        [invalid.code],
+      );
+      assert.strictEqual(invalidEditor.document.getText(), invalid.line);
+      assert.strictEqual(invalidEditor.document.isDirty, false);
+    }
+
+    const header = regular[1].line;
+    const headerBoundary = 103;
+    const displayBoundary = displayIndexAtShiftJisByte(header, headerBoundary);
+    const splitHeader =
+      header.slice(0, displayBoundary - 1) +
+      "あ" +
+      header.slice(displayBoundary + 1);
+    const boundaryEditor = host.createEditor(
+      "split-boundary.txt",
+      [splitHeader],
+      "billingStation://split-boundary",
+    );
+    host.setActiveEditor(boundaryEditor);
+    await host.chooseFileType(expectedName);
+    await host.waitForAnalysis();
+    assert.deepStrictEqual(
+      host.diagnosticsFor(boundaryEditor)?.map(({ code }) => code),
+      ["INVALID_BYTE_BOUNDARY", "INVALID_BYTE_BOUNDARY"],
+    );
+    assert.strictEqual(boundaryEditor.document.getText(), splitHeader);
+    assert.strictEqual(boundaryEditor.document.isDirty, false);
   });
 
   test("定義色ペアは両方有効な時だけ先頭一致行に適用する", async () => {
